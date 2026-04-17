@@ -17,7 +17,11 @@ export function Header() {
           <Link href="#contacto" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Contacto</Link>
         </nav>
         <div className="flex items-center gap-4">
-          <LoginDialog />
+          <Link href="/login">
+            <Button className="h-8 px-4 text-base bg-white text-zinc-900 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 shadow-sm rounded-md transition-all" variant="ghost">
+              Acceder
+            </Button>
+          </Link>
            
           <Link href="/wizard">
             <Button className="bg-accent hover:bg-accent-200 text-white border-none h-8 px-4 text-base shadow-xl shadow-zinc-900/10 transition-all rounded-md">
