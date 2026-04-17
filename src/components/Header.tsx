@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { LoginDialog } from "../components/auth/login-dialog";
 
 export function Header() {
   return (
-    <header className="fixed top-0 w-full z-50 backdrop-blur-xl bg-background/80 border-b border-border/40">
+    <header >
       <div className="container mx-auto px-6 h-20 flex items-center justify-between max-w-[1280px]">
         <Link href="/" className="font-serif text-2xl font-bold tracking-tight text-foreground">
-          Reserva Epicúrea
+          GetChef.com
         </Link>
         <nav className="hidden md:flex gap-8 items-center">
           <Link href="#experiencia" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">La Experiencia</Link>
@@ -16,12 +17,22 @@ export function Header() {
           <Link href="#contacto" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Contacto</Link>
         </nav>
         <div className="flex items-center gap-4">
-          <Link href="/login" className="text-sm font-medium hidden md:inline-block">Acceder</Link>
-          <Button className="bg-accent text-accent-foreground hover:bg-accent/90 rounded-md shadow-sm">
-            Empezar
-          </Button>
+          <LoginDialog />
+           
+          <Link href="/wizard">
+            <Button className="bg-accent hover:bg-accent-200 text-white border-none h-8 px-4 text-base shadow-xl shadow-zinc-900/10 transition-all rounded-md">
+                Empezar
+            </Button>
+          </Link>
         </div>
       </div>
+     
     </header>
+//     <header>
+//   <LoginDialog />
+// </header>
   );
 }
+ 
+
+

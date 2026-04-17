@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+
 export function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
   const vectorRef = useRef<SVGSVGElement>(null);
@@ -80,7 +81,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section ref={containerRef} className="relative min-h-[90vh] flex items-center pt-24 overflow-hidden bg-[#FAFAFA]">
+    <section ref={containerRef} className="relative min-h-[90vh] flex items-center pt-24  bg-[#FAFAFA]">
       <div className="container mx-auto px-6 max-w-[1280px]">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
           
@@ -100,13 +101,17 @@ export function Hero() {
             </p>
             <div className="hero-text opacity-0 flex flex-col sm:flex-row gap-4">
               <Link href="/wizard">
-                <Button size="lg" className="bg-zinc-900 hover:bg-zinc-800 text-white border-none h-14 px-8 text-base shadow-xl shadow-zinc-900/10 transition-all rounded-md">
-                  Personaliza tu Menú
+                <Button size="lg" className="bg-accent hover:bg-accent-200 text-white border-none h-8 px-4 text-base shadow-xl shadow-zinc-900/10 transition-all rounded-md">
+                  Empezar
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="h-14 px-8 text-base bg-white text-zinc-900 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 shadow-sm rounded-md transition-all">
-                Ver Nuestros Chefs
-              </Button>
+             
+              
+              <Link href="#chefs">
+                <Button size="lg" variant="outline" className="h-8 px-4 text-base bg-white text-zinc-900 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 shadow-sm rounded-md transition-all">
+                  Ver Nuestros Chefs
+                </Button>
+              </Link>
             </div>
           </div>
 
