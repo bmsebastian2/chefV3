@@ -5,7 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Star } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-
+import Image from "next/image";
 gsap.registerPlugin(ScrollTrigger);
 
 const chefs = [
@@ -56,11 +56,14 @@ export function Chefs() {
           {chefs.map((chef, idx) => (
             <Card key={idx} className="chef-card opacity-0 overflow-hidden border-none shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] bg-white hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] transition-shadow duration-300 rounded-md">
               <div className="h-80 w-full overflow-hidden">
-                <img 
+                <Image 
                   src={chef.img} 
                   alt={chef.name} 
+                  width={600} 
+  height={400} 
                   className="w-full h-full object-cover filter grayscale hover:grayscale-0 transition-all duration-700 hover:scale-105"
                 />
+  
               </div>
               <CardContent className="p-6">
                 <h3 className="font-serif text-2xl font-medium text-zinc-900 mb-2">{chef.name}</h3>

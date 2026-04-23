@@ -15,6 +15,7 @@ export function Header() {
           <Link href="#experiencia" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">La Experiencia</Link>
           <Link href="#chefs" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Nuestros Chefs</Link>
           <Link href="#contacto" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Contacto</Link>
+          <Link href="/chef-registration" className="text-sm font-medium text-muted-foreground hover:text-accent transition-colors">Registro de Chef</Link>
         </nav>
         <div className="flex items-center gap-4">
           <LoginDialog />
@@ -28,9 +29,6 @@ export function Header() {
       </div>
      
     </header>
-//     <header>
-//   <LoginDialog />
-// </header>
   );
 }
  
