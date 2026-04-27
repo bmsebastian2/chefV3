@@ -1,31 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { Country, City } from "country-state-city";
 import { saveUbicacion } from "@/app/dashboard/ubicacion/actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { MapPin, Globe } from "lucide-react";
-
-const COUNTRIES = [
-  { value: "Argentina",  label: "Argentina" },
-  { value: "Bolivia",    label: "Bolivia" },
-  { value: "Chile",      label: "Chile" },
-  { value: "Colombia",   label: "Colombia" },
-  { value: "Costa Rica", label: "Costa Rica" },
-  { value: "Cuba",       label: "Cuba" },
-  { value: "Ecuador",    label: "Ecuador" },
-  { value: "España",     label: "España" },
-  { value: "Guatemala",  label: "Guatemala" },
-  { value: "Honduras",   label: "Honduras" },
-  { value: "Mexico",     label: "México" },
-  { value: "Nicaragua",  label: "Nicaragua" },
-  { value: "Panama",     label: "Panamá" },
-  { value: "Paraguay",   label: "Paraguay" },
-  { value: "Peru",       label: "Perú" },
-  { value: "Uruguay",    label: "Uruguay" },
-  { value: "Venezuela",  label: "Venezuela" },
-  { value: "Other",      label: "Otro país" },
-];
+import { ChevronDown, X } from "lucide-react";
 
 const LANGUAGES = [
   { value: "es", label: "Español" },
@@ -35,6 +14,125 @@ const LANGUAGES = [
   { value: "pt", label: "Português" },
   { value: "it", label: "Italiano" },
 ];
+
+// ── Combobox genérico ──────────────────────────────────────────────────────────
+
+function Combobox({
+  name,
+  options,
+  value,
+  onChange,
+  placeholder,
+  disabled = false,
+}: {
+  name: string;
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const selectedLabel = options.find((o) => o.value === value)?.label ?? "";
+
+  const filtered = query
+    ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase())).slice(0, 80)
+    : options.slice(0, 80);
+
+  // Close on outside click
+  useEffect(() => {
+    function onMouseDown(e: MouseEvent) {
+      if (!containerRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    }
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
+  function handleFocus() {
+    setOpen(true);
+    setQuery("");
+  }
+
+  function handleSelect(val: string) {
+    onChange(val);
+    setOpen(false);
+    setQuery("");
+    inputRef.current?.blur();
+  }
+
+  function handleClear(e: React.MouseEvent) {
+    e.stopPropagation();
+    onChange("");
+    setQuery("");
+    setOpen(false);
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Hidden input for form submission */}
+      <input type="hidden" name={name} value={value} />
+
+      {/* Visible input */}
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          disabled={disabled}
+          placeholder={disabled ? "Seleccioná primero un país" : placeholder}
+          value={open ? query : selectedLabel}
+          onFocus={handleFocus}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full px-3 py-2 pr-16 border border-input rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-accent disabled:bg-zinc-50 disabled:text-zinc-400 disabled:cursor-not-allowed transition-colors"
+        />
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          {value && !disabled && (
+            <button type="button" onClick={handleClear} className="p-0.5 text-zinc-400 hover:text-zinc-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        </div>
+      </div>
+
+      {/* Dropdown */}
+      {open && !disabled && (
+        <ul className="absolute z-50 w-full mt-1 bg-white border border-zinc-200 rounded-md shadow-lg max-h-52 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <li className="px-3 py-2 text-sm text-zinc-400">Sin resultados</li>
+          ) : (
+            filtered.map((option) => (
+              <li
+                key={option.value}
+                onMouseDown={() => handleSelect(option.value)}
+                className={`px-3 py-2 text-sm cursor-pointer select-none transition-colors ${
+                  option.value === value
+                    ? "bg-accent/10 text-accent font-medium"
+                    : "text-zinc-700 hover:bg-zinc-50"
+                }`}
+              >
+                {option.label}
+              </li>
+            ))
+          )}
+          {options.length > 80 && filtered.length === 80 && (
+            <li className="px-3 py-2 text-xs text-zinc-400 border-t border-zinc-100">
+              Escribí para filtrar más resultados…
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ── Tipos ──────────────────────────────────────────────────────────────────────
 
 export type UbicacionInitialData = {
   city:               string | null
@@ -50,69 +148,89 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ── Formulario principal ───────────────────────────────────────────────────────
+
 export function UbicacionForm({ initialData }: { initialData: UbicacionInitialData }) {
   const [state, action, isPending] = useActionState(saveUbicacion, null);
 
+  // Derivar isoCode del nombre de país guardado en DB
+  const allCountries = Country.getAllCountries();
+  const initialIso = allCountries.find((c) => c.name === initialData.country)?.isoCode ?? "";
+
+  const [countryIso, setCountryIso] = useState(initialIso);
+  const [countryName, setCountryName] = useState(initialData.country ?? "");
+  const [cityName, setCityName] = useState(initialData.city ?? "");
+
+  const countryOptions = allCountries.map((c) => ({
+    value: c.isoCode,
+    label: `${c.flag ?? ""} ${c.name}`.trim(),
+  }));
+
+  const cityOptions = countryIso
+    ? (City.getCitiesOfCountry(countryIso) ?? []).map((c) => ({
+        value: c.name,
+        label: c.name,
+      }))
+    : [];
+
+  function handleCountryChange(iso: string) {
+    const country = allCountries.find((c) => c.isoCode === iso);
+    setCountryIso(iso);
+    setCountryName(country?.name ?? "");
+    setCityName(""); // reset city when country changes
+  }
+
   return (
     <form action={action} className="space-y-10">
+      {/* Hidden inputs con los valores reales para el server action */}
+      <input type="hidden" name="country" value={countryName} />
+      <input type="hidden" name="city" value={cityName} />
 
-      {/* ── Ubicación ─────────────────────────────────────────────── */}
+      {/* ── Ubicación ─────────────────────────────────────────── */}
       <section>
         <SectionTitle>Ubicación</SectionTitle>
         <p className="text-sm text-muted-foreground mb-5">
-          Indicá desde dónde operás. Los clientes podrán encontrarte según tu ciudad y país.
+          Indicá desde dónde operás. Los clientes podrán encontrarte por ciudad y país.
         </p>
 
         <div className="space-y-4 max-w-md">
-          {/* País */}
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1.5">
               País <span className="text-red-400">*</span>
             </label>
-            <div className="relative">
-              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-              <select
-                name="country"
-                defaultValue={initialData.country ?? ""}
-                required
-                className="w-full pl-9 pr-4 py-2 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent bg-white appearance-none"
-              >
-                <option value="" disabled>Seleccioná tu país</option>
-                {COUNTRIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </div>
+            <Combobox
+              name="_country_iso"
+              options={countryOptions}
+              value={countryIso}
+              onChange={handleCountryChange}
+              placeholder="Buscar país…"
+            />
           </div>
 
-          {/* Ciudad */}
           <div>
             <label className="block text-sm font-medium text-zinc-700 mb-1.5">
               Ciudad <span className="text-red-400">*</span>
             </label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
-              <Input
-                name="city"
-                defaultValue={initialData.city ?? ""}
-                placeholder="Ej: Buenos Aires"
-                required
-                className="pl-9"
-              />
-            </div>
+            <Combobox
+              name="_city"
+              options={cityOptions}
+              value={cityName}
+              onChange={setCityName}
+              placeholder="Buscar ciudad…"
+              disabled={!countryIso}
+            />
           </div>
         </div>
       </section>
 
       <hr className="border-zinc-100" />
 
-      {/* ── Idioma preferido ──────────────────────────────────────── */}
+      {/* ── Idioma ──────────────────────────────────────────────── */}
       <section>
         <SectionTitle>Idioma de Preferencia</SectionTitle>
         <p className="text-sm text-muted-foreground mb-5">
           Idioma en el que preferís comunicarte con clientes y recibir notificaciones.
         </p>
-
         <div className="max-w-md">
           <label className="block text-sm font-medium text-zinc-700 mb-1.5">
             Seleccioná tu idioma
@@ -129,7 +247,7 @@ export function UbicacionForm({ initialData }: { initialData: UbicacionInitialDa
         </div>
       </section>
 
-      {/* ── Feedback ─────────────────────────────────────────────── */}
+      {/* ── Feedback ──────────────────────────────────────────── */}
       {state?.error && (
         <div className="bg-red-50 border border-red-200 rounded-md px-4 py-3">
           <p className="text-sm text-red-700">{state.error}</p>
@@ -144,13 +262,12 @@ export function UbicacionForm({ initialData }: { initialData: UbicacionInitialDa
       <div className="pt-2 pb-10">
         <Button
           type="submit"
-          disabled={isPending}
-          className="bg-accent hover:bg-accent-200 text-white border-none h-11 px-8 text-sm rounded-md"
+          disabled={isPending || !countryName || !cityName}
+          className="bg-accent hover:bg-accent-200 text-white border-none h-11 px-8 text-sm rounded-md disabled:opacity-50"
         >
           {isPending ? "Guardando..." : "Guardar cambios"}
         </Button>
       </div>
-
     </form>
   );
 }
