@@ -33,12 +33,15 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <LoginDialog />
-          <Link href="/wizard">
-            <Button className="bg-accent hover:bg-accent-200 text-white border-none h-8 px-4 text-base shadow-xl shadow-zinc-900/10 transition-all rounded-md">
-              Empezar
-            </Button>
-          </Link>
+          {/* Login + Empezar — desktop only */}
+          <div className="hidden md:flex items-center gap-3">
+            <LoginDialog />
+            <Link href="/wizard">
+              <Button className="bg-accent hover:bg-accent-200 text-white border-none h-8 px-4 text-base shadow-xl shadow-zinc-900/10 transition-all rounded-md">
+                Empezar
+              </Button>
+            </Link>
+          </div>
 
           {/* Hamburger — mobile only */}
           <button
@@ -84,7 +87,8 @@ export function Header() {
               ))}
             </nav>
 
-            <div className="mt-auto">
+            <div className="mt-auto flex flex-col gap-3">
+              <LoginDialog />
               <Link href="/wizard" onClick={() => setOpen(false)}>
                 <Button className="w-full bg-accent hover:bg-accent-200 text-white border-none h-12 text-base rounded-md">
                   Empezar
