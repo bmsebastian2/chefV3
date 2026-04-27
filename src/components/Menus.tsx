@@ -9,10 +9,10 @@ import Link from "next/link";
 gsap.registerPlugin(ScrollTrigger);
 
 const menuItems = [
-  { name: "Tataki de Atún Rojo", desc: "Ajo blanco de coco y migas crujientes", img: "https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&q=80&w=800" },
-  { name: "Lomo de Ciervo", desc: "Salsa de frutos rojos y setas salteadas", img: "https://images.unsplash.com/photo-1544025162-811cfff36b0c?auto=format&fit=crop&q=80&w=800" },
-  { name: "Milhoja Caramelizada", desc: "Foie de pato, manzana verde y cebolla confitada", img: "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&q=80&w=800" },
-  { name: "Torrija de Pan Brioche", desc: "Crema inglesa y su helado", img: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&q=80&w=800" }
+  { name: "Tataki de Atún Rojo", desc: "Ajo blanco de coco y migas crujientes", img: "/tataki de atun rojo.png" },
+  { name: "Lomo de Ciervo", desc: "Salsa de frutos rojos y setas salteadas", img: "/Lomito.png" },
+  { name: "Milhoja Caramelizada", desc: "Foie de pato, manzana verde y cebolla confitada", img: "/milhoja.png" },
+  { name: "Torrija de Pan Brioche", desc: "Crema inglesa y su helado", img: "/pan brioche.png" }
 ];
 
 export function Menus() {
