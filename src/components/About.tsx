@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -51,10 +52,11 @@ export function About() {
             </div>
           </div>
           <div className="lg:w-1/2 w-full h-[500px] relative rounded-md overflow-hidden about-text">
-            <img 
-              src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&q=80&w=1200" 
-              alt="Cocina en acción" 
-              className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay hover:scale-105 transition-transform duration-1000"
+            <Image
+              src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&q=80&w=1200"
+              alt="Cocina en acción"
+              fill
+              className="object-cover opacity-60 mix-blend-overlay hover:scale-105 transition-transform duration-1000"
             />
             <div className="absolute inset-0 bg-gradient-to-tr from-zinc-900/80 to-transparent" />
           </div>
