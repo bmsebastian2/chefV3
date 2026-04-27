@@ -10,10 +10,11 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Loader2 } from 'lucide-react'
 
 export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
   const [showPassword, setShowPassword] = useState(false)
-  const [loginState, loginAction] = useActionState(login, null)
+  const [loginState, loginAction, isPending] = useActionState(login, null)
 
   return (
     <Dialog>
@@ -74,9 +75,13 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
           {/* Submit */}
           <Button
             type="submit"
-            className=" h-8 px-4 w-full rounded-full h-8 bg-amber-500 hover:bg-amber-600 text-white font-medium"
+            disabled={isPending}
+            className="h-8 px-4 w-full rounded-full h-12 bg-amber-500 hover:bg-amber-600 text-white font-medium disabled:opacity-70"
           >
-            Acceder
+            {isPending
+              ? <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+              : 'Acceder'
+            }
           </Button>
 
         </form>
