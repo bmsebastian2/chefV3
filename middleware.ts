@@ -33,16 +33,15 @@ export async function middleware(request: NextRequest) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
 
-      // Si no está logueado y quiere entrar a rutas privadas → redirigir
-      if (!user && !request.nextUrl.pathname.startsWith('/') && 
-          !request.nextUrl.pathname.startsWith('/auth') &&
-          !request.nextUrl.pathname.startsWith('/wizard') &&
-          request.nextUrl.pathname !== '/') {
+      const { pathname } = request.nextUrl
+
+      // Si no está logueado e intenta entrar al dashboard → redirigir al inicio
+      if (!user && pathname.startsWith('/dashboard')) {
         return NextResponse.redirect(new URL('/', request.url))
       }
 
-      // Si está logueado y va al login → redirigir al dashboard
-      if (user && request.nextUrl.pathname.startsWith('/')) {
+      // Si está logueado y está en la raíz exacta → redirigir al dashboard
+      if (user && pathname === '/') {
         return NextResponse.redirect(new URL('/dashboard', request.url))
       }
     } catch (error) {
