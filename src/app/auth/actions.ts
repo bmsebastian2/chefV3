@@ -22,6 +22,9 @@ export async function signup(prevState: { error: string } | null, formData: Form
   const { error } = await supabase.auth.signUp({
     email: formData.get('email') as string,
     password: formData.get('password') as string,
+    options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+    },
   })
 
   if (error) return { error: error.message }
@@ -82,6 +85,9 @@ export async function registerChef(prevState: { error: string } | null, formData
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      },
     })
 
     if (authError || !authData.user) {
