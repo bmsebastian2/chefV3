@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { registerOrVerifyClient } from "@/app/wizard/actions";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check } from "lucide-react";
+import { CalendarIcon, Check, Fish, Leaf, ChefHat, Layers, Store, Pizza, Croissant, Soup, Cake, PartyPopper, Heart, Briefcase, Smile, HelpCircle, Sun, Moon, Home, Users } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { es as esRDP } from "react-day-picker/locale";
 import { DateRange, RangeKeyDict } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
@@ -111,8 +112,8 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
         if (!res.ok) throw new Error("Network Error");
         const json = await res.json();
         setResults(json.candidates || []);
-      } catch (e: any) {
-        if (e.name !== 'AbortError') {
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name !== 'AbortError') {
           // El API devolvió un timeout o límite. Vaciamos en modo silencioso.
           setResults([]);
         }
@@ -321,19 +322,43 @@ export function StepDate({ data, updateData, nextStep }: StepProps) {
   );
 }
 
+const CUISINE_OPTIONS = [
+  { value: "local",        label: "Local",             Icon: Store      },
+  { value: "italian",      label: "Italiana",          Icon: Pizza      },
+  { value: "mediterranean",label: "Mediterránea",      Icon: Leaf       },
+  { value: "seafood",      label: "Mariscos/Pescados", Icon: Fish       },
+  { value: "french",       label: "Francesa",          Icon: Croissant  },
+  { value: "japanese",     label: "Japonesa",          Icon: Soup       },
+  { value: "fusion",       label: "Fusión",            Icon: Layers     },
+  { value: "chefs_special",label: "Especial del chef", Icon: ChefHat   },
+] as const;
+
 export function StepCuisine({ data, updateData, nextStep }: StepProps) {
-  const options = ["Mediterránea", "Asiática", "Fusión", "Italiana", "Mexicana", "Sorpréndeme"];
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl mx-auto w-full">
-      {options.map(opt => (
-        <button
-          key={opt}
-          onClick={() => { updateData({ cuisine: opt }); nextStep(); }}
-          className={`h-16 rounded-md border text-base font-medium transition-all ${data.cuisine === opt ? 'border-accent bg-accent/5 scale-[0.98]' : 'border-zinc-200 text-zinc-700 hover:border-zinc-300'}`}
-        >
-          {opt}
-        </button>
-      ))}
+    <div className="flex flex-col gap-4 max-w-xl mx-auto w-full">
+      <p className="text-center text-zinc-500 text-sm -mt-2 mb-1">
+        Si necesitas más inspiración, prueba el especial del chef.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {CUISINE_OPTIONS.map(({ value, label, Icon }) => {
+          const active = data.cuisine === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => { updateData({ cuisine: value }); nextStep(); }}
+              className={`flex items-center gap-4 px-5 h-16 rounded-xl border text-left transition-all ${
+                active
+                  ? "border-accent bg-accent/5 text-accent"
+                  : "border-zinc-200 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+              }`}
+            >
+              <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-400"}`} />
+              <span className="text-sm font-medium">{label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -631,6 +656,482 @@ export function StepMealSlots({ data, updateData, nextStep }: StepProps) {
       >
         Continuar
       </Button>
+    </div>
+  );
+}
+
+// ── Hint box reutilizable ─────────────────────────────────────────────────────
+function HintBox({ text = "¿No estás seguro? Puedes cambiarlo más adelante! 😊" }: { text?: string }) {
+  return (
+    <div className="w-full bg-amber-50 border border-amber-100 rounded-xl px-5 py-3 text-sm font-medium text-zinc-700 text-center">
+      {text}
+    </div>
+  );
+}
+
+// ── Radio circle reutilizable ─────────────────────────────────────────────────
+function RadioCircle({ active }: { active: boolean }) {
+  return (
+    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+      active ? "border-accent bg-accent" : "border-zinc-300 bg-white"
+    }`}>
+      {active && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+    </div>
+  );
+}
+
+// ── StepOccasion1: con íconos + radio para servicio único ─────────────────────
+const OCCASION_OPTIONS_1 = [
+  { value: "birthday",          label: "Cumpleaños",              Icon: Cake         },
+  { value: "family_reunion",    label: "Reunión familiar",        Icon: Home         },
+  { value: "bachelor_party",    label: "Despedida de soltera/o",  Icon: PartyPopper  },
+  { value: "friends_gathering", label: "Reunión con amigos",      Icon: Smile        },
+  { value: "romantic_dinner",   label: "Cena romántica",          Icon: Heart        },
+  { value: "corporate",         label: "Evento corporativo",      Icon: Briefcase    },
+  { value: "gastronomic",       label: "Aventura gastronómica",   Icon: Users        },
+  { value: "other",             label: "Otra",                    Icon: HelpCircle   },
+] as const;
+
+export function StepOccasion1({ data, updateData, nextStep }: StepProps) {
+  return (
+    <div className="flex flex-col gap-3 max-w-xl mx-auto w-full">
+      <p className="text-center text-zinc-500 text-sm mb-2">
+        Esto nos ayuda a transmitir a nuestros chefs el ambiente ideal del evento.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {OCCASION_OPTIONS_1.map(({ value, label, Icon }) => {
+          const active = data.occasion === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => { updateData({ occasion: value }); nextStep(); }}
+              className={`flex items-center gap-4 px-5 h-16 rounded-xl border text-left transition-all ${
+                active
+                  ? "border-accent bg-accent/5"
+                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+              }`}
+            >
+              <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-400"}`} />
+              <span className={`flex-1 text-sm font-medium ${active ? "text-accent" : "text-zinc-700"}`}>{label}</span>
+              <RadioCircle active={active} />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── StepGuestsStatic: rangos fijos con precio desde ──────────────────────────
+const GUESTS_OPTIONS = [
+  { value: "2",    label: "2 personas",       price: "$2.772" },
+  { value: "3-6",  label: "3 a 6 personas",   price: "$1.733" },
+  { value: "7-12", label: "7 a 12 personas",  price: "$1.213" },
+  { value: "13+",  label: "13+ personas",     price: "$1.213" },
+] as const;
+
+export function StepGuestsStatic({ data, updateData, nextStep }: StepProps) {
+  return (
+    <div className="flex flex-col gap-3 max-w-md mx-auto w-full">
+      <p className="text-center text-zinc-500 text-sm mb-2">
+        La tarifa del chef es fija, por lo que el precio por persona varía según el tamaño del grupo.
+      </p>
+      {GUESTS_OPTIONS.map(({ value, label, price }) => {
+        const active = data.guestsRange === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            onClick={() => { updateData({ guestsRange: value }); nextStep(); }}
+            className={`flex items-center gap-4 px-5 h-16 rounded-xl border transition-all ${
+              active
+                ? "border-accent bg-accent/5"
+                : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+            }`}
+          >
+            <span className={`flex-1 text-sm font-semibold text-left ${active ? "text-zinc-900" : "text-zinc-800"}`}>
+              <span className="font-bold">{label}</span>
+              <span className="font-normal text-zinc-500"> desde {price}</span>
+            </span>
+            <RadioCircle active={active} />
+          </button>
+        );
+      })}
+      <HintBox />
+    </div>
+  );
+}
+
+// ── StepMealTime: Comida / Cena ───────────────────────────────────────────────
+export function StepMealTime({ data, updateData, nextStep }: StepProps) {
+  const options = [
+    { value: "lunch"  as const, label: "Comida", Icon: Sun  },
+    { value: "dinner" as const, label: "Cena",   Icon: Moon },
+  ];
+
+  return (
+    <div className="flex flex-col gap-3 max-w-md mx-auto w-full">
+      {options.map(({ value, label, Icon }) => {
+        const active = data.mealTime === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            onClick={() => { updateData({ mealTime: value }); nextStep(); }}
+            className={`flex items-center gap-4 px-5 h-16 rounded-xl border transition-all ${
+              active
+                ? "border-accent bg-accent/5"
+                : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+            }`}
+          >
+            <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-400"}`} />
+            <span className={`flex-1 text-sm font-medium text-left ${active ? "text-accent" : "text-zinc-700"}`}>{label}</span>
+            <RadioCircle active={active} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── StepDateCalendar: calendario inline ───────────────────────────────────────
+export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
+  return (
+    <div className="flex flex-col gap-4 items-center max-w-4xl mx-auto w-full">
+      <div className="w-full border border-zinc-200 rounded-xl overflow-x-auto bg-white p-4">
+        <Calendar
+          mode="single"
+          selected={data.date}
+          onSelect={(date) => {
+            if (!date) return;
+            updateData({ date });
+            nextStep();
+          }}
+          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+          numberOfMonths={3}
+          locale={esRDP}
+          className="mx-auto"
+        />
+      </div>
+      <HintBox />
+    </div>
+  );
+}
+
+// ── StepBudgetTier: Casual / Gourmet / Selección exclusiva ───────────────────
+const BUDGET_OPTIONS = [
+  {
+    value:   "casual"    as const,
+    label:   "Casual",
+    desc:    "Crear vínculos en torno a la buena comida.",
+    range:   "$2.772 - $3.119",
+  },
+  {
+    value:   "gourmet"   as const,
+    label:   "Gourmet",
+    desc:    "Menús brillantes para impresionar a tus invitados.",
+    range:   "$3.119 - $3.465",
+  },
+  {
+    value:   "exclusive" as const,
+    label:   "Selección exclusiva",
+    desc:    "Lo mejor de lo mejor para tu evento.",
+    range:   "$3.465 - $4.158",
+  },
+] as const;
+
+export function StepBudgetTier({ data, updateData, nextStep }: StepProps) {
+  return (
+    <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
+      <p className="text-center text-zinc-500 text-sm mb-2">
+        Los precios varían según la experiencia del chef y la complejidad del menú. ¡Elige el que más te convenga!
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {BUDGET_OPTIONS.map(({ value, label, desc, range }) => {
+          const active = data.budgetTier === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => { updateData({ budgetTier: value }); nextStep(); }}
+              className={`flex flex-col items-start p-5 rounded-xl border text-left transition-all h-full ${
+                active
+                  ? "border-accent bg-accent/5"
+                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+              }`}
+            >
+              <div className="flex w-full justify-between items-start mb-2">
+                <span className={`font-semibold text-base ${active ? "text-accent" : "text-zinc-900"}`}>{label}</span>
+                <RadioCircle active={active} />
+              </div>
+              <p className="text-xs text-zinc-500 mb-4 flex-1">{desc}</p>
+              <span className="text-xs font-semibold bg-zinc-100 text-zinc-700 px-3 py-1.5 rounded-md">
+                {range} por persona
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── StepDietarySimple: Ninguna / Sí → si Sí, muestra picker ─────────────────
+const RESTRICTION_OPTIONS = [
+  { value: "Vegetariano",  label: "Vegetariano"  },
+  { value: "Gluten",       label: "Gluten"        },
+  { value: "Frutos Secos", label: "Frutos Secos"  },
+  { value: "Marisco",      label: "Marisco"       },
+  { value: "Lácteos",      label: "Lácteos"       },
+] as const;
+
+export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
+  const hasRestrictions = (data.dietaryRestrictions ?? [])[0] === "Sí";
+
+  const toggleRestriction = (val: string) => {
+    const current = (data.dietaryRestrictions ?? []).filter(r => r !== "Sí" && r !== "Ninguna");
+    const next = current.includes(val)
+      ? current.filter(r => r !== val)
+      : [...current, val];
+    updateData({ dietaryRestrictions: ["Sí", ...next] });
+  };
+
+  const selected = (data.dietaryRestrictions ?? []).filter(r => r !== "Sí" && r !== "Ninguna");
+
+  if (!hasRestrictions) {
+    return (
+      <div className="flex flex-col gap-3 max-w-md mx-auto w-full">
+        <p className="text-center text-zinc-500 text-sm mb-2">
+          Si necesitas comprobarlo con sus invitados, no hay problema. Puedes informar a tu chef más tarde.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          {[{ value: "Ninguna", label: "Ninguna" }, { value: "Sí", label: "Sí" }].map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => {
+                updateData({ dietaryRestrictions: [value] });
+                if (value === "Ninguna") nextStep();
+              }}
+              className="flex items-center justify-between px-5 h-16 rounded-xl border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 transition-all"
+            >
+              <span className="text-sm font-medium text-zinc-700">{label}</span>
+              <RadioCircle active={false} />
+            </button>
+          ))}
+        </div>
+        <HintBox />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 max-w-xl mx-auto w-full">
+      <p className="text-center text-zinc-500 text-sm mb-1">
+        Con esta información, nuestros chefs elaborarán menús personalizados adaptados a tus necesidades.
+      </p>
+
+      <div className="grid grid-cols-3 gap-3">
+        {RESTRICTION_OPTIONS.map(({ value, label }) => {
+          const active = selected.includes(value);
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => toggleRestriction(value)}
+              className={`h-16 rounded-xl border text-sm font-medium transition-all ${
+                active
+                  ? "border-zinc-900 bg-zinc-900 text-white"
+                  : "border-zinc-200 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      <textarea
+        placeholder="Otras restricciones..."
+        value={data.dietaryOtras ?? ""}
+        onChange={(e) => updateData({ dietaryOtras: e.target.value })}
+        className="w-full min-h-[120px] p-4 text-sm border border-zinc-200 rounded-xl outline-none focus:ring-2 focus:ring-zinc-900 resize-y font-sans"
+      />
+
+      <Button
+        onClick={nextStep}
+        size="lg"
+        className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-md shadow-sm"
+      >
+        Continuar
+      </Button>
+    </div>
+  );
+}
+
+// ── StepContact1: formulario de contacto rediseñado ───────────────────────────
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [touched, setTouched]       = useState<Record<string, boolean>>({});
+
+  const email    = data.contact?.email    ?? "";
+  const password = data.contact?.password ?? "";
+
+  const emailValid    = EMAIL_REGEX.test(email);
+  const emailsMatch   = email === confirmEmail;
+  const passwordValid = password.length >= 6;
+
+  const isValid = !!(
+    data.contact?.name &&
+    emailValid &&
+    emailsMatch &&
+    passwordValid &&
+    data.contact?.phone
+  );
+
+  const blur = (field: string) => setTouched((p) => ({ ...p, [field]: true }));
+
+  const handleSubmit = async () => {
+    if (!isValid) return;
+    setLoading(true);
+    setError("");
+
+    const result = await registerOrVerifyClient(
+      data.contact!.name!,
+      data.contact!.email!,
+      data.contact!.phone!,
+      data.contact!.password!
+    );
+
+    if (result.error) {
+      setError(result.error);
+      setLoading(false);
+      return;
+    }
+
+    if (result.userId && onFinalSubmit) {
+      await onFinalSubmit(result.userId);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="flex flex-col gap-5 max-w-md mx-auto w-full">
+      <p className="text-zinc-500 text-sm text-center mb-1">
+        Ahora, sólo tienes que añadir tus datos de contacto y te enviaremos propuestas de menú
+        personalizadas y gratuitas en menos de 20 minutos.
+      </p>
+
+      {/* Nombre */}
+      <div>
+        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
+          Nombre <span className="text-red-400">*</span>
+        </label>
+        <Input
+          placeholder="John Doe"
+          className="h-14 text-base border-zinc-200"
+          value={data.contact?.name ?? ""}
+          onChange={(e) => updateData({ contact: { ...data.contact, name: e.target.value } })}
+        />
+      </div>
+
+      {/* Email */}
+      <div>
+        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
+          Email <span className="text-red-400">*</span>
+        </label>
+        <Input
+          placeholder="example@mail.com"
+          type="email"
+          className={`h-14 text-base ${touched.email && !emailValid ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
+          value={email}
+          onChange={(e) => updateData({ contact: { ...data.contact, email: e.target.value } })}
+          onBlur={() => blur("email")}
+        />
+        {touched.email && !emailValid && (
+          <p className="text-xs text-red-500 mt-1">Ingresá un email válido.</p>
+        )}
+      </div>
+
+      {/* Confirmar email */}
+      <div>
+        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
+          Confirmar email <span className="text-red-400">*</span>
+        </label>
+        <Input
+          placeholder="Repetí tu email"
+          type="email"
+          className={`h-14 text-base ${touched.confirmEmail && !emailsMatch ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
+          value={confirmEmail}
+          onChange={(e) => setConfirmEmail(e.target.value)}
+          onBlur={() => blur("confirmEmail")}
+        />
+        {touched.confirmEmail && !emailsMatch && (
+          <p className="text-xs text-red-500 mt-1">Los emails no coinciden.</p>
+        )}
+      </div>
+
+      {/* Contraseña */}
+      <div>
+        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
+          Contraseña <span className="text-red-400">*</span>
+        </label>
+        <Input
+          placeholder="Mínimo 6 caracteres"
+          type="password"
+          className={`h-14 text-base ${touched.password && !passwordValid ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
+          value={password}
+          onChange={(e) => updateData({ contact: { ...data.contact, password: e.target.value } })}
+          onBlur={() => blur("password")}
+        />
+        {touched.password && !passwordValid && (
+          <p className="text-xs text-red-500 mt-1">La contraseña debe tener al menos 6 caracteres.</p>
+        )}
+      </div>
+
+      {/* Teléfono */}
+      <div>
+        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
+          Teléfono <span className="text-red-400">*</span>
+        </label>
+        <div className="flex gap-2">
+          <div className="flex items-center gap-2 px-3 h-14 border border-zinc-200 rounded-md bg-white text-sm text-zinc-700 whitespace-nowrap">
+            <span>🇺🇾</span>
+            <span>+598</span>
+          </div>
+          <Input
+            placeholder="000-000-000"
+            type="tel"
+            className="h-14 text-base border-zinc-200 flex-1"
+            value={data.contact?.phone ?? ""}
+            onChange={(e) => updateData({ contact: { ...data.contact, phone: e.target.value } })}
+          />
+        </div>
+      </div>
+
+
+      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
+      <Button
+        disabled={!isValid || loading}
+        onClick={handleSubmit}
+        size="lg"
+        className="w-full h-14 bg-accent text-zinc-900 font-bold text-base rounded-md mt-2 hover:bg-accent/90 shadow-[0_8px_20px_rgb(224,159,62,0.2)] transition-all disabled:opacity-50"
+      >
+        {loading ? "Enviando..." : "Solicitar chefs y menús"}
+      </Button>
+
+      <p className="text-xs text-zinc-400 text-center">
+        Al enviar este formulario, aceptas nuestros{" "}
+        <a href="/terms" className="underline">Términos</a>{" "}
+        y reconoces la{" "}
+        <a href="/privacy" className="underline">Declaración de privacidad global</a>.
+      </p>
     </div>
   );
 }

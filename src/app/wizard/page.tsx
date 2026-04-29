@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, X } from "lucide-react";
 import { WizardData } from "@/components/wizard/types";
-import { StepServiceType, StepLocation, StepOccasion, StepGuests, StepDate, StepDateRange, StepMealSlots, StepCuisine, StepDietary, StepDetails, StepContact } from "@/components/wizard/Steps";
+import { StepServiceType, StepLocation, StepOccasion, StepGuests, StepDateRange, StepMealSlots, StepCuisine, StepDietary, StepDetails, StepContact, StepOccasion1, StepGuestsStatic, StepMealTime, StepDateCalendar, StepBudgetTier, StepDietarySimple, StepContact1 } from "@/components/wizard/Steps";
 import { WeeklyMealsForm } from "@/components/wizard/WeeklyMealsForm";
 import { submitServiceRequest } from "@/app/wizard/actions";
 
@@ -13,15 +13,17 @@ const baseSteps = [
 ];
 
 const stepsService1 = [
-  { id: "serviceType", component: StepServiceType, title: "¿Qué tipo de servicio de chef necesitas?" },
-  { id: "occasion", component: StepOccasion, title: "¿Cuál es la ocasión?" },
-  { id: "location", component: StepLocation, title: "¿Dónde será el evento?" },
-  { id: "guests", component: StepGuests, title: "Somos" },
-  { id: "date", component: StepDate, title: "¿Cuándo y a qué hora?" },
-  { id: "cuisine", component: StepCuisine, title: "¿Qué te apetece?" },
-  { id: "dietary", component: StepDietary, title: "¿Restricciones alimentarias?" },
-  { id: "details", component: StepDetails, title: "Describe tu evento" },
-  { id: "contact", component: StepContact, title: "¡Ya está!" },
+  { id: "serviceType", component: StepServiceType,  title: "¿Qué tipo de servicio de chef necesitas?" },
+  { id: "occasion",    component: StepOccasion1,    title: "¿Cuál es la ocasión?" },
+  { id: "location",    component: StepLocation,     title: "¿Dónde será el evento?" },
+  { id: "guests",      component: StepGuestsStatic, title: "¿Para cuántas personas?" },
+  { id: "mealTime",    component: StepMealTime,     title: "¿A qué hora?" },
+  { id: "cuisine",     component: StepCuisine,      title: "¿Qué te apetece?" },
+  { id: "date",        component: StepDateCalendar, title: "¿Cuándo?" },
+  { id: "budget",      component: StepBudgetTier,   title: "¿Cuál es tu presupuesto para esta experiencia?" },
+  { id: "dietary",     component: StepDietarySimple,title: "¿Alguna restricción alimentaria?" },
+  { id: "details",     component: StepDetails,      title: "Por último, describe tu evento a nuestros chefs" },
+  { id: "contact",     component: StepContact1,     title: "¡Ya está!" },
 ];
 
 const stepsService2 = [

@@ -22,14 +22,34 @@ const SERVICE_TYPE_MAP: Record<string, string> = {
   '3': 'weekly',
 }
 
-// 'Asiática' y 'Mexicana' no existen en el enum de la DB → null
-const CUISINE_MAP: Record<string, string | null> = {
-  'Mediterránea': 'mediterranean',
-  'Asiática':     null,
-  'Fusión':       'fusion',
-  'Italiana':     'italian',
-  'Mexicana':     null,
-  'Sorpréndeme':  'chefs_special',
+const CUISINE_MAP: Record<string, string> = {
+  'local':        'local',
+  'italian':      'italian',
+  'mediterranean':'mediterranean',
+  'seafood':      'seafood',
+  'french':       'french',
+  'japanese':     'japanese',
+  'fusion':       'fusion',
+  'chefs_special':'chefs_special',
+}
+
+const MEAL_TIME_MAP: Record<string, string> = {
+  'lunch':  'Comida',
+  'dinner': 'Cena',
+}
+
+const BUDGET_MAP: Record<string, { min: number; max: number }> = {
+  'casual':    { min: 2772, max: 3119 },
+  'gourmet':   { min: 3119, max: 3465 },
+  'exclusive': { min: 3465, max: 4158 },
+}
+
+// Guests range → representative adult count
+const GUESTS_RANGE_MAP: Record<string, number> = {
+  '2':    2,
+  '3-6':  4,
+  '7-12': 9,
+  '13+':  13,
 }
 
 function formatLocalDate(date: Date): string {
@@ -47,7 +67,8 @@ function extractCity(locationName: string): string {
 export async function registerOrVerifyClient(
   name: string,
   email: string,
-  phone: string
+  phone: string,
+  password?: string
 ): Promise<{ error?: string; userId?: string }> {
   const supabase = await createClient()
 
@@ -85,13 +106,10 @@ export async function registerOrVerifyClient(
     return { userId: user.user_id }
   }
 
-  // 3. Truly new user — create Supabase Auth account with a temporary password.
-  //    They can claim the account later via "Olvidé mi contraseña".
-  const tempPassword = `${crypto.randomUUID().replace(/-/g, '')}Aa1!`
-
+  // 3. Truly new user — crear cuenta con la contraseña elegida por el usuario
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
-    password: tempPassword,
+    password: password ?? `${crypto.randomUUID().replace(/-/g, '')}Aa1!`,
   })
 
   if (authError) {
@@ -136,25 +154,41 @@ export async function submitServiceRequest(
   if (restrictions.includes('Otras (Conversar con Chef)')) {
     notasArr.push('Restricciones adicionales — conversar con el chef')
   }
+  if (restrictions.includes('Sí')) {
+    notasArr.push('El cliente tiene restricciones alimentarias — coordinar con el chef')
+  }
+
+  // Guests: service 1 usa guestsRange (rango estático), service 2 usa guestsAdults
+  const guestsAdults = data.guestsRange
+    ? (GUESTS_RANGE_MAP[data.guestsRange] ?? 0)
+    : (data.guestsAdults ?? 0)
+
+  // Budget: service 1 usa budgetTier, service 2 no tiene presupuesto fijo
+  const budgetTier = data.budgetTier ? BUDGET_MAP[data.budgetTier] : null
+
+  // Event time: service 1 usa mealTime (Comida/Cena), service 2 no usa este campo
+  const eventTime = data.mealTime
+    ? (MEAL_TIME_MAP[data.mealTime] ?? null)
+    : (data.time ?? null)
 
   const { data: requestId, error } = await supabase.rpc('create_service_request', {
     p_user_id:            userId,
     p_service_type:       SERVICE_TYPE_MAP[data.serviceType ?? ''] ?? 'single',
-    p_occasion:           OCCASION_MAP[data.occasion ?? ''] ?? 'other',
+    p_occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
     p_location:           data.location.name,
     p_city:               extractCity(data.location.name),
     p_event_date_start:   formatLocalDate(new Date(data.date as unknown as string)),
-    p_event_time:         data.time ?? null,
-    p_guests_adults:      data.guestsAdults ?? 0,
-    p_cuisine_type:       CUISINE_MAP[data.cuisine ?? ''] ?? null,
+    p_event_time:         eventTime,
+    p_guests_adults:      guestsAdults,
+    p_cuisine_type:       CUISINE_MAP[data.cuisine ?? ''] ?? data.cuisine ?? null,
     p_descripcion_evento: data.details ?? null,
     p_contact_name:       data.contact.name,
     p_contact_email:      data.contact.email,
     p_contact_phone:      data.contact.phone ?? null,
-    p_vegetariano:        restrictions.includes('Vegetariana'),
+    p_vegetariano:        restrictions.includes('Vegetariana') || restrictions.includes('Vegetariano'),
     p_vegano:             restrictions.includes('Vegana'),
-    p_sin_gluten:         restrictions.includes('Sin Gluten'),
-    p_sin_lactosa:        restrictions.includes('Sin Lácteos'),
+    p_sin_gluten:         restrictions.includes('Sin Gluten') || restrictions.includes('Gluten'),
+    p_sin_lactosa:        restrictions.includes('Sin Lácteos') || restrictions.includes('Lácteos'),
     p_notas_adicionales:  notasArr.length > 0 ? notasArr.join('. ') : null,
   })
 
@@ -163,5 +197,32 @@ export async function submitServiceRequest(
     return { error: 'Error al guardar la solicitud' }
   }
 
-  return { requestId: requestId as string }
+  const newRequestId = requestId as string
+
+  // Update budget if selected via tier (service 1)
+  if (budgetTier && newRequestId) {
+    await supabase
+      .from('service_requests')
+      .update({ budget_min: budgetTier.min, budget_max: budgetTier.max })
+      .eq('id', newRequestId)
+  }
+
+  // Update extra restriction fields not covered by the RPC
+  const hasExtraRestrictions =
+    restrictions.includes('Marisco') ||
+    restrictions.includes('Frutos Secos') ||
+    data.dietaryOtras?.trim()
+
+  if (hasExtraRestrictions && newRequestId) {
+    await supabase
+      .from('request_restrictions')
+      .update({
+        sin_mariscos:        restrictions.includes('Marisco'),
+        sin_frutos_secos:    restrictions.includes('Frutos Secos'),
+        alergias_adicionales: data.dietaryOtras?.trim() || null,
+      })
+      .eq('request_id', newRequestId)
+  }
+
+  return { requestId: newRequestId }
 }

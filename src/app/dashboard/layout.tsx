@@ -13,9 +13,12 @@ export default async function DashboardLayout({
 
   const { data: userData } = await supabase
     .from('users')
-    .select('first_name')
+    .select('first_name, role')
     .eq('id', user.id)
     .single()
+
+  // Solo chefs pueden acceder al dashboard de chef
+  if (userData?.role !== 'chef') redirect('/client-dashboard')
 
   const userName = userData?.first_name || user.email || 'Chef'
 

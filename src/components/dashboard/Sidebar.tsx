@@ -4,13 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home, User, Camera, MapPin, UtensilsCrossed,
-  Settings, LogOut, ChevronDown, Menu, X,
+  Home, User, UtensilsCrossed,
+  Settings, LogOut, ChevronDown, Menu, X, ClipboardList, SlidersHorizontal,
 } from "lucide-react";
 import { logout } from "@/app/auth/actions";
 
 const NAV = [
   { href: "/dashboard", label: "Inicio", icon: Home },
+  { href: "/dashboard/requests", label: "Solicitudes", icon: ClipboardList },
   {
     label: "Perfil",
     icon: User,
@@ -27,6 +28,7 @@ const NAV = [
       { href: "/dashboard/menus", label: "Menús" },
     ],
   },
+  { href: "/dashboard/request-settings", label: "Config. Solicitudes", icon: SlidersHorizontal },
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
 ];
 

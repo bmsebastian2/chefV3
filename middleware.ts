@@ -35,18 +35,25 @@ export async function middleware(request: NextRequest) {
 
       const { pathname } = request.nextUrl
 
-      // Si no está logueado e intenta entrar al dashboard → redirigir al inicio
-      if (!user && pathname.startsWith('/dashboard')) {
+      // Rutas protegidas: redirigir al inicio si no está logueado
+      if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/client-dashboard'))) {
         return NextResponse.redirect(new URL('/', request.url))
       }
 
-      // Si está logueado y está en la raíz exacta → redirigir al dashboard
+      // En la raíz con sesión → redirigir según rol
       if (user && pathname === '/') {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        const role = userData?.role
+        if (role === 'chef')   return NextResponse.redirect(new URL('/dashboard', request.url))
+        if (role === 'client') return NextResponse.redirect(new URL('/client-dashboard', request.url))
       }
     } catch (error) {
       console.error('Error getting user:', error)
-      // Si falla Supabase, permitir acceso (mejor experiencia que 500)
     }
 
     return supabaseResponse
