@@ -11,7 +11,7 @@ export default async function ClientDashboardPage() {
 
   const { data: userData } = await supabase
     .from('users')
-    .select('first_name, first_surname')
+    .select('first_name, first_surname, phone')
     .eq('id', user.id)
     .single()
 
@@ -22,6 +22,14 @@ export default async function ClientDashboardPage() {
     .order('created_at', { ascending: false })
 
   const name = [userData?.first_name, userData?.first_surname].filter(Boolean).join(' ') || user.email
+
+  const wizardUrl = (() => {
+    const params = new URLSearchParams()
+    if (name) params.set('name', name)
+    if (user.email) params.set('email', user.email)
+    if (userData?.phone) params.set('phone', userData.phone)
+    return `/wizard?${params.toString()}`
+  })()
 
   const STATUS_LABELS: Record<string, string> = {
     new:        'Nueva',
@@ -79,7 +87,7 @@ export default async function ClientDashboardPage() {
 
         {/* CTA nueva solicitud */}
         <Link
-          href="/wizard"
+          href={wizardUrl}
           className="flex items-center gap-3 w-full bg-accent hover:bg-accent/90 text-white font-medium text-sm px-5 py-4 rounded-xl transition-colors mb-8"
         >
           <Plus className="w-5 h-5" />

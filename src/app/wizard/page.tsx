@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, X } from "lucide-react";
 import { WizardData } from "@/components/wizard/types";
-import { StepServiceType, StepLocation, StepOccasion, StepGuests, StepDateRange, StepMealSlots, StepCuisine, StepDietary, StepDetails, StepContact, StepOccasion1, StepGuestsStatic, StepMealTime, StepDateCalendar, StepBudgetTier, StepDietarySimple, StepContact1 } from "@/components/wizard/Steps";
+import { StepServiceType, StepLocation, StepOccasion, StepGuests, StepDateRange, StepMealSlots, StepCuisine, StepDetails, StepContact, StepOccasion1, StepGuestsStatic, StepMealTime, StepDateCalendar, StepBudgetTier, StepBudgetMultiple, StepDietarySimple, StepContact1 } from "@/components/wizard/Steps";
 import { WeeklyMealsForm } from "@/components/wizard/WeeklyMealsForm";
 import { submitServiceRequest } from "@/app/wizard/actions";
 
@@ -22,7 +22,7 @@ const stepsService1 = [
   { id: "date",        component: StepDateCalendar, title: "¿Cuándo?" },
   { id: "budget",      component: StepBudgetTier,   title: "¿Cuál es tu presupuesto para esta experiencia?" },
   { id: "dietary",     component: StepDietarySimple,title: "¿Alguna restricción alimentaria?" },
-  { id: "details",     component: StepDetails,      title: "Por último, describe tu evento a nuestros chefs" },
+  { id: "details",     component: StepDetails,      title: "Por último, describe tu evento" },
   { id: "contact",     component: StepContact1,     title: "¡Ya está!" },
 ];
 
@@ -33,8 +33,8 @@ const stepsService2 = [
   { id: "dateRange", component: StepDateRange, title: "¿Cuándo necesitarás el servicio?" },
   { id: "mealSlots", component: StepMealSlots, title: "Quiero disfrutar del servicio los días" },
   { id: "guests", component: StepGuests, title: "Somos" },
-  { id: "cuisine", component: StepCuisine, title: "¿Qué te apetece?" },
-  { id: "dietary", component: StepDietary, title: "¿Restricciones alimentarias?" },
+  { id: "budget", component: StepBudgetMultiple, title: "¿Cuál es tu presupuesto para esta experiencia?" },
+  { id: "dietary", component: StepDietarySimple, title: "¿Alguna restricción alimentaria?" },
   { id: "details", component: StepDetails, title: "Describe tu evento" },
   { id: "contact", component: StepContact, title: "¡Ya está!" },
 ];
@@ -51,6 +51,25 @@ export default function WizardPage() {
   const [submitted, setSubmitted] = useState(false);
   const [showWeeklyForm, setShowWeeklyForm] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const name  = params.get('name');
+    const email = params.get('email');
+    const phone = params.get('phone');
+    if (name || email || phone) {
+      setData((prev) => ({
+        ...prev,
+        contact: {
+          ...prev.contact,
+          ...(name  ? { name }  : {}),
+          ...(email ? { email } : {}),
+          ...(phone ? { phone } : {}),
+          prefilled: true,
+        },
+      }));
+    }
+  }, []);
 
   const stepsObj = getStepsForService(data.serviceType);
 

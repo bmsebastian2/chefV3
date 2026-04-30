@@ -25,7 +25,7 @@ export async function saveRequestSettings(
   const min_guests       = parseInt(formData.get('min_guests') as string) || 1
   const max_guests       = parseInt(formData.get('max_guests') as string) || 50
   const min_budget       = parseFloat(formData.get('min_budget') as string) || null
-  const advance_days     = parseInt(formData.get('advance_days') as string) || 3
+  const advance_days     = parseInt(formData.get('advance_days') as string) || 0
 
   const { error } = await supabase
     .from('request_settings')

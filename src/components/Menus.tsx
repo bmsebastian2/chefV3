@@ -51,12 +51,15 @@ export function Menus() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           {menuItems.map((item, idx) => (
-            <div key={idx} className="menu-item opacity-0 group relative h-80 rounded-md overflow-hidden cursor-pointer">
+            <div key={idx} className="menu-item opacity-0 group relative h-80 rounded-xl overflow-hidden cursor-pointer ring-1 ring-transparent hover:ring-accent transition-all duration-300">
               <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/90 via-zinc-900/30 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="absolute bottom-0 left-0 p-6 w-full transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+              {/* Gradiente base siempre visible */}
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 via-zinc-900/10 to-transparent transition-opacity duration-300 group-hover:opacity-0" />
+              {/* Gradiente accent en hover */}
+              <div className="absolute inset-0 bg-gradient-to-t from-accent/90 via-accent/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute bottom-0 left-0 p-6 w-full transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 z-10">
                 <h3 className="font-serif text-xl font-medium text-white mb-1">{item.name}</h3>
-                <p className="font-sans text-sm text-zinc-300 line-clamp-2">{item.desc}</p>
+                <p className="font-sans text-sm text-white/80 line-clamp-2">{item.desc}</p>
               </div>
             </div>
           ))}
@@ -64,7 +67,7 @@ export function Menus() {
 
         <div className="text-center">
           <Link href="/wizard">
-            <Button size="lg" className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-md shadow-md h-12 px-8">
+            <Button size="lg" className="bg-accent text-white hover:bg-accent/90 rounded-md shadow-md h-12 px-8">
               Personalizar Menú
             </Button>
           </Link>

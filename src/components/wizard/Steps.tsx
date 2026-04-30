@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { registerOrVerifyClient } from "@/app/wizard/actions";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check, Fish, Leaf, ChefHat, Layers, Store, Pizza, Croissant, Soup, Cake, PartyPopper, Heart, Briefcase, Smile, HelpCircle, Sun, Moon, Home, Users } from "lucide-react";
+import { CalendarIcon, Check, X, Fish, Leaf, ChefHat, Layers, Store, Pizza, Croissant, Soup, Cake, PartyPopper, Heart, Briefcase, Smile, HelpCircle, Sun, Moon, Home, Users } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { es as esRDP } from "react-day-picker/locale";
@@ -494,7 +494,7 @@ export function StepDateRange({ data, updateData, nextStep }: StepProps) {
 
   const [state, setState] = useState({
     startDate: data.dateRangeStart || tomorrow,
-    endDate: data.dateRangeEnd || new Date(tomorrow.getTime() + 7 * 24 * 60 * 60 * 1000),
+    endDate:   data.dateRangeEnd   || tomorrow,
     key: "selection",
   });
 
@@ -504,7 +504,7 @@ export function StepDateRange({ data, updateData, nextStep }: StepProps) {
     updateData({ dateRangeStart: sel.startDate, dateRangeEnd: sel.endDate });
   };
 
-  const isValid = state.startDate && state.endDate;
+  const isValid = state.startDate && state.endDate && state.endDate > state.startDate;
 
   return (
     <div className="flex flex-col gap-6 items-center max-w-2xl mx-auto w-full">
@@ -527,22 +527,24 @@ export function StepDateRange({ data, updateData, nextStep }: StepProps) {
         />
       </div>
 
-      <div className="w-full bg-zinc-50 p-4 rounded-lg">
-        <div className="grid grid-cols-2 gap-4 text-center">
-          <div>
-            <p className="text-xs text-zinc-500 uppercase font-semibold">Inicio</p>
-            <p className="text-lg font-semibold text-zinc-900 mt-1">
-              {format(state.startDate, "dd MMM yyyy", { locale: es })}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-zinc-500 uppercase font-semibold">Fin</p>
-            <p className="text-lg font-semibold text-zinc-900 mt-1">
-              {format(state.endDate, "dd MMM yyyy", { locale: es })}
-            </p>
+      {isValid && (
+        <div className="w-full bg-zinc-50 p-4 rounded-lg">
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <p className="text-xs text-zinc-500 uppercase font-semibold">Inicio</p>
+              <p className="text-lg font-semibold text-zinc-900 mt-1">
+                {format(state.startDate, "dd MMM yyyy", { locale: es })}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-zinc-500 uppercase font-semibold">Fin</p>
+              <p className="text-lg font-semibold text-zinc-900 mt-1">
+                {format(state.endDate, "dd MMM yyyy", { locale: es })}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <Button disabled={!isValid} onClick={nextStep} size="lg" className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-md shadow-md transition-all">
         Continuar
@@ -598,9 +600,12 @@ export function StepMealSlots({ data, updateData, nextStep }: StepProps) {
     <td
       onClick={onClick}
       className={`w-24 text-center py-4 cursor-pointer transition-colors select-none
-        ${active ? "bg-green-50" : "bg-zinc-50 hover:bg-zinc-100"}`}
+        ${active ? "bg-green-50" : "bg-red-50 hover:bg-red-100"}`}
     >
-      {active && <Check className="w-5 h-5 text-green-500 mx-auto" strokeWidth={2.5} />}
+      {active
+        ? <Check className="w-5 h-5 text-green-500 mx-auto" strokeWidth={2.5} />
+        : <X     className="w-5 h-5 text-red-400  mx-auto" strokeWidth={2.5} />
+      }
     </td>
   );
 
@@ -877,6 +882,65 @@ export function StepBudgetTier({ data, updateData, nextStep }: StepProps) {
   );
 }
 
+// ── StepBudgetMultiple: presupuesto para Varios Servicios ────────────────────
+const BUDGET_MULTIPLE_OPTIONS = [
+  {
+    value:   "casual"    as const,
+    label:   "Casual",
+    desc:    "Crear vínculos en torno a la buena comida.",
+    range:   "$27.213 - $31.295",
+  },
+  {
+    value:   "gourmet"   as const,
+    label:   "Gourmet",
+    desc:    "Menús brillantes para impresionar a tus invitados.",
+    range:   "$31.295 - $35.989",
+  },
+  {
+    value:   "exclusive" as const,
+    label:   "Selección exclusiva",
+    desc:    "Lo mejor de lo mejor para tu evento.",
+    range:   "$35.989 - $45.354",
+  },
+] as const;
+
+export function StepBudgetMultiple({ data, updateData, nextStep }: StepProps) {
+  return (
+    <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {BUDGET_MULTIPLE_OPTIONS.map(({ value, label, desc, range }) => {
+          const active = data.budgetTier === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => { updateData({ budgetTier: value }); nextStep(); }}
+              className={`flex flex-col items-start p-5 rounded-xl border text-left transition-all h-full ${
+                active
+                  ? "border-accent bg-accent/5"
+                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+              }`}
+            >
+              <div className="flex w-full justify-between items-start mb-2">
+                <span className={`font-semibold text-base ${active ? "text-accent" : "text-zinc-900"}`}>{label}</span>
+                <RadioCircle active={active} />
+              </div>
+              <p className="text-xs text-zinc-500 mb-4 flex-1">{desc}</p>
+              <span className="text-xs font-semibold bg-zinc-100 text-zinc-700 px-3 py-1.5 rounded-md w-full text-center">
+                {range} servicio de Chef
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="space-y-1.5 text-xs text-zinc-400 max-w-2xl mx-auto w-full">
+        <p>* Este precio no incluye el coste de materias primas, que serán abonados directamente al presentar los tickets de compra.</p>
+        <p>** Precios desde $4.535 por persona y servicio.</p>
+      </div>
+    </div>
+  );
+}
+
 // ── StepDietarySimple: Ninguna / Sí → si Sí, muestra picker ─────────────────
 const RESTRICTION_OPTIONS = [
   { value: "Vegetariano",  label: "Vegetariano"  },
@@ -979,12 +1043,17 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
   const [confirmEmail, setConfirmEmail] = useState("");
   const [touched, setTouched]       = useState<Record<string, boolean>>({});
 
-  const email    = data.contact?.email    ?? "";
-  const password = data.contact?.password ?? "";
+  const prefilled = !!data.contact?.prefilled;
+  const email     = data.contact?.email    ?? "";
+  const password  = data.contact?.password ?? "";
+
+  useEffect(() => {
+    if (prefilled && email) setConfirmEmail(email);
+  }, [prefilled, email]);
 
   const emailValid    = EMAIL_REGEX.test(email);
-  const emailsMatch   = email === confirmEmail;
-  const passwordValid = password.length >= 6;
+  const emailsMatch   = prefilled ? true : email === confirmEmail;
+  const passwordValid = prefilled ? true : password.length >= 6;
 
   const isValid = !!(
     data.contact?.name &&
@@ -1005,7 +1074,7 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
       data.contact!.name!,
       data.contact!.email!,
       data.contact!.phone!,
-      data.contact!.password!
+      prefilled ? undefined : data.contact!.password!
     );
 
     if (result.error) {
@@ -1058,41 +1127,44 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         )}
       </div>
 
-      {/* Confirmar email */}
-      <div>
-        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
-          Confirmar email <span className="text-red-400">*</span>
-        </label>
-        <Input
-          placeholder="Repetí tu email"
-          type="email"
-          className={`h-14 text-base ${touched.confirmEmail && !emailsMatch ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
-          value={confirmEmail}
-          onChange={(e) => setConfirmEmail(e.target.value)}
-          onBlur={() => blur("confirmEmail")}
-        />
-        {touched.confirmEmail && !emailsMatch && (
-          <p className="text-xs text-red-500 mt-1">Los emails no coinciden.</p>
-        )}
-      </div>
+      {/* Confirmar email y contraseña — solo para usuarios no autenticados */}
+      {!prefilled && (
+        <>
+          <div>
+            <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
+              Confirmar email <span className="text-red-400">*</span>
+            </label>
+            <Input
+              placeholder="Repetí tu email"
+              type="email"
+              className={`h-14 text-base ${touched.confirmEmail && !emailsMatch ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
+              value={confirmEmail}
+              onChange={(e) => setConfirmEmail(e.target.value)}
+              onBlur={() => blur("confirmEmail")}
+            />
+            {touched.confirmEmail && !emailsMatch && (
+              <p className="text-xs text-red-500 mt-1">Los emails no coinciden.</p>
+            )}
+          </div>
 
-      {/* Contraseña */}
-      <div>
-        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
-          Contraseña <span className="text-red-400">*</span>
-        </label>
-        <Input
-          placeholder="Mínimo 6 caracteres"
-          type="password"
-          className={`h-14 text-base ${touched.password && !passwordValid ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
-          value={password}
-          onChange={(e) => updateData({ contact: { ...data.contact, password: e.target.value } })}
-          onBlur={() => blur("password")}
-        />
-        {touched.password && !passwordValid && (
-          <p className="text-xs text-red-500 mt-1">La contraseña debe tener al menos 6 caracteres.</p>
-        )}
-      </div>
+          <div>
+            <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
+              Contraseña <span className="text-red-400">*</span>
+            </label>
+            <Input
+              placeholder="Mínimo 6 caracteres"
+              type="password"
+              className={`h-14 text-base ${touched.password && !passwordValid ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
+              value={password}
+              onChange={(e) => updateData({ contact: { ...data.contact, password: e.target.value } })}
+              onBlur={() => blur("password")}
+            />
+            {touched.password && !passwordValid && (
+              <p className="text-xs text-red-500 mt-1">La contraseña debe tener al menos 6 caracteres.</p>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Teléfono */}
       <div>

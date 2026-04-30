@@ -39,6 +39,7 @@ export interface WizardData {
     phone?: string;
     password?: string;
     comoNosConociste?: string;
+    prefilled?: boolean;
   };
 }
 
