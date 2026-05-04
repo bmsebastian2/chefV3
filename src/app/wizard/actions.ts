@@ -145,7 +145,10 @@ export async function submitServiceRequest(
 ): Promise<{ error?: string; requestId?: string }> {
   const supabase = await createClient()
 
-  if (!data.location || !data.date || !data.contact?.name || !data.contact?.email) {
+  // Servicio 1 usa data.date; servicio 2 usa data.dateRangeStart
+  const eventDateStart = data.date ?? data.dateRangeStart
+
+  if (!data.location || !eventDateStart || !data.contact?.name || !data.contact?.email) {
     return { error: 'Faltan datos obligatorios para guardar la solicitud' }
   }
 
@@ -158,12 +161,12 @@ export async function submitServiceRequest(
     notasArr.push('El cliente tiene restricciones alimentarias — coordinar con el chef')
   }
 
-  // Guests: service 1 usa guestsRange (rango estático), service 2 usa guestsAdults
+  // Guests: service 1 usa guestsRange (rango estático), service 2 usa contadores individuales
   const guestsAdults = data.guestsRange
     ? (GUESTS_RANGE_MAP[data.guestsRange] ?? 0)
     : (data.guestsAdults ?? 0)
 
-  // Budget: service 1 usa budgetTier, service 2 no tiene presupuesto fijo
+  // Budget: servicio 1 y 2 usan budgetTier
   const budgetTier = data.budgetTier ? BUDGET_MAP[data.budgetTier] : null
 
   // Event time: service 1 usa mealTime (Comida/Cena), service 2 no usa este campo
@@ -177,7 +180,7 @@ export async function submitServiceRequest(
     p_occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
     p_location:           data.location.name,
     p_city:               extractCity(data.location.name),
-    p_event_date_start:   formatLocalDate(new Date(data.date as unknown as string)),
+    p_event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
     p_event_time:         eventTime,
     p_guests_adults:      guestsAdults,
     p_cuisine_type:       CUISINE_MAP[data.cuisine ?? ''] ?? data.cuisine ?? null,
@@ -199,12 +202,50 @@ export async function submitServiceRequest(
 
   const newRequestId = requestId as string
 
-  // Update budget if selected via tier (service 1)
+  // Update budget si se seleccionó un tier
   if (budgetTier && newRequestId) {
     await supabase
       .from('service_requests')
       .update({ budget_min: budgetTier.min, budget_max: budgetTier.max })
       .eq('id', newRequestId)
+  }
+
+  // Campos adicionales de servicio 2: fecha fin, desglose de invitados y meal slots
+  if (data.serviceType === '2' && newRequestId) {
+    const service2Updates: Record<string, unknown> = {}
+    if (data.dateRangeEnd) {
+      service2Updates.event_date_end = formatLocalDate(new Date(data.dateRangeEnd as unknown as string))
+    }
+    if (data.guestsTeens != null) service2Updates.guests_teens = data.guestsTeens
+    if (data.guestsKids  != null) service2Updates.guests_kids  = data.guestsKids
+    const totalGuests = (data.guestsAdults ?? 0) + (data.guestsTeens ?? 0) + (data.guestsKids ?? 0)
+    if (totalGuests > 0) service2Updates.cuantas_personas = totalGuests
+
+    if (Object.keys(service2Updates).length > 0) {
+      await supabase
+        .from('service_requests')
+        .update(service2Updates)
+        .eq('id', newRequestId)
+    }
+
+    // Insertar meal slots en request_dates (solo días con al menos una comida seleccionada)
+    const slots = (data.mealSlots ?? []).filter(
+      (s) => s.desayuno || s.almuerzo || s.cena
+    )
+    if (slots.length > 0) {
+      const { error: datesError } = await supabase.rpc('insert_request_dates', {
+        p_request_id: newRequestId,
+        p_slots:      slots.map((s) => ({
+          fecha:    s.fecha,
+          desayuno: s.desayuno,
+          almuerzo: s.almuerzo,
+          cena:     s.cena,
+        })),
+      })
+      if (datesError) {
+        console.error('Error inserting request_dates:', datesError)
+      }
+    }
   }
 
   // Update extra restriction fields not covered by the RPC

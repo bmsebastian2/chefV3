@@ -75,11 +75,15 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function fmt(n: number) {
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 function formatBudget(min: number | null, max: number | null) {
   if (!min && !max) return null;
-  if (min && max) return `$${min.toLocaleString()} – $${max.toLocaleString()}`;
-  if (max) return `hasta $${max.toLocaleString()}`;
-  return `desde $${min!.toLocaleString()}`;
+  if (min && max) return `$${fmt(min)} – $${fmt(max)}`;
+  if (max) return `hasta $${fmt(max)}`;
+  return `desde $${fmt(min!)}`;
 }
 
 // ── Card ───────────────────────────────────────────────────────────────────────

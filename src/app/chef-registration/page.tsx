@@ -8,6 +8,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { registerChef } from "@/app/auth/actions";
+import { Country } from "country-state-city";
 
 interface FormData {
   firstName: string;
@@ -307,14 +308,20 @@ export default function ChefRegistrationPage() {
                 required
                 className="w-full px-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
               >
-                <option value="Spain">España</option>
-                <option value="Argentina">Argentina</option>
-                <option value="Chile">Chile</option>
-                <option value="Colombia">Colombia</option>
-                <option value="Mexico">México</option>
-                <option value="Peru">Perú</option>
-                <option value="Venezuela">Venezuela</option>
-                <option value="Other">Otro</option>
+                <option value="" disabled>Selecciona un país</option>
+                {[
+                  "ES", "MX", "AR", "CO", "CL", "PE", "VE", "CR", "EC", "BO",
+                  "PY", "UY", "GT", "HN", "SV", "NI", "PA", "DO", "CU", "PR",
+                ].map((code) => {
+                  const c = Country.getCountryByCode(code);
+                  return c ? <option key={code} value={c.name}>{c.name}</option> : null;
+                })}
+                <option disabled>──────────</option>
+                {Country.getAllCountries()
+                  .filter((c) => !["ES","MX","AR","CO","CL","PE","VE","CR","EC","BO","PY","UY","GT","HN","SV","NI","PA","DO","CU","PR"].includes(c.isoCode))
+                  .map((c) => (
+                    <option key={c.isoCode} value={c.name}>{c.name}</option>
+                  ))}
               </select>
             </div>
 
