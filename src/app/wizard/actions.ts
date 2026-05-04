@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { WizardData } from '@/components/wizard/types'
 
 // ─── Mapeos Wizard → DB ───────────────────────────────────────────────────────
@@ -202,16 +203,27 @@ export async function submitServiceRequest(
 
   const newRequestId = requestId as string
 
-  // Update budget si se seleccionó un tier
-  if (budgetTier && newRequestId) {
-    await supabase
-      .from('service_requests')
-      .update({ budget_min: budgetTier.min, budget_max: budgetTier.max })
-      .eq('id', newRequestId)
+  if (!newRequestId) {
+    console.error('create_service_request returned no ID')
+    return { error: 'Error al guardar la solicitud' }
+  }
+
+  const admin = createAdminClient()
+
+  // Update budget via SECURITY DEFINER — bypasses RLS without needing service_role grants
+  if (budgetTier) {
+    const { error: budgetError } = await supabase.rpc('update_request_budget', {
+      p_request_id: newRequestId,
+      p_budget_min: budgetTier.min,
+      p_budget_max: budgetTier.max,
+    })
+    if (budgetError) {
+      console.error('Error updating budget:', budgetError)
+    }
   }
 
   // Campos adicionales de servicio 2: fecha fin, desglose de invitados y meal slots
-  if (data.serviceType === '2' && newRequestId) {
+  if (data.serviceType === '2') {
     const service2Updates: Record<string, unknown> = {}
     if (data.dateRangeEnd) {
       service2Updates.event_date_end = formatLocalDate(new Date(data.dateRangeEnd as unknown as string))
@@ -222,10 +234,13 @@ export async function submitServiceRequest(
     if (totalGuests > 0) service2Updates.cuantas_personas = totalGuests
 
     if (Object.keys(service2Updates).length > 0) {
-      await supabase
+      const { error: s2Error } = await admin
         .from('service_requests')
         .update(service2Updates)
         .eq('id', newRequestId)
+      if (s2Error) {
+        console.error('Error updating service_2 fields:', s2Error)
+      }
     }
 
     // Insertar meal slots en request_dates (solo días con al menos una comida seleccionada)
@@ -254,15 +269,18 @@ export async function submitServiceRequest(
     restrictions.includes('Frutos Secos') ||
     data.dietaryOtras?.trim()
 
-  if (hasExtraRestrictions && newRequestId) {
-    await supabase
+  if (hasExtraRestrictions) {
+    const { error: restrictError } = await admin
       .from('request_restrictions')
       .update({
-        sin_mariscos:        restrictions.includes('Marisco'),
-        sin_frutos_secos:    restrictions.includes('Frutos Secos'),
+        sin_mariscos:         restrictions.includes('Marisco'),
+        sin_frutos_secos:     restrictions.includes('Frutos Secos'),
         alergias_adicionales: data.dietaryOtras?.trim() || null,
       })
       .eq('request_id', newRequestId)
+    if (restrictError) {
+      console.error('Error updating request_restrictions:', restrictError)
+    }
   }
 
   return { requestId: newRequestId }

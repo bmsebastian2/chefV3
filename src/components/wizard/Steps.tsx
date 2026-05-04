@@ -813,7 +813,11 @@ export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
             updateData({ date });
             nextStep();
           }}
-          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+          disabled={(date) => {
+            const today = new Date()
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate()) <=
+              new Date(today.getFullYear(), today.getMonth(), today.getDate())
+          }}
           numberOfMonths={3}
           locale={esRDP}
           className="mx-auto"
