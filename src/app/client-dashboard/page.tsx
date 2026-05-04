@@ -9,17 +9,13 @@ export default async function ClientDashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
 
-  const { data: userData } = await supabase
-    .from('users')
-    .select('first_name, first_surname, phone')
-    .eq('id', user.id)
-    .single()
-
-  const { data: requests } = await supabase
-    .from('service_requests')
-    .select('id, service_type, status, event_date_start, location, created_at')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+  const [{ data: userData }, { data: requests }] = await Promise.all([
+    supabase.from('users').select('first_name, first_surname, phone').eq('id', user.id).single(),
+    supabase.from('service_requests')
+      .select('id, service_type, status, event_date_start, location, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false }),
+  ])
 
   const name = [userData?.first_name, userData?.first_surname].filter(Boolean).join(' ') || user.email
 

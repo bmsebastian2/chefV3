@@ -51,6 +51,28 @@ export async function logout() {
   redirect('/')
 }
 
+export async function changePassword(
+  prevState: { error: string; success: boolean } | null,
+  formData: FormData
+): Promise<{ error: string; success: boolean }> {
+  const supabase = await createClient()
+
+  const newPassword = formData.get('newPassword') as string
+  const repeatPassword = formData.get('repeatPassword') as string
+
+  if (!newPassword || newPassword.length < 6) {
+    return { error: 'La contraseña debe tener al menos 6 caracteres.', success: false }
+  }
+  if (newPassword !== repeatPassword) {
+    return { error: 'Las contraseñas no coinciden.', success: false }
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) return { error: error.message, success: false }
+
+  return { error: '', success: true }
+}
+
 export async function registerChef(prevState: { error: string } | null, formData: FormData) {
   const supabase = await createClient()
 
