@@ -1,5 +1,6 @@
 'use server'
 
+import { after } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { WizardData } from '@/components/wizard/types'
@@ -284,8 +285,7 @@ export async function submitServiceRequest(
     }
   }
 
-  // Fire-and-forget: email failure must not block the request creation
-  notifyMatchingChefs(newRequestId, {
+  const notifyPayload = {
     service_type:       SERVICE_TYPE_MAP[data.serviceType ?? ''] ?? 'single',
     occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
     city:               extractCity(data.location.name),
@@ -295,8 +295,11 @@ export async function submitServiceRequest(
     budget_min:         budgetTier?.min ?? null,
     budget_max:         budgetTier?.max ?? null,
     descripcion_evento: data.details ?? null,
-  }).catch((err) =>
-    console.error('[wizard] notifyMatchingChefs threw:', err)
+  }
+  after(() =>
+    notifyMatchingChefs(newRequestId, notifyPayload).catch((err) =>
+      console.error('[wizard] notifyMatchingChefs threw:', err)
+    )
   )
 
   return { requestId: newRequestId }
