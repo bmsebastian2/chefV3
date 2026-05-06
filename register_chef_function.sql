@@ -67,7 +67,7 @@ BEGIN
 
   IF v_existing_chef IS NULL THEN
     INSERT INTO public.chef_profiles (user_id, country, is_active)
-    VALUES (v_user_id, p_country, false)
+    VALUES (v_user_id, p_country, true)
     RETURNING id INTO v_chef_profile_id;
 
     INSERT INTO public.profile_completion (chef_id)

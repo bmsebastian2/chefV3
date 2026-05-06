@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { WizardData } from '@/components/wizard/types'
+import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
 
 // ─── Mapeos Wizard → DB ───────────────────────────────────────────────────────
 
@@ -282,6 +283,21 @@ export async function submitServiceRequest(
       console.error('Error updating request_restrictions:', restrictError)
     }
   }
+
+  // Fire-and-forget: email failure must not block the request creation
+  notifyMatchingChefs(newRequestId, {
+    service_type:       SERVICE_TYPE_MAP[data.serviceType ?? ''] ?? 'single',
+    occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
+    city:               extractCity(data.location.name),
+    event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
+    cuantas_personas:   guestsAdults,
+    cuisine_type:       CUISINE_MAP[data.cuisine ?? ''] ?? data.cuisine ?? null,
+    budget_min:         budgetTier?.min ?? null,
+    budget_max:         budgetTier?.max ?? null,
+    descripcion_evento: data.details ?? null,
+  }).catch((err) =>
+    console.error('[wizard] notifyMatchingChefs threw:', err)
+  )
 
   return { requestId: newRequestId }
 }
