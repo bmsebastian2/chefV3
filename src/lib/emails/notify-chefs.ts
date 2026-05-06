@@ -166,20 +166,24 @@ export async function notifyMatchingChefs(requestId: string, req: RequestData): 
   }
 
   const client = resend
-  const isDev = process.env.NODE_ENV === 'development'
   const devEmail = process.env.RESEND_DEV_EMAIL
+  const hasVerifiedDomain = !!process.env.RESEND_FROM_EMAIL
+  const fromAddress = hasVerifiedDomain
+    ? `GetChef <${process.env.RESEND_FROM_EMAIL}>`
+    : 'GetChef <onboarding@resend.dev>'
 
   const results = await Promise.allSettled(
-    (chefs as MatchingChef[]).map((chef) =>
-      client.emails.send({
-        from:    'GetChef <onboarding@resend.dev>',
-        to:      isDev && devEmail ? devEmail : chef.email,
-        subject: isDev
-          ? `[TEST → ${chef.email}] Nueva solicitud en tu ciudad — ${req.city ?? 'sin ciudad'}`
-          : `Nueva solicitud en tu ciudad — ${req.city ?? 'sin ciudad'}`,
+    (chefs as MatchingChef[]).map((chef) => {
+      const to = hasVerifiedDomain ? chef.email : (devEmail ?? chef.email)
+      return client.emails.send({
+        from:    fromAddress,
+        to,
+        subject: hasVerifiedDomain
+          ? `Nueva solicitud en tu ciudad — ${req.city ?? 'sin ciudad'}`
+          : `[TEST → ${chef.email}] Nueva solicitud en tu ciudad — ${req.city ?? 'sin ciudad'}`,
         html: buildEmailHtml(chef.first_name, req),
       })
-    )
+    })
   )
 
   const failed = results.filter((r) => r.status === 'rejected').length
