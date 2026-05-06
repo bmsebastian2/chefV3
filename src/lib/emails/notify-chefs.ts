@@ -160,12 +160,18 @@ export async function notifyMatchingChefs(requestId: string, req: RequestData): 
     return
   }
 
+  if (!resend) {
+    console.warn('[notify-chefs] RESEND_API_KEY not configured, skipping email notifications')
+    return
+  }
+
+  const client = resend
   const isDev = process.env.NODE_ENV === 'development'
   const devEmail = process.env.RESEND_DEV_EMAIL
 
   const results = await Promise.allSettled(
     (chefs as MatchingChef[]).map((chef) =>
-      resend.emails.send({
+      client.emails.send({
         from:    'GetChef <onboarding@resend.dev>',
         to:      isDev && devEmail ? devEmail : chef.email,
         subject: isDev
