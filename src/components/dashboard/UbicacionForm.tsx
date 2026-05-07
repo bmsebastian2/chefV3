@@ -167,10 +167,9 @@ export function UbicacionForm({ initialData }: { initialData: UbicacionInitialDa
   }));
 
   const cityOptions = countryIso
-    ? (City.getCitiesOfCountry(countryIso) ?? []).map((c) => ({
-        value: c.name,
-        label: c.name,
-      }))
+    ? Array.from(new Set((City.getCitiesOfCountry(countryIso) ?? []).map((c) => c.name))).map(
+        (name) => ({ value: name, label: name })
+      )
     : [];
 
   function handleCountryChange(iso: string) {

@@ -948,6 +948,7 @@ export function StepBudgetMultiple({ data, updateData, nextStep }: StepProps) {
 // ── StepDietarySimple: Ninguna / Sí → si Sí, muestra picker ─────────────────
 const RESTRICTION_OPTIONS = [
   { value: "Vegetariano",  label: "Vegetariano"  },
+  { value: "Vegano",       label: "Vegano"        },
   { value: "Gluten",       label: "Gluten"        },
   { value: "Frutos Secos", label: "Frutos Secos"  },
   { value: "Marisco",      label: "Marisco"       },

@@ -64,7 +64,9 @@ function formatLocalDate(date: Date): string {
 
 function extractCity(locationName: string): string {
   const parts = locationName.split(',')
-  return parts[parts.length - 1].trim()
+  return parts.length >= 2
+    ? parts[parts.length - 2].trim()
+    : parts[0].trim()
 }
 
 export async function registerOrVerifyClient(
@@ -160,9 +162,6 @@ export async function submitServiceRequest(
   if (restrictions.includes('Otras (Conversar con Chef)')) {
     notasArr.push('Restricciones adicionales — conversar con el chef')
   }
-  if (restrictions.includes('Sí')) {
-    notasArr.push('El cliente tiene restricciones alimentarias — coordinar con el chef')
-  }
 
   // Guests: service 1 usa guestsRange (rango estático), service 2 usa contadores individuales
   const guestsAdults = data.guestsRange
@@ -191,11 +190,14 @@ export async function submitServiceRequest(
     p_contact_name:       data.contact.name,
     p_contact_email:      data.contact.email,
     p_contact_phone:      data.contact.phone ?? null,
-    p_vegetariano:        restrictions.includes('Vegetariana') || restrictions.includes('Vegetariano'),
-    p_vegano:             restrictions.includes('Vegana'),
-    p_sin_gluten:         restrictions.includes('Sin Gluten') || restrictions.includes('Gluten'),
-    p_sin_lactosa:        restrictions.includes('Sin Lácteos') || restrictions.includes('Lácteos'),
-    p_notas_adicionales:  notasArr.length > 0 ? notasArr.join('. ') : null,
+    p_vegetariano:         restrictions.includes('Vegetariana') || restrictions.includes('Vegetariano'),
+    p_vegano:              restrictions.includes('Vegano') || restrictions.includes('Vegana'),
+    p_sin_gluten:          restrictions.includes('Sin Gluten') || restrictions.includes('Gluten'),
+    p_sin_lactosa:         restrictions.includes('Sin Lácteos') || restrictions.includes('Lácteos'),
+    p_sin_mariscos:        restrictions.includes('Marisco'),
+    p_sin_frutos_secos:    restrictions.includes('Frutos Secos'),
+    p_alergias_adicionales: data.dietaryOtras?.trim() || null,
+    p_notas_adicionales:   notasArr.length > 0 ? notasArr.join('. ') : null,
   })
 
   if (error) {
@@ -262,26 +264,6 @@ export async function submitServiceRequest(
       if (datesError) {
         console.error('Error inserting request_dates:', datesError)
       }
-    }
-  }
-
-  // Update extra restriction fields not covered by the RPC
-  const hasExtraRestrictions =
-    restrictions.includes('Marisco') ||
-    restrictions.includes('Frutos Secos') ||
-    data.dietaryOtras?.trim()
-
-  if (hasExtraRestrictions) {
-    const { error: restrictError } = await admin
-      .from('request_restrictions')
-      .update({
-        sin_mariscos:         restrictions.includes('Marisco'),
-        sin_frutos_secos:     restrictions.includes('Frutos Secos'),
-        alergias_adicionales: data.dietaryOtras?.trim() || null,
-      })
-      .eq('request_id', newRequestId)
-    if (restrictError) {
-      console.error('Error updating request_restrictions:', restrictError)
     }
   }
 

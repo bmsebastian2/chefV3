@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { CheckCircle2, Circle, ArrowRight } from 'lucide-react'
+import { ActiveToggle } from '@/components/dashboard/ActiveToggle'
 
 type CompletionRow = {
   account_done: boolean
@@ -26,7 +27,7 @@ const ITEMS: {
   { key: 'profile_picture_done',label: 'Foto de Perfil',              href: '/dashboard/fotos',         desc: 'Sube tu foto de perfil.' },
   { key: 'gallery_done',        label: 'Fotos de Galería',            href: '/dashboard/fotos',         desc: 'Añade fotos de tus platos.' },
   { key: 'menus_done',          label: 'Menús',                       href: '/dashboard/menus',         desc: 'Crea al menos 1 menú.' },
-  { key: 'request_prefs_done',  label: 'Preferencias de Solicitudes', href: '/dashboard/configuracion', desc: 'Elige los tipos de servicio que aceptas.' },
+  { key: 'request_prefs_done',  label: 'Preferencias de Solicitudes', href: '/dashboard/request-settings', desc: 'Elige los tipos de servicio que aceptas.' },
   { key: 'payments_done',       label: 'Pagos',                       href: null,                       desc: 'Próximamente disponible.' },
 ]
 
@@ -37,7 +38,7 @@ export default async function DashboardPage() {
 
   const [{ data: userData }, { data: chefProfile }] = await Promise.all([
     supabase.from('users').select('first_name').eq('id', user.id).single(),
-    supabase.from('chef_profiles').select('id').eq('user_id', user.id).single(),
+    supabase.from('chef_profiles').select('id, is_active').eq('user_id', user.id).single(),
   ])
 
   let completion: CompletionRow | null = null
@@ -101,6 +102,13 @@ export default async function DashboardPage() {
             style={{ width: `${pct}%` }}
           />
         </div>
+
+        {chefProfile && (
+          <ActiveToggle
+            chefId={chefProfile.id}
+            initialActive={chefProfile.is_active ?? false}
+          />
+        )}
       </div>
 
       {/* Checklist grid */}

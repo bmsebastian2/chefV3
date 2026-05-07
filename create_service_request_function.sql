@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION create_service_request(
   p_event_date_start   DATE,
   p_contact_name       TEXT,
   p_contact_email      TEXT,
-  p_event_time         TIME    DEFAULT NULL,
+  p_event_time         TEXT    DEFAULT NULL,
   p_guests_adults      INTEGER DEFAULT 0,
   p_cuisine_type       TEXT    DEFAULT NULL,
   p_descripcion_evento TEXT    DEFAULT NULL,
@@ -16,6 +16,9 @@ CREATE OR REPLACE FUNCTION create_service_request(
   p_vegano             BOOLEAN DEFAULT FALSE,
   p_sin_gluten         BOOLEAN DEFAULT FALSE,
   p_sin_lactosa        BOOLEAN DEFAULT FALSE,
+  p_sin_mariscos       BOOLEAN DEFAULT FALSE,
+  p_sin_frutos_secos   BOOLEAN DEFAULT FALSE,
+  p_alergias_adicionales TEXT  DEFAULT NULL,
   p_notas_adicionales  TEXT    DEFAULT NULL
 )
 RETURNS UUID
@@ -43,9 +46,11 @@ BEGIN
   VALUES (v_request_id, p_contact_name, p_contact_email, p_contact_phone);
 
   INSERT INTO public.request_restrictions (
-    request_id, vegetariano, vegano, sin_gluten, sin_lactosa, notas_adicionales
+    request_id, vegetariano, vegano, sin_gluten, sin_lactosa,
+    sin_mariscos, sin_frutos_secos, alergias_adicionales, notas_adicionales
   ) VALUES (
-    v_request_id, p_vegetariano, p_vegano, p_sin_gluten, p_sin_lactosa, p_notas_adicionales
+    v_request_id, p_vegetariano, p_vegano, p_sin_gluten, p_sin_lactosa,
+    p_sin_mariscos, p_sin_frutos_secos, p_alergias_adicionales, p_notas_adicionales
   );
 
   RETURN v_request_id;
