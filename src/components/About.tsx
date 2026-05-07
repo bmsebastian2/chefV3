@@ -56,6 +56,7 @@ export function About() {
               src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&q=80&w=1200"
               alt="Cocina en acción"
               fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover opacity-60 mix-blend-overlay hover:scale-105 transition-transform duration-1000"
             />
             <div className="absolute inset-0 bg-gradient-to-tr from-zinc-900/80 to-transparent" />

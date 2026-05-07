@@ -44,6 +44,11 @@ function buildEmailHtml(chef: string, req: RequestData): string {
         day: 'numeric', month: 'long', year: 'numeric',
       })
     : '—'
+  const mealTimeLabel = req.event_time === 'Cena'
+    ? '🌙 Cena'
+    : req.event_time === 'Comida'
+      ? '☀️ Comida'
+      : req.event_time ?? '—'
 
   return `
 <!DOCTYPE html>
@@ -75,6 +80,7 @@ function buildEmailHtml(chef: string, req: RequestData): string {
               ${row('Ocasión',          occasionLabel)}
               ${row('Ciudad',           req.city ?? '—')}
               ${row('Fecha',            dateFormatted)}
+              ${row('Horario',          mealTimeLabel)}
               ${row('Comensales',       String(guests))}
               ${row('Tipo de cocina',   cuisineLabel)}
               ${row('Presupuesto',      budget)}
@@ -136,6 +142,7 @@ export type RequestData = {
   occasion: string
   city: string | null
   event_date_start: string | null
+  event_time: string | null
   cuantas_personas: number | null
   cuisine_type: string | null
   budget_min: number | null

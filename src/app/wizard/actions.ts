@@ -290,6 +290,7 @@ export async function submitServiceRequest(
     occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
     city:               extractCity(data.location.name),
     event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
+    event_time:         eventTime,
     cuantas_personas:   guestsAdults,
     cuisine_type:       CUISINE_MAP[data.cuisine ?? ''] ?? data.cuisine ?? null,
     budget_min:         budgetTier?.min ?? null,
