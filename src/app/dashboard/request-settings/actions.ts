@@ -49,6 +49,9 @@ export async function saveRequestSettings(
     return { error: 'Error al guardar la configuración' }
   }
 
+  await supabase.rpc('mark_request_prefs_done', { p_chef_id: chef.id })
+
+  revalidatePath('/dashboard')
   revalidatePath('/dashboard/request-settings')
   revalidatePath('/dashboard/requests')
   return { success: true }
