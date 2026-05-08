@@ -8,7 +8,10 @@ CREATE OR REPLACE FUNCTION create_service_request(
   p_contact_name       TEXT,
   p_contact_email      TEXT,
   p_event_time         TEXT    DEFAULT NULL,
+  p_event_date_end     DATE    DEFAULT NULL,
   p_guests_adults      INTEGER DEFAULT 0,
+  p_guests_teens       INTEGER DEFAULT 0,
+  p_guests_kids        INTEGER DEFAULT 0,
   p_cuisine_type       TEXT    DEFAULT NULL,
   p_descripcion_evento TEXT    DEFAULT NULL,
   p_contact_phone      TEXT    DEFAULT NULL,
@@ -32,13 +35,15 @@ BEGIN
   INSERT INTO public.service_requests (
     user_id, service_type, occasion,
     location, city,
-    event_date_start, event_time,
-    guests_adults, cuisine_type, descripcion_evento, status
+    event_date_start, event_date_end, event_time,
+    guests_adults, guests_teens, guests_kids,
+    cuisine_type, descripcion_evento, status
   ) VALUES (
     p_user_id, p_service_type, p_occasion,
     p_location, p_city,
-    p_event_date_start, p_event_time,
-    p_guests_adults, p_cuisine_type, p_descripcion_evento, 'new'
+    p_event_date_start, p_event_date_end, p_event_time,
+    p_guests_adults, p_guests_teens, p_guests_kids,
+    p_cuisine_type, p_descripcion_evento, 'new'
   )
   RETURNING id INTO v_request_id;
 

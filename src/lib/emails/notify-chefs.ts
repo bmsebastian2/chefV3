@@ -39,10 +39,12 @@ function buildEmailHtml(chef: string, req: RequestData): string {
   const budget        = req.budget_min && req.budget_max
     ? `$${req.budget_min.toLocaleString('es-UY')} – $${req.budget_max.toLocaleString('es-UY')}`
     : '—'
+  const fmtDate = (d: string) =>
+    new Date(d + 'T00:00:00').toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' })
   const dateFormatted = req.event_date_start
-    ? new Date(req.event_date_start + 'T00:00:00').toLocaleDateString('es-UY', {
-        day: 'numeric', month: 'long', year: 'numeric',
-      })
+    ? req.event_date_end && req.event_date_end !== req.event_date_start
+      ? `${fmtDate(req.event_date_start)} → ${fmtDate(req.event_date_end)}`
+      : fmtDate(req.event_date_start)
     : '—'
   const mealTimeLabel = req.event_time === 'Cena'
     ? '🌙 Cena'
@@ -142,6 +144,7 @@ export type RequestData = {
   occasion: string
   city: string | null
   event_date_start: string | null
+  event_date_end: string | null
   event_time: string | null
   cuantas_personas: number | null
   cuisine_type: string | null

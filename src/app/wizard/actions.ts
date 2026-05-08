@@ -2,7 +2,6 @@
 
 import { after } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
-import { createAdminClient } from '@/utils/supabase/admin'
 import { WizardData } from '@/components/wizard/types'
 import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
 
@@ -170,6 +169,21 @@ export async function submitServiceRequest(
     ? (MEAL_TIME_MAP[data.mealTime] ?? null)
     : (data.time ?? null)
 
+  // Campos exclusivos de servicio 2: derivados aquí para pasarlos todos al RPC
+  // (evita admin.update() que falla silenciosamente con RLS)
+  let eventDateEnd: string | null = null
+  let guestsTeens = 0
+  let guestsKids  = 0
+  if (data.serviceType === '2') {
+    const activeSlotDates = (data.mealSlots ?? [])
+      .filter((s) => s.desayuno || s.almuerzo || s.cena)
+      .map((s) => s.fecha)
+      .sort()
+    eventDateEnd    = activeSlotDates.length > 0 ? activeSlotDates[activeSlotDates.length - 1] : null
+    guestsTeens = data.guestsTeens ?? 0
+    guestsKids  = data.guestsKids  ?? 0
+  }
+
   const { data: requestId, error } = await supabase.rpc('create_service_request', {
     p_user_id:            userId,
     p_service_type:       SERVICE_TYPE_MAP[data.serviceType ?? ''] ?? 'single',
@@ -177,8 +191,11 @@ export async function submitServiceRequest(
     p_location:           data.location.name,
     p_city:               data.location.city,
     p_event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
+    p_event_date_end:     eventDateEnd,
     p_event_time:         eventTime,
     p_guests_adults:      guestsAdults,
+    p_guests_teens:       guestsTeens,
+    p_guests_kids:        guestsKids,
     p_cuisine_type:       CUISINE_MAP[data.cuisine ?? ''] ?? data.cuisine ?? null,
     p_descripcion_evento: data.details ?? null,
     p_contact_name:       data.contact.name,
@@ -206,8 +223,6 @@ export async function submitServiceRequest(
     return { error: 'Error al guardar la solicitud' }
   }
 
-  const admin = createAdminClient()
-
   // Update budget via SECURITY DEFINER — bypasses RLS without needing service_role grants
   if (budgetTier) {
     const { error: budgetError } = await supabase.rpc('update_request_budget', {
@@ -220,31 +235,12 @@ export async function submitServiceRequest(
     }
   }
 
-  // Campos adicionales de servicio 2: fecha fin, desglose de invitados y meal slots
+  // Meal slots de servicio 2
   if (data.serviceType === '2') {
-    const service2Updates: Record<string, unknown> = {}
-    if (data.dateRangeEnd) {
-      service2Updates.event_date_end = formatLocalDate(new Date(data.dateRangeEnd as unknown as string))
-    }
-    if (data.guestsTeens != null) service2Updates.guests_teens = data.guestsTeens
-    if (data.guestsKids  != null) service2Updates.guests_kids  = data.guestsKids
-    const totalGuests = (data.guestsAdults ?? 0) + (data.guestsTeens ?? 0) + (data.guestsKids ?? 0)
-    if (totalGuests > 0) service2Updates.cuantas_personas = totalGuests
-
-    if (Object.keys(service2Updates).length > 0) {
-      const { error: s2Error } = await admin
-        .from('service_requests')
-        .update(service2Updates)
-        .eq('id', newRequestId)
-      if (s2Error) {
-        console.error('Error updating service_2 fields:', s2Error)
-      }
-    }
-
-    // Insertar meal slots en request_dates (solo días con al menos una comida seleccionada)
     const slots = (data.mealSlots ?? []).filter(
       (s) => s.desayuno || s.almuerzo || s.cena
     )
+
     if (slots.length > 0) {
       const { error: datesError } = await supabase.rpc('insert_request_dates', {
         p_request_id: newRequestId,
@@ -266,6 +262,7 @@ export async function submitServiceRequest(
     occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
     city:               data.location.city,
     event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
+    event_date_end:     eventDateEnd,
     event_time:         eventTime,
     cuantas_personas:   guestsAdults,
     cuisine_type:       CUISINE_MAP[data.cuisine ?? ''] ?? data.cuisine ?? null,
