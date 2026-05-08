@@ -104,7 +104,7 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        let url = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?SingleLine=${encodeURIComponent(query)}&f=json&maxLocations=5`;
+        let url = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?SingleLine=${encodeURIComponent(query)}&f=json&maxLocations=5&outFields=City,Region`;
         if (userCoords) {
           url += `&location=${userCoords.lon},${userCoords.lat}&distance=50000`;
         }
@@ -128,15 +128,10 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
     };
   }, [query, userCoords, data.location?.name]);
 
-  const selectLocation = (name: string, state: string, country: string, lat: number, lng: number) => {
-    const fullName = [name, state, country].filter(Boolean).join(", ");
-    setQuery(fullName);
+  const selectLocation = (name: string, city: string, lat: number, lng: number) => {
+    setQuery(name);
     updateData({
-      location: {
-        name: fullName,
-        lat,
-        lng
-      }
+      location: { name, city, lat, lng }
     });
     setResults([]);
   };
@@ -173,7 +168,7 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
               <button
                 key={idx}
                 type="button"
-                onClick={() => selectLocation(r.address, "", "", r.location.y, r.location.x)}
+                onClick={() => selectLocation(r.address, r.attributes?.City || r.attributes?.Region || r.address.split(",")[0], r.location.y, r.location.x)}
                 className="w-full text-left px-4 py-3 hover:bg-zinc-50 border-b border-zinc-100 last:border-none focus:outline-none focus:bg-zinc-50 transition-colors"
               >
                 <div className="font-medium text-zinc-900">{r.address.split(",")[0]}</div>

@@ -62,12 +62,6 @@ function formatLocalDate(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
-function extractCity(locationName: string): string {
-  const parts = locationName.split(',')
-  return parts.length >= 2
-    ? parts[parts.length - 2].trim()
-    : parts[0].trim()
-}
 
 export async function registerOrVerifyClient(
   name: string,
@@ -181,7 +175,7 @@ export async function submitServiceRequest(
     p_service_type:       SERVICE_TYPE_MAP[data.serviceType ?? ''] ?? 'single',
     p_occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
     p_location:           data.location.name,
-    p_city:               extractCity(data.location.name),
+    p_city:               data.location.city,
     p_event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
     p_event_time:         eventTime,
     p_guests_adults:      guestsAdults,
@@ -270,7 +264,7 @@ export async function submitServiceRequest(
   const notifyPayload = {
     service_type:       SERVICE_TYPE_MAP[data.serviceType ?? ''] ?? 'single',
     occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
-    city:               extractCity(data.location.name),
+    city:               data.location.city,
     event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
     event_time:         eventTime,
     cuantas_personas:   guestsAdults,

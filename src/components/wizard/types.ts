@@ -10,6 +10,7 @@ export interface WizardData {
   serviceType?: string;
   location?: {
     name: string;
+    city: string;
     lat: number;
     lng: number;
   };
