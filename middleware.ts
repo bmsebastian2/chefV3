@@ -3,6 +3,22 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   try {
+    // Capturar params de auth de Supabase sin importar en qué ruta aterrizaron.
+    // Ocurre cuando /auth/callback no está en la lista de Redirect URLs de Supabase
+    // y el magic link redirige al Site URL base en su lugar.
+    const { pathname, searchParams } = request.nextUrl
+    const code      = searchParams.get('code')
+    const tokenHash = searchParams.get('token_hash')
+    const type      = searchParams.get('type')
+
+    if ((code || (tokenHash && type)) && pathname !== '/auth/callback') {
+      const callbackUrl = new URL('/auth/callback', request.url)
+      if (code)      callbackUrl.searchParams.set('code', code)
+      if (tokenHash) callbackUrl.searchParams.set('token_hash', tokenHash)
+      if (type)      callbackUrl.searchParams.set('type', type)
+      return NextResponse.redirect(callbackUrl)
+    }
+
     let supabaseResponse = NextResponse.next({ request })
 
     // Validar variables de entorno - retornar error claro en Vercel

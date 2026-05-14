@@ -53,7 +53,9 @@ export default async function RequestsPage() {
 
   const { data: allRequests } = await supabase.rpc('get_requests_for_chef')
 
-  let filtered: RawRequest[] = (allRequests ?? []) as RawRequest[]
+  let filtered: RawRequest[] = (allRequests ?? [] as RawRequest[]).filter(
+    (r: RawRequest) => r.status === 'new' || r.status === 'active'
+  )
 
   if (settings) {
     const s = {

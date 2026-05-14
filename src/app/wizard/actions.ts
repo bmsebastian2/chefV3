@@ -2,8 +2,10 @@
 
 import { after } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
-import { WizardData } from '@/components/wizard/types'
+import { createAdminClient } from '@/utils/supabase/admin'
+import { WizardData, ClientExtras } from '@/components/wizard/types'
 import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
+import { sendClientEmails } from '@/lib/emails/client-emails'
 
 // ─── Mapeos Wizard → DB ───────────────────────────────────────────────────────
 
@@ -46,7 +48,6 @@ const BUDGET_MAP: Record<string, { min: number; max: number }> = {
   'exclusive': { min: 3465, max: 4158 },
 }
 
-// Guests range → representative adult count
 const GUESTS_RANGE_MAP: Record<string, number> = {
   '2':    2,
   '3-6':  4,
@@ -61,18 +62,27 @@ function formatLocalDate(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+// ─── registerOrVerifyClient ───────────────────────────────────────────────────
 
 export async function registerOrVerifyClient(
   name: string,
   email: string,
   phone: string,
   password?: string
-): Promise<{ error?: string; userId?: string }> {
+): Promise<{
+  error?: string
+  userId?: string
+  isNewUser?: boolean
+  tempPassword?: string
+  confirmationLink?: string
+}> {
   const supabase = await createClient()
 
-  // 1. Check by email first
+  // 1. Buscar por email
   const { data: byEmail, error: emailCheckError } = await supabase
-    .rpc('get_user_by_email', { p_email: email })
+    .rpc('find_user_by_email', { p_email: email })
 
   if (emailCheckError) {
     console.error('Error checking user by email:', emailCheckError)
@@ -84,10 +94,11 @@ export async function registerOrVerifyClient(
     if (user.user_role === 'chef') {
       return { error: 'Los chefs no pueden realizar solicitudes de servicio. Usa una cuenta de cliente.' }
     }
-    return { userId: user.user_id }
+    // Caso A: cliente existente
+    return { userId: user.user_id, isNewUser: false }
   }
 
-  // 2. Email not found — check by phone before attempting to create
+  // 2. Buscar por teléfono
   const { data: byPhone, error: phoneCheckError } = await supabase
     .rpc('get_user_by_phone', { p_phone: phone })
 
@@ -101,49 +112,81 @@ export async function registerOrVerifyClient(
     if (user.user_role === 'chef') {
       return { error: 'Los chefs no pueden realizar solicitudes de servicio. Usa una cuenta de cliente.' }
     }
-    return { userId: user.user_id }
+    // Caso A: cliente existente (identificado por teléfono)
+    return { userId: user.user_id, isNewUser: false }
   }
 
-  // 3. Truly new user — crear cuenta con la contraseña elegida por el usuario
-  const { data: authData, error: authError } = await supabase.auth.signUp({
+  // 3. Caso B: usuario nuevo — admin.createUser para controlar el email de confirmación
+  const admin = createAdminClient()
+  const isPasswordProvided = !!password
+  const finalPassword = password ?? `Tmp${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}Aa1!`
+
+  const { data: adminData, error: adminError } = await admin.auth.admin.createUser({
     email,
-    password: password ?? `${crypto.randomUUID().replace(/-/g, '')}Aa1!`,
+    password: finalPassword,
+    email_confirm: false,
+    user_metadata: { full_name: name },
   })
 
-  if (authError) {
-    if (authError.message?.toLowerCase().includes('already registered')) {
+  if (adminError) {
+    const msg = adminError.message?.toLowerCase() ?? ''
+    if (msg.includes('already registered') || msg.includes('already been registered')) {
       return { error: 'Este correo ya tiene una cuenta. Por favor inicia sesión.' }
     }
+    console.error('Error creating admin user:', adminError)
     return { error: 'Error al crear cuenta' }
   }
 
-  if (!authData.user) {
+  if (!adminData.user) {
     return { error: 'Error al crear cuenta' }
   }
 
-  // 4. Register in public.users — ON CONFLICT handles any orphaned auth users
+  // 4. Registrar en public.users
   const { error: rpcError } = await supabase.rpc('register_client', {
-    p_user_id: authData.user.id,
-    p_email: email,
+    p_user_id:   adminData.user.id,
+    p_email:     email,
     p_first_name: name,
-    p_phone: phone || null,
+    p_phone:     phone || null,
   })
 
   if (rpcError) {
     console.error('Error registering client in public.users:', rpcError)
+    // Limpiar usuario huérfano en auth
+    await admin.auth.admin.deleteUser(adminData.user.id).catch(() => {})
     return { error: 'Error al registrar usuario' }
   }
 
-  return { userId: authData.user.id }
+  // 5. Generar magic link — confirma el email E inicia sesión en un solo click
+  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    type:    'magiclink',
+    email,
+    options: { redirectTo: `${SITE_URL}/auth/callback` },
+  })
+
+  if (linkError) {
+    console.error('Error generating confirmation link:', linkError)
+  }
+
+  const confirmationLink = linkData?.properties?.action_link
+
+  return {
+    userId:           adminData.user.id,
+    isNewUser:        true,
+    // Solo se envía la contraseña en el email si fue auto-generada (el usuario no la eligió)
+    tempPassword:     isPasswordProvided ? undefined : finalPassword,
+    confirmationLink,
+  }
 }
+
+// ─── submitServiceRequest ─────────────────────────────────────────────────────
 
 export async function submitServiceRequest(
   data: WizardData,
-  userId: string
+  userId: string,
+  extras?: ClientExtras
 ): Promise<{ error?: string; requestId?: string }> {
   const supabase = await createClient()
 
-  // Servicio 1 usa data.date; servicio 2 usa data.dateRangeStart
   const eventDateStart = data.date ?? data.dateRangeStart
 
   if (!data.location || !eventDateStart || !data.contact?.name || !data.contact?.email) {
@@ -156,21 +199,16 @@ export async function submitServiceRequest(
     notasArr.push('Restricciones adicionales — conversar con el chef')
   }
 
-  // Guests: service 1 usa guestsRange (rango estático), service 2 usa contadores individuales
   const guestsAdults = data.guestsRange
     ? (GUESTS_RANGE_MAP[data.guestsRange] ?? 0)
     : (data.guestsAdults ?? 0)
 
-  // Budget: servicio 1 y 2 usan budgetTier
   const budgetTier = data.budgetTier ? BUDGET_MAP[data.budgetTier] : null
 
-  // Event time: service 1 usa mealTime (Comida/Cena), service 2 no usa este campo
   const eventTime = data.mealTime
     ? (MEAL_TIME_MAP[data.mealTime] ?? null)
     : (data.time ?? null)
 
-  // Campos exclusivos de servicio 2: derivados aquí para pasarlos todos al RPC
-  // (evita admin.update() que falla silenciosamente con RLS)
   let eventDateEnd: string | null = null
   let guestsTeens = 0
   let guestsKids  = 0
@@ -179,9 +217,9 @@ export async function submitServiceRequest(
       .filter((s) => s.desayuno || s.almuerzo || s.cena)
       .map((s) => s.fecha)
       .sort()
-    eventDateEnd    = activeSlotDates.length > 0 ? activeSlotDates[activeSlotDates.length - 1] : null
-    guestsTeens = data.guestsTeens ?? 0
-    guestsKids  = data.guestsKids  ?? 0
+    eventDateEnd = activeSlotDates.length > 0 ? activeSlotDates[activeSlotDates.length - 1] : null
+    guestsTeens  = data.guestsTeens ?? 0
+    guestsKids   = data.guestsKids  ?? 0
   }
 
   const { data: requestId, error } = await supabase.rpc('create_service_request', {
@@ -217,30 +255,34 @@ export async function submitServiceRequest(
   }
 
   const newRequestId = requestId as string
-
   if (!newRequestId) {
     console.error('create_service_request returned no ID')
     return { error: 'Error al guardar la solicitud' }
   }
 
-  // Update budget via SECURITY DEFINER — bypasses RLS without needing service_role grants
+  // Si es usuario nuevo, marcar el request como pending_confirmation via SECURITY DEFINER
+  if (extras?.isNewUser) {
+    const { error: statusError } = await supabase.rpc('set_request_pending', {
+      p_request_id: newRequestId,
+    })
+    if (statusError) {
+      console.error('Error setting pending_confirmation status:', statusError)
+    }
+  }
+
+  // Presupuesto
   if (budgetTier) {
     const { error: budgetError } = await supabase.rpc('update_request_budget', {
       p_request_id: newRequestId,
       p_budget_min: budgetTier.min,
       p_budget_max: budgetTier.max,
     })
-    if (budgetError) {
-      console.error('Error updating budget:', budgetError)
-    }
+    if (budgetError) console.error('Error updating budget:', budgetError)
   }
 
   // Meal slots de servicio 2
   if (data.serviceType === '2') {
-    const slots = (data.mealSlots ?? []).filter(
-      (s) => s.desayuno || s.almuerzo || s.cena
-    )
-
+    const slots = (data.mealSlots ?? []).filter((s) => s.desayuno || s.almuerzo || s.cena)
     if (slots.length > 0) {
       const { error: datesError } = await supabase.rpc('insert_request_dates', {
         p_request_id: newRequestId,
@@ -251,9 +293,7 @@ export async function submitServiceRequest(
           cena:     s.cena,
         })),
       })
-      if (datesError) {
-        console.error('Error inserting request_dates:', datesError)
-      }
+      if (datesError) console.error('Error inserting request_dates:', datesError)
     }
   }
 
@@ -270,10 +310,30 @@ export async function submitServiceRequest(
     budget_max:         budgetTier?.max ?? null,
     descripcion_evento: data.details ?? null,
   }
+
+  const clientEmail = data.contact.email!
+  const clientName  = data.contact.name!
+
+  // Para usuarios nuevos, los chefs se notifican solo después de confirmar el email
+  // (en /auth/callback). Para usuarios existentes, notificar de inmediato.
   after(() =>
-    notifyMatchingChefs(newRequestId, notifyPayload).catch((err) =>
-      console.error('[wizard] notifyMatchingChefs threw:', err)
-    )
+    Promise.all([
+      ...(extras?.isNewUser
+        ? []
+        : [notifyMatchingChefs(newRequestId, notifyPayload).catch((err) =>
+            console.error('[wizard] notifyMatchingChefs threw:', err)
+          )]
+      ),
+      sendClientEmails({
+        email:            clientEmail,
+        name:             clientName,
+        isNewUser:        extras?.isNewUser ?? false,
+        tempPassword:     extras?.tempPassword,
+        confirmationLink: extras?.confirmationLink,
+      }).catch((err) =>
+        console.error('[wizard] sendClientEmails threw:', err)
+      ),
+    ])
   )
 
   return { requestId: newRequestId }

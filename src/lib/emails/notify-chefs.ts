@@ -156,16 +156,17 @@ export type RequestData = {
 export async function notifyMatchingChefs(requestId: string, req: RequestData): Promise<void> {
   const admin = createAdminClient()
 
-  const { data: chefs, error: chefsError } = await admin.rpc(
-    'get_matching_chefs_for_request',
-    { p_request_id: requestId }
-  )
+  const { data, error: chefsError } = await admin
+    .rpc('get_matching_chefs_for_request', { p_request_id: requestId })
 
   if (chefsError) {
-    console.error('[notify-chefs] Error fetching matching chefs:', chefsError)
+    console.error('[notify-chefs] Error fetching chefs:', chefsError)
     return
   }
-  if (!chefs || chefs.length === 0) {
+
+  const chefs: MatchingChef[] = data ?? []
+
+  if (chefs.length === 0) {
     console.log('[notify-chefs] No matching chefs for request', requestId)
     return
   }

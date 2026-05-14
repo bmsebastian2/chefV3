@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Newsreader } from "next/font/google";
 import "./globals.css";
+import { AuthHashHandler } from "@/components/AuthHashHandler";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -27,7 +28,10 @@ export default function RootLayout({
       lang="es"
       className={`${manrope.variable} ${newsreader.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-background text-foreground">{children}</body>
+      <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
+        <AuthHashHandler />
+        {children}
+      </body>
     </html>
   );
 }

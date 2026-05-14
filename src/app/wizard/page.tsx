@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, X } from "lucide-react";
 import { WizardData } from "@/components/wizard/types";
 import { StepServiceType, StepLocation, StepOccasion, StepGuests, StepDateRange, StepMealSlots, StepCuisine, StepDetails, StepContact, StepOccasion1, StepGuestsStatic, StepMealTime, StepDateCalendar, StepBudgetTier, StepBudgetMultiple, StepDietarySimple, StepContact1 } from "@/components/wizard/Steps";
 import { WeeklyMealsForm } from "@/components/wizard/WeeklyMealsForm";
 import { submitServiceRequest } from "@/app/wizard/actions";
+import { ClientExtras } from "@/components/wizard/types";
+import { createClient } from "@/utils/supabase/clients";
 
 const baseSteps = [
   { id: "serviceType", component: StepServiceType, title: "¿Qué tipo de servicio de chef necesitas?" },
@@ -46,11 +49,24 @@ const getStepsForService = (serviceType?: string) => {
 };
 
 export default function WizardPage() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState<WizardData>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState<false | 'active' | 'pending'>(false);
   const [showWeeklyForm, setShowWeeklyForm] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Detecta confirmación de email en cualquier pestaña y redirige automáticamente
+  useEffect(() => {
+    if (submitted !== 'pending') return;
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
+        router.push('/client-dashboard');
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [submitted, router]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -93,14 +109,14 @@ export default function WizardPage() {
     }
   };
 
-  const handleFinalSubmit = async (userId: string) => {
+  const handleFinalSubmit = async (userId: string, extras?: ClientExtras) => {
     setSubmitError(null);
-    const result = await submitServiceRequest(data, userId);
+    const result = await submitServiceRequest(data, userId, extras);
     if (result.error) {
       setSubmitError(result.error);
       return;
     }
-    setSubmitted(true);
+    setSubmitted(extras?.isNewUser ? 'pending' : 'active');
   };
 
   const handleService3Selected = () => {
@@ -112,10 +128,10 @@ export default function WizardPage() {
   };
 
   const handleWeeklyFormSubmit = () => {
-    setSubmitted(true);
+    setSubmitted('active');
   };
 
-  if (submitted) {
+  if (submitted === 'active') {
     return (
       <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] p-10 text-center border border-zinc-100">
@@ -126,7 +142,33 @@ export default function WizardPage() {
           </div>
           <h2 className="font-serif text-4xl font-semibold text-zinc-900 mb-4">¡Solicitud recibida!</h2>
           <p className="font-sans text-zinc-600 mb-10 leading-relaxed">
-            En menos de 30 minutos, nuestros chefs diseñarán propuestas de menú específicas para tu evento en <strong>{data.location?.name || "tu ubicación"}</strong>. Revisa pronto tu correo asociado.
+            En menos de 30 minutos, nuestros chefs diseñarán propuestas de menú específicas para tu evento en{" "}
+            <strong>{data.location?.name || "tu ubicación"}</strong>. Revisa pronto tu correo.
+          </p>
+          <Link href="/client-dashboard" className="w-full h-14 bg-zinc-900 text-white rounded-md font-medium hover:bg-zinc-800 transition-colors shadow-sm flex items-center justify-center">
+            Ver mi solicitud
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitted === 'pending') {
+    return (
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] p-10 text-center border border-zinc-100">
+          <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-8">
+            <svg className="w-10 h-10 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h2 className="font-serif text-4xl font-semibold text-zinc-900 mb-4">¡Revisa tu email!</h2>
+          <p className="font-sans text-zinc-600 mb-4 leading-relaxed">
+            Te enviamos un enlace de confirmación a{" "}
+            <strong>{data.contact?.email}</strong>.
+          </p>
+          <p className="font-sans text-zinc-500 text-sm mb-10 leading-relaxed">
+            Al confirmar tu email, tu solicitud se activará y empezarás a recibir propuestas de nuestros chefs en menos de 30 minutos.
           </p>
           <Link href="/" className="w-full h-14 bg-zinc-900 text-white rounded-md font-medium hover:bg-zinc-800 transition-colors shadow-sm flex items-center justify-center">
             Volver al Inicio

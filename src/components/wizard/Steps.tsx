@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { registerOrVerifyClient } from "@/app/wizard/actions";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Check, X, Fish, Leaf, ChefHat, Layers, Store, Pizza, Croissant, Soup, Cake, PartyPopper, Heart, Briefcase, Smile, HelpCircle, Sun, Moon, Home, Users } from "lucide-react";
+import { CalendarIcon, Check, X, Fish, Leaf, ChefHat, Layers, Store, Pizza, Croissant, Soup, Cake, PartyPopper, Heart, Briefcase, Smile, HelpCircle, Sun, Moon, Home, Users, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { es as esRDP } from "react-day-picker/locale";
@@ -15,6 +15,7 @@ import { DateRange, RangeKeyDict } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import "./daterange.css";
+import { Country as LibCountry } from "country-state-city";
 
 export function StepServiceType({ data, updateData, nextStep, onService3Selected, onServiceTypeSelected }: StepProps) {
   const options = [
@@ -408,22 +409,127 @@ export function StepDetails({ data, updateData, nextStep }: StepProps) {
   );
 }
 
+// ── PhoneInput ────────────────────────────────────────────────────────────────
+type PhoneCountry = { name: string; isoCode: string; flag: string; code: string };
+
+const PHONE_COUNTRIES: PhoneCountry[] = LibCountry.getAllCountries()
+  .map(c => {
+    const raw = c.phonecode;
+    const base = raw.startsWith('+') ? raw.slice(1) : raw;
+    const code = '+' + base.split(/[-\s]/)[0].split('and')[0].trim();
+    return { name: c.name, isoCode: c.isoCode, flag: c.flag, code };
+  })
+  .filter(c => /^\+\d+$/.test(c.code));
+
+const DEFAULT_PHONE_COUNTRY = PHONE_COUNTRIES.find(c => c.isoCode === 'UY') ?? PHONE_COUNTRIES[0];
+
+function parsePhone(val: string): { country: PhoneCountry; local: string } {
+  if (!val) return { country: DEFAULT_PHONE_COUNTRY, local: '' };
+  const sorted = [...PHONE_COUNTRIES].sort((a, b) => b.code.length - a.code.length);
+  for (const c of sorted) {
+    if (val.startsWith(c.code)) return { country: c, local: val.slice(c.code.length) };
+  }
+  return { country: DEFAULT_PHONE_COUNTRY, local: '' };
+}
+
+function PhoneInput({
+  value,
+  onChange,
+  onBlur,
+  hasError,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  onBlur?: () => void;
+  hasError?: boolean;
+}) {
+  const { country: initCountry, local: initLocal } = parsePhone(value);
+  const [country, setCountry] = useState<PhoneCountry>(initCountry);
+  const [local, setLocal] = useState(initLocal);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const filtered = search
+    ? PHONE_COUNTRIES.filter(
+        c => c.name.toLowerCase().includes(search.toLowerCase()) || c.code.includes(search)
+      )
+    : PHONE_COUNTRIES;
+
+  const handleCountrySelect = (c: PhoneCountry) => {
+    setCountry(c);
+    setOpen(false);
+    setSearch('');
+    onChange(`${c.code}${local}`);
+  };
+
+  const handleLocalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/[^\d\s\-\(\)]/g, '');
+    setLocal(val);
+    onChange(`${country.code}${val}`);
+  };
+
+  return (
+    <div className={`flex items-center h-14 border rounded-lg overflow-hidden bg-white transition-colors ${hasError ? 'border-red-400' : 'border-zinc-200 focus-within:border-zinc-400'}`}>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger className="flex items-center gap-1.5 px-3 h-full border-r border-zinc-200 bg-zinc-50 hover:bg-zinc-100 transition-colors shrink-0 rounded-none">
+          <span className="text-lg leading-none">{country.flag}</span>
+          <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+          <span className="text-sm font-medium text-zinc-700">{country.code}</span>
+        </PopoverTrigger>
+        <PopoverContent className="w-72 p-2" align="start">
+          <Input
+            placeholder="Buscar país..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-9 text-sm mb-2"
+            autoFocus
+          />
+          <div className="max-h-56 overflow-y-auto">
+            {filtered.map(c => (
+              <button
+                key={c.isoCode}
+                type="button"
+                onClick={() => handleCountrySelect(c)}
+                className={`w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm transition-colors text-left ${c.isoCode === country.isoCode ? 'bg-accent/10 text-accent' : 'text-zinc-700 hover:bg-zinc-50'}`}
+              >
+                <span>{c.flag}</span>
+                <span className="flex-1 truncate">{c.name}</span>
+                <span className="text-xs text-zinc-400 shrink-0">{c.code}</span>
+              </button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+      <input
+        type="tel"
+        placeholder="000-000-000"
+        value={local}
+        onChange={handleLocalChange}
+        onBlur={onBlur}
+        className="flex-1 h-full px-4 text-base outline-none bg-transparent text-zinc-900 placeholder:text-zinc-400 font-medium"
+      />
+    </div>
+  );
+}
+
 export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const isValid = !!(data.contact?.name && data.contact?.email && data.contact?.phone);
+  const phoneDigits = (data.contact?.phone ?? '').replace(/\D/g, '');
+  const phoneValid  = phoneDigits.length >= 8;
+  const isValid = !!(data.contact?.name && data.contact?.email && phoneValid);
 
   const handleSubmit = async () => {
-    if (!data.contact?.name || !data.contact?.email || !data.contact?.phone) return;
+    if (!data.contact?.name || !data.contact?.email || !phoneValid) return;
 
     setLoading(true);
     setError("");
 
     const result = await registerOrVerifyClient(
-      data.contact.name,
-      data.contact.email,
-      data.contact.phone
+      data.contact.name!,
+      data.contact.email!,
+      data.contact.phone!
     );
 
     if (result.error) {
@@ -433,7 +539,11 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
     }
 
     if (result.userId && onFinalSubmit) {
-      await onFinalSubmit(result.userId);
+      await onFinalSubmit(result.userId, {
+        isNewUser:        result.isNewUser ?? false,
+        tempPassword:     result.tempPassword,
+        confirmationLink: result.confirmationLink,
+      });
     }
 
     setLoading(false);
@@ -442,7 +552,7 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
   return (
     <div className="flex flex-col gap-5 items-center max-w-md mx-auto w-full">
       <p className="text-zinc-600 mb-2 text-center font-sans">
-        Sólo un paso más. Añade tus datos y recibirás menús personalizados de nuestra red élite en menos de 30 minutos.
+        <strong>Sólo un paso más.</strong> Añade tus datos y recibirás menús personalizados de nuestra red élite en menos de 30 minutos.
       </p>
       <Input
         placeholder="Nombre completo"
@@ -457,12 +567,9 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
         value={data.contact?.email || ""}
         onChange={(e) => updateData({ contact: { ...data.contact, email: e.target.value } })}
       />
-      <Input
-        placeholder="Teléfono (ej: +34...)"
-        type="tel"
-        className="h-14 font-medium text-base border-zinc-200"
-        value={data.contact?.phone || ""}
-        onChange={(e) => updateData({ contact: { ...data.contact, phone: e.target.value } })}
+      <PhoneInput
+        value={data.contact?.phone ?? ""}
+        onChange={(val) => updateData({ contact: { ...data.contact, phone: val } })}
       />
       {error && (
         <p className="text-red-500 text-sm text-center w-full">{error}</p>
@@ -1038,29 +1145,30 @@ export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState("");
-  const [confirmEmail, setConfirmEmail] = useState("");
-  const [touched, setTouched]       = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const prefilled = !!data.contact?.prefilled;
   const email     = data.contact?.email    ?? "";
   const password  = data.contact?.password ?? "";
 
-  useEffect(() => {
-    if (prefilled && email) setConfirmEmail(email);
-  }, [prefilled, email]);
+  const [confirmEmail, setConfirmEmail] = useState(() =>
+    prefilled && email ? email : ""
+  );
 
   const emailValid    = EMAIL_REGEX.test(email);
   const emailsMatch   = prefilled ? true : email === confirmEmail;
   const passwordValid = prefilled ? true : password.length >= 6;
 
+  const phoneDigits = (data.contact?.phone ?? '').replace(/\D/g, '');
+  const phoneValid  = phoneDigits.length >= 8;
   const isValid = !!(
     data.contact?.name &&
     emailValid &&
     emailsMatch &&
     passwordValid &&
-    data.contact?.phone
+    phoneValid
   );
 
   const blur = (field: string) => setTouched((p) => ({ ...p, [field]: true }));
@@ -1084,7 +1192,11 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
     }
 
     if (result.userId && onFinalSubmit) {
-      await onFinalSubmit(result.userId);
+      await onFinalSubmit(result.userId, {
+        isNewUser:        result.isNewUser ?? false,
+        tempPassword:     result.tempPassword,
+        confirmationLink: result.confirmationLink,
+      });
     }
     setLoading(false);
   };
@@ -1171,19 +1283,15 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
           Teléfono <span className="text-red-400">*</span>
         </label>
-        <div className="flex gap-2">
-          <div className="flex items-center gap-2 px-3 h-14 border border-zinc-200 rounded-md bg-white text-sm text-zinc-700 whitespace-nowrap">
-            <span>🇺🇾</span>
-            <span>+598</span>
-          </div>
-          <Input
-            placeholder="000-000-000"
-            type="tel"
-            className="h-14 text-base border-zinc-200 flex-1"
-            value={data.contact?.phone ?? ""}
-            onChange={(e) => updateData({ contact: { ...data.contact, phone: e.target.value } })}
-          />
-        </div>
+        <PhoneInput
+          value={data.contact?.phone ?? ""}
+          onChange={(val) => updateData({ contact: { ...data.contact, phone: val } })}
+          onBlur={() => blur("phone")}
+          hasError={touched.phone && !phoneValid}
+        />
+        {touched.phone && !phoneValid && (
+          <p className="text-xs text-red-500 mt-1">Ingresá un número de teléfono válido.</p>
+        )}
       </div>
 
 

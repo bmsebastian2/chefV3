@@ -1,5 +1,8 @@
+import { after } from 'next/server'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
+import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
 import Link from 'next/link'
 import { logout } from '@/app/auth/actions'
 import { ClipboardList, Plus, LogOut } from 'lucide-react'
@@ -8,6 +11,36 @@ export default async function ClientDashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
+
+  // Activar requests pendientes si el email ya fue confirmado.
+  // Corre cada vez que el usuario visita el dashboard — es idempotente.
+  if (user.email_confirmed_at) {
+    const admin = createAdminClient()
+    const { data: activated, error } = await admin
+      .rpc('activate_pending_requests', { p_user_id: user.id })
+
+    if (error) {
+      console.error('[dashboard] activate pending requests:', error.message)
+    } else if (activated && (activated as any[]).length > 0) {
+      after(async () => {
+        for (const req of activated as any[]) {
+          await notifyMatchingChefs(req.id, {
+            service_type:       req.service_type,
+            occasion:           req.occasion,
+            city:               req.city,
+            event_date_start:   req.event_date_start,
+            event_date_end:     req.event_date_end,
+            event_time:         req.event_time,
+            cuantas_personas:   req.guests_adults,
+            cuisine_type:       req.cuisine_type,
+            budget_min:         req.budget_min,
+            budget_max:         req.budget_max,
+            descripcion_evento: req.descripcion_evento,
+          }).catch((err) => console.error('[dashboard] notifyMatchingChefs:', err))
+        }
+      })
+    }
+  }
 
   const [{ data: userData }, { data: requests }] = await Promise.all([
     supabase.from('users').select('first_name, first_surname, phone').eq('id', user.id).single(),
@@ -28,19 +61,25 @@ export default async function ClientDashboardPage() {
   })()
 
   const STATUS_LABELS: Record<string, string> = {
-    new:        'Nueva',
-    in_process: 'En proceso',
-    paid:       'Pagada',
-    completed:  'Completada',
-    cancelled:  'Cancelada',
+    new:                  'Nueva',
+    active:               'Activa',
+    pending_confirmation: 'Pendiente de confirmación',
+    in_process:           'En proceso',
+    paid:                 'Pagada',
+    completed:            'Completada',
+    cancelled:            'Cancelada',
+    pending:              'Pendiente',
   }
 
   const STATUS_COLORS: Record<string, string> = {
-    new:        'bg-blue-50 text-blue-700',
-    in_process: 'bg-amber-50 text-amber-700',
-    paid:       'bg-emerald-50 text-emerald-700',
-    completed:  'bg-zinc-100 text-zinc-600',
-    cancelled:  'bg-red-50 text-red-700',
+    new:                  'bg-blue-50 text-blue-700',
+    active:               'bg-emerald-50 text-emerald-700',
+    pending_confirmation: 'bg-amber-50 text-amber-700',
+    in_process:           'bg-amber-50 text-amber-700',
+    paid:                 'bg-emerald-50 text-emerald-700',
+    completed:            'bg-zinc-100 text-zinc-600',
+    cancelled:            'bg-red-50 text-red-700',
+    pending:              'bg-amber-50 text-amber-700',
   }
 
   const SERVICE_LABELS: Record<string, string> = {
