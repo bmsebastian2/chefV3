@@ -1,31 +1,27 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/clients'
 
 export function AuthHashHandler() {
-  const [processing, setProcessing] = useState(false)
-  const tokensRef = useRef<{ access: string; refresh: string } | null>(null)
-
-  useLayoutEffect(() => {
+  const [tokens] = useState<{ access: string; refresh: string } | null>(() => {
+    if (typeof window === 'undefined') return null
     const hash = window.location.hash
-    if (!hash || hash.length < 2) return
-
+    if (!hash || hash.length < 2) return null
     const params = new URLSearchParams(hash.slice(1))
     const access  = params.get('access_token')
     const refresh = params.get('refresh_token')
+    return access && refresh ? { access, refresh } : null
+  })
 
-    if (access && refresh) {
-      tokensRef.current = { access, refresh }
-      setProcessing(true)
-      window.history.replaceState(null, '', window.location.pathname)
-    }
-  }, [])
+  useLayoutEffect(() => {
+    if (tokens) window.history.replaceState(null, '', window.location.pathname)
+  }, [tokens])
 
   useEffect(() => {
-    if (!processing || !tokensRef.current) return
+    if (!tokens) return
 
-    const { access, refresh } = tokensRef.current
+    const { access, refresh } = tokens
     const supabase = createClient()
 
     const go = () => window.location.replace('/client-dashboard')
@@ -43,9 +39,9 @@ export function AuthHashHandler() {
         clearTimeout(fallback)
         go()
       })
-  }, [processing])
+  }, [tokens])
 
-  if (!processing) return null
+  if (!tokens) return null
 
   return (
     <div style={{

@@ -14,7 +14,7 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "El Concierge Culinario",
+  title: " GetChef - Chefs Privados de Élite",
   description: "Reserva Epicúrea - Chefs Privados de Élite",
 };
 

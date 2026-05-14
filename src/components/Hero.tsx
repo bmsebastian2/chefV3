@@ -101,7 +101,7 @@ export function Hero() {
             </p>
             <div className="hero-text opacity-0 flex flex-col sm:flex-row gap-4">
               <Link href="/wizard">
-                <Button size="lg" className="bg-accent hover:bg-accent-200 text-white border-none h-8 px-4 text-base shadow-xl shadow-zinc-900/10 transition-all rounded-md">
+                <Button size="lg" className="bg-accent text-white border-none h-8 px-4 text-base shadow-xl shadow-zinc-900/10 transition-all duration-200 rounded-md hover:scale-105 hover:shadow-lg hover:shadow-accent/50">
                   Empezar
                 </Button>
               </Link>           

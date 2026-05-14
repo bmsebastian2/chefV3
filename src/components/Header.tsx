@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, UtensilsCrossed, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginDialog } from "../components/auth/login-dialog";
 
@@ -19,8 +19,9 @@ export function Header() {
   return (
     <header>
       <div className="container mx-auto px-6 h-20 flex items-center justify-between max-w-[1280px]">
-        <Link href="/" className="font-serif text-2xl font-bold tracking-tight text-foreground">
-          GetChef.com
+        <Link href="/" className="flex items-center gap-2 font-serif text-2xl font-bold tracking-tight text-foreground">
+          <UtensilsCrossed className="w-5 h-5 text-accent" />
+          <span>GetChef</span><span className="text-muted-foreground text-lg font-medium">.com</span>
         </Link>
 
         {/* Desktop nav */}
@@ -37,7 +38,7 @@ export function Header() {
           <div className="hidden md:flex items-center gap-3">
             <LoginDialog />
             <Link href="/wizard">
-              <Button className="bg-accent hover:bg-accent-200 text-white border-none h-8 px-4 text-base shadow-xl shadow-zinc-900/10 transition-all rounded-md">
+              <Button className="bg-accent text-white border-none h-8 px-4 text-base shadow-xl shadow-zinc-900/10 transition-all duration-200 rounded-md hover:scale-105 hover:shadow-lg hover:shadow-accent/50">
                 Empezar
               </Button>
             </Link>
@@ -90,7 +91,7 @@ export function Header() {
             <div className="mt-auto flex flex-col gap-3">
               <LoginDialog />
               <Link href="/wizard" onClick={() => setOpen(false)}>
-                <Button className="w-full bg-accent hover:bg-accent-200 text-white border-none h-12 text-base rounded-md">
+                <Button className="w-full bg-accent text-white border-none h-12 text-base rounded-md transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-accent/50">
                   Empezar
                 </Button>
               </Link>
