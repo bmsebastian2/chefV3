@@ -65,8 +65,10 @@ export default async function MenuEditorPage({
     const dishesByCourse: Record<Course, string[]> = {
       starter: [], first_course: [], main: [], dessert: [],
     }
-    ;(dishRows ?? []).forEach((row: { dish_id: string; dishes: { course: string } | null }) => {
-      const c = row.dishes?.course as Course
+    ;(dishRows ?? []).forEach((row) => {
+      const dishes = row.dishes
+      const course = Array.isArray(dishes) ? dishes[0]?.course : (dishes as { course: string } | null)?.course
+      const c = course as Course
       if (c && dishesByCourse[c]) dishesByCourse[c].push(row.dish_id)
     })
 
