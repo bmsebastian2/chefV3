@@ -1,7 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Newsreader } from "next/font/google";
 import "./globals.css";
 import { AuthHashHandler } from "@/components/AuthHashHandler";
+import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -13,9 +15,32 @@ const newsreader = Newsreader({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#18181B",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
-  title: " GetChef - Chefs Privados de Élite",
-  description: "Reserva Epicúrea - Chefs Privados de Élite",
+  title: "GetChef - Chefs Privados de Élite",
+  description: "Reserva chefs privados de élite para tu próxima experiencia gastronómica",
+  applicationName: "GetChef",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "GetChef",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    siteName: "GetChef",
+    title: "GetChef - Chefs Privados de Élite",
+    description: "Reserva chefs privados de élite para tu próxima experiencia gastronómica",
+  },
 };
 
 export default function RootLayout({
@@ -31,6 +56,8 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
         <AuthHashHandler />
         {children}
+        <InstallPrompt />
+        <PushNotificationPrompt />
       </body>
     </html>
   );
