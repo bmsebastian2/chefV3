@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Download, Share2, X, Plus } from "lucide-react";
+import { Download, Share2, X, Plus, MoreVertical } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-type State = "idle" | "android" | "ios" | "installed";
+type State = "idle" | "android-prompt" | "android-manual" | "ios" | "installed";
 
 export function InstallPrompt() {
   const [mounted, setMounted] = useState(false);
@@ -24,33 +24,38 @@ export function InstallPrompt() {
       return;
     }
 
-    // Ya instalada (abierta como standalone)
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    // Ya instalada
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as { standalone?: boolean }).standalone === true;
+    if (isStandalone) {
       setState("installed");
       return;
     }
 
-    // iOS Safari: no soporta beforeinstallprompt, se instala manualmente
+    // iOS Safari: no soporta beforeinstallprompt
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isStandalone = ("standalone" in navigator) && (navigator as { standalone?: boolean }).standalone;
-    if (isIOS && !isStandalone) {
+    if (isIOS) {
       setState("ios");
       return;
     }
 
-    // Evento ya capturado antes de que React montara
+    // Android/Chrome: revisar si el evento ya fue capturado antes de que React montara
     const early = (window as { __pwaPrompt?: BeforeInstallPromptEvent }).__pwaPrompt;
     if (early) {
       setDeferredPrompt(early);
-      setState("android");
+      setState("android-prompt");
       return;
     }
 
-    // Escuchar si todavía no llegó
+    // Sin evento aún → mostrar instrucciones manuales de Chrome
+    setState("android-manual");
+
+    // Igual escuchar por si el evento llega después
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setState("android");
+      setState("android-prompt");
     };
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
@@ -79,10 +84,11 @@ export function InstallPrompt() {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">Instala GetChef</p>
 
-        {state === "android" && (
+        {/* Android con botón directo */}
+        {state === "android-prompt" && (
           <>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Accede rápido desde tu pantalla de inicio, sin abrir el navegador.
+              Accede rápido desde tu pantalla de inicio.
             </p>
             <button
               onClick={install}
@@ -94,19 +100,35 @@ export function InstallPrompt() {
           </>
         )}
 
+        {/* Android sin evento (Chrome engagement check no cumplido) */}
+        {state === "android-manual" && (
+          <>
+            <p className="text-xs text-muted-foreground mt-0.5">Para instalar en Android:</p>
+            <ol className="text-xs text-muted-foreground mt-1.5 space-y-1">
+              <li className="flex items-center gap-1.5">
+                <span className="bg-secondary rounded px-1 py-0.5 shrink-0 font-medium">1</span>
+                Toca <MoreVertical className="w-3 h-3 inline mx-0.5" /> (menú de Chrome)
+              </li>
+              <li className="flex items-center gap-1.5">
+                <span className="bg-secondary rounded px-1 py-0.5 shrink-0 font-medium">2</span>
+                Toca <strong>&ldquo;Instalar app&rdquo;</strong> o &ldquo;Agregar a inicio&rdquo;
+              </li>
+            </ol>
+          </>
+        )}
+
+        {/* iOS Safari */}
         {state === "ios" && (
           <>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Para instalar en iPhone:
-            </p>
-            <ol className="text-xs text-muted-foreground mt-1 space-y-1 list-none">
+            <p className="text-xs text-muted-foreground mt-0.5">Para instalar en iPhone:</p>
+            <ol className="text-xs text-muted-foreground mt-1.5 space-y-1">
               <li className="flex items-center gap-1.5">
-                <span className="bg-secondary rounded px-1 py-0.5 shrink-0">1</span>
+                <span className="bg-secondary rounded px-1 py-0.5 shrink-0 font-medium">1</span>
                 Toca <Share2 className="w-3 h-3 inline mx-0.5" /> (Compartir) en Safari
               </li>
               <li className="flex items-center gap-1.5">
-                <span className="bg-secondary rounded px-1 py-0.5 shrink-0">2</span>
-                Toca <Plus className="w-3 h-3 inline mx-0.5" /> &ldquo;Agregar a inicio&rdquo;
+                <span className="bg-secondary rounded px-1 py-0.5 shrink-0 font-medium">2</span>
+                Toca <Plus className="w-3 h-3 inline mx-0.5" /> <strong>&ldquo;Agregar a inicio&rdquo;</strong>
               </li>
             </ol>
           </>
