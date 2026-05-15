@@ -19,26 +19,24 @@ export default async function ClientDashboardPage() {
     const { data: activated, error } = await admin
       .rpc('activate_pending_requests', { p_user_id: user.id })
 
+    console.log('[dashboard] activate_pending_requests:', JSON.stringify(activated), 'err:', error?.message)
+
     if (error) {
       console.error('[dashboard] activate pending requests:', error.message)
     } else if (activated && (activated as any[]).length > 0) {
-      after(async () => {
-        for (const req of activated as any[]) {
-          await notifyMatchingChefs(req.id, {
-            service_type:       req.service_type,
-            occasion:           req.occasion,
-            city:               req.city,
-            event_date_start:   req.event_date_start,
-            event_date_end:     req.event_date_end,
-            event_time:         req.event_time,
-            cuantas_personas:   req.guests_adults,
-            cuisine_type:       req.cuisine_type,
-            budget_min:         req.budget_min,
-            budget_max:         req.budget_max,
-            descripcion_evento: req.descripcion_evento,
-          }).catch((err) => console.error('[dashboard] notifyMatchingChefs:', err))
-        }
-      })
+      // El RPC puede devolver strings (UUID directo) u objetos con .id según el schema cache
+      const validIds = (activated as any[])
+        .map((r) => (typeof r === 'string' ? r : r?.id))
+        .filter(Boolean) as string[]
+      console.log('[dashboard] validIds a notificar:', validIds)
+      if (validIds.length > 0) {
+        after(async () => {
+          for (const requestId of validIds) {
+            await notifyMatchingChefs(requestId)
+              .catch((err) => console.error('[dashboard] notifyMatchingChefs:', err))
+          }
+        })
+      }
     }
   }
 

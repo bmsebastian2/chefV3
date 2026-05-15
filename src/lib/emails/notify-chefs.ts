@@ -153,18 +153,95 @@ export type RequestData = {
   descripcion_evento: string | null
 }
 
-export async function notifyMatchingChefs(requestId: string, req: RequestData): Promise<void> {
+export async function notifyMatchingChefs(requestId: string, _req?: RequestData): Promise<void> {
+  if (!requestId || requestId === 'undefined') {
+    console.error('[notify-chefs] requestId inválido recibido:', requestId)
+    return
+  }
+
   const admin = createAdminClient()
 
-  const { data, error: chefsError } = await admin
-    .rpc('get_matching_chefs_for_request', { p_request_id: requestId })
+  // Siempre busca los datos frescos desde la DB — evita depender del caller
+  const { data: requestRow, error: reqError } = await admin
+    .from('service_requests')
+    .select('service_type, occasion, city, event_date_start, event_date_end, event_time, guests_adults, cuisine_type, budget_min, budget_max, descripcion_evento')
+    .eq('id', requestId)
+    .single()
+
+  if (reqError || !requestRow) {
+    console.error('[notify-chefs] Could not fetch request data:', reqError)
+    return
+  }
+
+  const req: RequestData = {
+    service_type:       requestRow.service_type,
+    occasion:           requestRow.occasion,
+    city:               requestRow.city,
+    event_date_start:   requestRow.event_date_start,
+    event_date_end:     requestRow.event_date_end,
+    event_time:         requestRow.event_time,
+    cuantas_personas:   requestRow.guests_adults,
+    cuisine_type:       requestRow.cuisine_type,
+    budget_min:         requestRow.budget_min,
+    budget_max:         requestRow.budget_max,
+    descripcion_evento: requestRow.descripcion_evento,
+  }
+
+  const { data: rows, error: chefsError } = await admin
+    .from('chef_profiles')
+    .select(`
+      city,
+      users!inner ( email, first_name ),
+      request_settings!inner (
+        accepts_single, accepts_multiple, accepts_weekly,
+        min_guests, max_guests, min_budget, advance_days
+      )
+    `)
+    .eq('is_active', true)
 
   if (chefsError) {
     console.error('[notify-chefs] Error fetching chefs:', chefsError)
     return
   }
 
-  const chefs: MatchingChef[] = data ?? []
+  const vCity      = req.city
+  const vType      = req.service_type
+  const vGuests    = req.cuantas_personas
+  const vBudgetMax = req.budget_max
+  const vDate      = req.event_date_start
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const chefs: MatchingChef[] = ((rows ?? []) as any[])
+    .filter((cp) => {
+      const rs = Array.isArray(cp.request_settings) ? cp.request_settings[0] : cp.request_settings
+      if (!rs) return false
+
+      if (cp.city && vCity &&
+          cp.city.toLowerCase().trim() !== vCity.toLowerCase().trim()) return false
+
+      if (vType === 'single'   && !rs.accepts_single)   return false
+      if (vType === 'multiple' && !rs.accepts_multiple) return false
+      if (vType === 'weekly'   && !rs.accepts_weekly)   return false
+
+      if (vGuests != null) {
+        if (vGuests < (rs.min_guests ?? 1) || vGuests > (rs.max_guests ?? 9999)) return false
+      }
+
+      if (rs.min_budget != null && vBudgetMax != null && vBudgetMax < rs.min_budget) return false
+
+      const adv = rs.advance_days ?? 0
+      if (adv > 0 && vDate) {
+        const minDate = new Date()
+        minDate.setDate(minDate.getDate() + adv)
+        if (vDate < minDate.toISOString().split('T')[0]) return false
+      }
+
+      return true
+    })
+    .map((cp) => {
+      const u = Array.isArray(cp.users) ? cp.users[0] : cp.users
+      return { email: u.email as string, first_name: u.first_name as string }
+    })
 
   if (chefs.length === 0) {
     console.log('[notify-chefs] No matching chefs for request', requestId)

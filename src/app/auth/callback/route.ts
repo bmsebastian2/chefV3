@@ -34,31 +34,34 @@ export async function GET(request: Request) {
   if (userId) {
     const admin = createAdminClient()
 
-    const { data: activated, error: updateErr } = await admin
+    // 1. Obtener los IDs de solicitudes pendientes ANTES de actualizar
+    const { data: pending, error: pendingErr } = await admin
+      .from('service_requests')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'pending_confirmation')
+
+    console.log('[callback] pending select:', JSON.stringify(pending), 'err:', pendingErr?.message)
+
+    // 2. Actualizar el status a 'new'
+    const { error: updateErr } = await admin
       .from('service_requests')
       .update({ status: 'new' })
       .eq('user_id', userId)
       .eq('status', 'pending_confirmation')
-      .select('id, service_type, occasion, city, event_date_start, event_date_end, event_time, guests_adults, cuisine_type, budget_min, budget_max, descripcion_evento')
 
     if (updateErr) {
       console.error('[callback] update service_requests:', updateErr.message)
-    } else if (activated && activated.length > 0) {
+    }
+
+    const requestIds = (pending ?? []).map((r) => r.id as string).filter(Boolean)
+    console.log('[callback] requestIds a notificar:', requestIds)
+
+    if (requestIds.length > 0) {
       after(async () => {
-        for (const req of activated) {
-          await notifyMatchingChefs(req.id, {
-            service_type:       req.service_type,
-            occasion:           req.occasion,
-            city:               req.city,
-            event_date_start:   req.event_date_start,
-            event_date_end:     req.event_date_end,
-            event_time:         req.event_time,
-            cuantas_personas:   req.guests_adults,
-            cuisine_type:       req.cuisine_type,
-            budget_min:         req.budget_min,
-            budget_max:         req.budget_max,
-            descripcion_evento: req.descripcion_evento,
-          }).catch((err) => console.error('[callback] notifyMatchingChefs:', err))
+        for (const requestId of requestIds) {
+          await notifyMatchingChefs(requestId)
+            .catch((err) => console.error('[callback] notifyMatchingChefs:', err))
         }
       })
     }
