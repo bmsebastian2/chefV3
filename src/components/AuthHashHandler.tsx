@@ -1,22 +1,23 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/clients'
 
 export function AuthHashHandler() {
-  const [tokens] = useState<{ access: string; refresh: string } | null>(() => {
-    if (typeof window === 'undefined') return null
+  const [tokens, setTokens] = useState<{ access: string; refresh: string } | null>(null)
+
+  // Leer el hash solo en el cliente, después de la hidratación
+  useEffect(() => {
     const hash = window.location.hash
-    if (!hash || hash.length < 2) return null
+    if (!hash || hash.length < 2) return
     const params = new URLSearchParams(hash.slice(1))
     const access  = params.get('access_token')
     const refresh = params.get('refresh_token')
-    return access && refresh ? { access, refresh } : null
-  })
-
-  useLayoutEffect(() => {
-    if (tokens) window.history.replaceState(null, '', window.location.pathname)
-  }, [tokens])
+    if (access && refresh) {
+      window.history.replaceState(null, '', window.location.pathname)
+      setTokens({ access, refresh })
+    }
+  }, [])
 
   useEffect(() => {
     if (!tokens) return

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { StepProps, MealSlot } from "./types";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { registerOrVerifyClient } from "@/app/wizard/actions";
 import { Calendar } from "@/components/ui/calendar";
@@ -19,14 +20,14 @@ import { Country as LibCountry } from "country-state-city";
 
 export function StepServiceType({ data, updateData, nextStep, onService3Selected, onServiceTypeSelected }: StepProps) {
   const options = [
-    { id: 1, title: "Experiencia Culinaria Única", desc: "Un chef exclusivo para una comida o cena especial de un día." },
-    { id: 2, title: "Varios Servicios", desc: "Un chef disponible para múltiples comidas durante unas vacaciones o evento continuo." },
-    { id: 3, title: "Comidas Semanales", desc: "Un chef que prepara tus comidas cada semana." }
+    { id: 1, title: "Experiencia Culinaria Única", desc: "Un chef exclusivo para una comida o cena especial de un día.", icon: "/unico.png" },
+    { id: 2, title: "Varios Servicios", desc: "Un chef disponible para múltiples comidas durante unas vacaciones o evento continuo.", icon: "/varios 4.png" },
+    { id: 3, title: "Comidas Semanales", desc: "Un chef que prepara tus comidas cada semana.", icon: "/date 1.png" }
   ];
 
   const handleSelectService = (id: number) => {
     updateData({ serviceType: id.toString() });
-    
+
     if (id === 3 && onService3Selected) {
       onService3Selected();
     } else if (onServiceTypeSelected) {
@@ -46,10 +47,15 @@ export function StepServiceType({ data, updateData, nextStep, onService3Selected
           key={opt.id}
           type="button"
           onClick={() => handleSelectService(opt.id)}
-          className={`flex flex-col items-start p-6 rounded-md border text-left transition-all ${data.serviceType === opt.id.toString() ? 'border-accent bg-accent/5' : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'}`}
+          className={`flex items-center gap-4 p-6 rounded-md border text-left transition-all ${data.serviceType === opt.id.toString() ? 'border-accent bg-accent/5' : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'}`}
         >
-          <span className={`font-semibold text-lg mb-1 ${data.serviceType === opt.id.toString() ? 'text-accent' : 'text-zinc-900'}`}>{opt.title}</span>
-          <span className="text-sm text-zinc-500 font-sans">{opt.desc}</span>
+          {opt.icon && (
+            <Image src={opt.icon} alt="" width={48} height={48} className="shrink-0" />
+          )}
+          <div className="flex flex-col">
+            <span className={`font-semibold text-lg mb-1 ${data.serviceType === opt.id.toString() ? 'text-accent' : 'text-zinc-900'}`}>{opt.title}</span>
+            <span className="text-sm text-zinc-500 font-sans">{opt.desc}</span>
+          </div>
         </button>
       ))}
     </div>
@@ -349,7 +355,7 @@ export function StepCuisine({ data, updateData, nextStep }: StepProps) {
                   : "border-zinc-200 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
               }`}
             >
-              <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-400"}`} />
+              <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-900"}`} />
               <span className="text-sm font-medium">{label}</span>
             </button>
           );
@@ -819,7 +825,7 @@ export function StepOccasion1({ data, updateData, nextStep }: StepProps) {
                   : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
               }`}
             >
-              <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-400"}`} />
+              <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-900"}`} />
               <span className={`flex-1 text-sm font-medium ${active ? "text-accent" : "text-zinc-700"}`}>{label}</span>
               <RadioCircle active={active} />
             </button>
@@ -840,7 +846,7 @@ const GUESTS_OPTIONS = [
 
 export function StepGuestsStatic({ data, updateData, nextStep }: StepProps) {
   return (
-    <div className="flex flex-col gap-3 max-w-md mx-auto w-full">
+    <div className="flex flex-col gap-3 max-w-xs mx-auto w-full">
       <p className="text-center text-zinc-500 text-sm mb-2">
         La tarifa del chef es fija, por lo que el precio por persona varía según el tamaño del grupo.
       </p>
@@ -878,7 +884,7 @@ export function StepMealTime({ data, updateData, nextStep }: StepProps) {
   ];
 
   return (
-    <div className="flex flex-col gap-3 max-w-md mx-auto w-full">
+    <div className="flex flex-col gap-3 max-w-xs mx-auto w-full">
       {options.map(({ value, label, Icon }) => {
         const active = data.mealTime === value;
         return (
@@ -892,7 +898,7 @@ export function StepMealTime({ data, updateData, nextStep }: StepProps) {
                 : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
             }`}
           >
-            <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-400"}`} />
+            <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-900"}`} />
             <span className={`flex-1 text-sm font-medium text-left ${active ? "text-accent" : "text-zinc-700"}`}>{label}</span>
             <RadioCircle active={active} />
           </button>
@@ -923,6 +929,7 @@ export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
           numberOfMonths={3}
           locale={esRDP}
           className="mx-auto"
+          classNames={{ day_button: "cursor-pointer" }}
         />
       </div>
       <HintBox />
@@ -1149,25 +1156,14 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
   const [error, setError]     = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const prefilled = !!data.contact?.prefilled;
-  const email     = data.contact?.email    ?? "";
-  const password  = data.contact?.password ?? "";
+  const email = data.contact?.email ?? "";
 
-  const [confirmEmail, setConfirmEmail] = useState(() =>
-    prefilled && email ? email : ""
-  );
-
-  const emailValid    = EMAIL_REGEX.test(email);
-  const emailsMatch   = prefilled ? true : email === confirmEmail;
-  const passwordValid = prefilled ? true : password.length >= 6;
-
-  const phoneDigits = (data.contact?.phone ?? '').replace(/\D/g, '');
-  const phoneValid  = phoneDigits.length >= 8;
+  const emailValid  = EMAIL_REGEX.test(email);
+  const { local: phoneLocal } = parsePhone(data.contact?.phone ?? '');
+  const phoneValid  = phoneLocal.replace(/\D/g, '').length >= 6;
   const isValid = !!(
     data.contact?.name &&
     emailValid &&
-    emailsMatch &&
-    passwordValid &&
     phoneValid
   );
 
@@ -1181,8 +1177,7 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
     const result = await registerOrVerifyClient(
       data.contact!.name!,
       data.contact!.email!,
-      data.contact!.phone!,
-      prefilled ? undefined : data.contact!.password!
+      data.contact!.phone!
     );
 
     if (result.error) {
@@ -1239,44 +1234,6 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         )}
       </div>
 
-      {/* Confirmar email y contraseña — solo para usuarios no autenticados */}
-      {!prefilled && (
-        <>
-          <div>
-            <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
-              Confirmar email <span className="text-red-400">*</span>
-            </label>
-            <Input
-              placeholder="Repetí tu email"
-              type="email"
-              className={`h-14 text-base ${touched.confirmEmail && !emailsMatch ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
-              value={confirmEmail}
-              onChange={(e) => setConfirmEmail(e.target.value)}
-              onBlur={() => blur("confirmEmail")}
-            />
-            {touched.confirmEmail && !emailsMatch && (
-              <p className="text-xs text-red-500 mt-1">Los emails no coinciden.</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
-              Contraseña <span className="text-red-400">*</span>
-            </label>
-            <Input
-              placeholder="Mínimo 6 caracteres"
-              type="password"
-              className={`h-14 text-base ${touched.password && !passwordValid ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
-              value={password}
-              onChange={(e) => updateData({ contact: { ...data.contact, password: e.target.value } })}
-              onBlur={() => blur("password")}
-            />
-            {touched.password && !passwordValid && (
-              <p className="text-xs text-red-500 mt-1">La contraseña debe tener al menos 6 caracteres.</p>
-            )}
-          </div>
-        </>
-      )}
 
       {/* Teléfono */}
       <div>
@@ -1301,7 +1258,7 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         disabled={!isValid || loading}
         onClick={handleSubmit}
         size="lg"
-        className="w-full h-14 bg-accent text-zinc-900 font-bold text-base rounded-md mt-2 hover:bg-accent/90 shadow-[0_8px_20px_rgb(224,159,62,0.2)] transition-all disabled:opacity-50"
+        className="w-auto mx-auto px-10 h-14 bg-accent text-zinc-900 font-bold text-base rounded-2xl mt-2 hover:bg-accent/90 shadow-[0_8px_20px_rgb(224,159,62,0.2)] transition-all disabled:opacity-50"
       >
         {loading ? "Enviando..." : "Solicitar chefs y menús"}
       </Button>
