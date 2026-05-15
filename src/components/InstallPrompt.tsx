@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore, useState } from "react";
 import { Download, Share2, X, Plus, MoreVertical } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -8,74 +8,61 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-type State = "idle" | "android-prompt" | "android-manual" | "ios" | "installed";
+// Estado externo al componente (vive fuera del ciclo de React)
+let _deferredPrompt: BeforeInstallPromptEvent | null =
+  typeof window !== "undefined"
+    ? ((window as { __pwaPrompt?: BeforeInstallPromptEvent }).__pwaPrompt ?? null)
+    : null;
+
+type UIState = "hidden" | "android-prompt" | "android-manual" | "ios";
+
+function subscribe(onChange: () => void) {
+  const handler = (e: Event) => {
+    e.preventDefault();
+    _deferredPrompt = e as BeforeInstallPromptEvent;
+    onChange();
+  };
+  window.addEventListener("beforeinstallprompt", handler);
+  return () => window.removeEventListener("beforeinstallprompt", handler);
+}
+
+function getClientSnapshot(): UIState {
+  if (sessionStorage.getItem("install-dismissed")) return "hidden";
+  if (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as { standalone?: boolean }).standalone === true
+  )
+    return "hidden";
+  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) return "ios";
+  if (_deferredPrompt) return "android-prompt";
+  return "android-manual";
+}
 
 export function InstallPrompt() {
-  const [mounted, setMounted] = useState(false);
-  const [state, setState] = useState<State>("idle");
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [dismissed, setDismissed] = useState(false);
+  const uiState = useSyncExternalStore(
+    subscribe,
+    getClientSnapshot,
+    () => "hidden" as UIState // servidor: no renderizar nada
+  );
 
-  useEffect(() => {
-    setMounted(true);
-
-    if (sessionStorage.getItem("install-dismissed")) {
-      setDismissed(true);
-      return;
-    }
-
-    // Ya instalada
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (navigator as { standalone?: boolean }).standalone === true;
-    if (isStandalone) {
-      setState("installed");
-      return;
-    }
-
-    // iOS Safari: no soporta beforeinstallprompt
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      setState("ios");
-      return;
-    }
-
-    // Android/Chrome: revisar si el evento ya fue capturado antes de que React montara
-    const early = (window as { __pwaPrompt?: BeforeInstallPromptEvent }).__pwaPrompt;
-    if (early) {
-      setDeferredPrompt(early);
-      setState("android-prompt");
-      return;
-    }
-
-    // Sin evento aún → mostrar instrucciones manuales de Chrome
-    setState("android-manual");
-
-    // Igual escuchar por si el evento llega después
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setState("android-prompt");
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
+  // Para forzar re-evaluación del snapshot tras dismiss/install
+  const [, tick] = useState(0);
 
   async function install() {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") setState("installed");
-    setDeferredPrompt(null);
-    dismiss();
+    if (!_deferredPrompt) return;
+    await _deferredPrompt.prompt();
+    const { outcome } = await _deferredPrompt.userChoice;
+    _deferredPrompt = null;
+    if (outcome === "accepted") sessionStorage.setItem("install-dismissed", "1");
+    tick((n) => n + 1);
   }
 
   function dismiss() {
     sessionStorage.setItem("install-dismissed", "1");
-    setDismissed(true);
+    tick((n) => n + 1);
   }
 
-  if (!mounted || dismissed || state === "idle" || state === "installed") return null;
+  if (uiState === "hidden") return null;
 
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 bg-card border border-border rounded-2xl shadow-lg p-4 flex items-start gap-3 animate-in slide-in-from-bottom-4 fade-in duration-300">
@@ -84,8 +71,7 @@ export function InstallPrompt() {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">Instala GetChef</p>
 
-        {/* Android con botón directo */}
-        {state === "android-prompt" && (
+        {uiState === "android-prompt" && (
           <>
             <p className="text-xs text-muted-foreground mt-0.5">
               Accede rápido desde tu pantalla de inicio.
@@ -100,8 +86,7 @@ export function InstallPrompt() {
           </>
         )}
 
-        {/* Android sin evento (Chrome engagement check no cumplido) */}
-        {state === "android-manual" && (
+        {uiState === "android-manual" && (
           <>
             <p className="text-xs text-muted-foreground mt-0.5">Para instalar en Android:</p>
             <ol className="text-xs text-muted-foreground mt-1.5 space-y-1">
@@ -117,8 +102,7 @@ export function InstallPrompt() {
           </>
         )}
 
-        {/* iOS Safari */}
-        {state === "ios" && (
+        {uiState === "ios" && (
           <>
             <p className="text-xs text-muted-foreground mt-0.5">Para instalar en iPhone:</p>
             <ol className="text-xs text-muted-foreground mt-1.5 space-y-1">
@@ -128,7 +112,8 @@ export function InstallPrompt() {
               </li>
               <li className="flex items-center gap-1.5">
                 <span className="bg-secondary rounded px-1 py-0.5 shrink-0 font-medium">2</span>
-                Toca <Plus className="w-3 h-3 inline mx-0.5" /> <strong>&ldquo;Agregar a inicio&rdquo;</strong>
+                Toca <Plus className="w-3 h-3 inline mx-0.5" />{" "}
+                <strong>&ldquo;Agregar a inicio&rdquo;</strong>
               </li>
             </ol>
           </>
