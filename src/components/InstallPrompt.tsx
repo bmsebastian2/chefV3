@@ -38,7 +38,15 @@ export function InstallPrompt() {
       return;
     }
 
-    // Android/Chrome/Edge: capturar el evento de instalación
+    // Evento ya capturado antes de que React montara
+    const early = (window as { __pwaPrompt?: BeforeInstallPromptEvent }).__pwaPrompt;
+    if (early) {
+      setDeferredPrompt(early);
+      setState("android");
+      return;
+    }
+
+    // Escuchar si todavía no llegó
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);

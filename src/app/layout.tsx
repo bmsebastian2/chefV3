@@ -53,6 +53,14 @@ export default function RootLayout({
       lang="es"
       className={`${manrope.variable} ${newsreader.variable} h-full antialiased`}
     >
+      <head>
+        {/* Captura beforeinstallprompt antes de que React monte */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaPrompt=e;});`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
         <AuthHashHandler />
         {children}
