@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
-import webpush from "web-push";
 import { createAdminClient } from "@/utils/supabase/admin";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+export const dynamic = "force-dynamic";
 
 export interface PushPayload {
   title: string;
@@ -20,6 +15,13 @@ export async function POST(request: Request) {
   if (apiKey !== process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
+
+  const webpush = (await import("web-push")).default;
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT!,
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
+  );
 
   const { title, body, url = "/", userIds }: PushPayload = await request.json();
 
