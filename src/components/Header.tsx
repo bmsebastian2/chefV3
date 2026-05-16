@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Menu, UtensilsCrossed, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginDialog } from "../components/auth/login-dialog";
+import { InstallButton } from "@/components/InstallButton";
 
 const navLinks = [
   { href: "#experiencia", label: "La Experiencia" },
@@ -36,6 +37,7 @@ export function Header() {
         <div className="flex items-center gap-3">
           {/* Login + Empezar — desktop only */}
           <div className="hidden md:flex items-center gap-3">
+            <InstallButton />
             <LoginDialog />
             <Link href="/wizard">
               <Button className="bg-accent text-white border-none h-8 px-4 text-base shadow-xl shadow-zinc-900/10 transition-all duration-200 rounded-md hover:scale-105 hover:shadow-lg hover:shadow-accent/50">
@@ -89,6 +91,7 @@ export function Header() {
             </nav>
 
             <div className="mt-auto flex flex-col gap-3">
+              <InstallButton className="justify-center py-2 border border-border rounded-lg hover:bg-secondary" />
               <LoginDialog />
               <Link href="/wizard" onClick={() => setOpen(false)}>
                 <Button className="w-full bg-accent text-white border-none h-12 text-base rounded-md transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-accent/50">
