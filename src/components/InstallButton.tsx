@@ -1,62 +1,24 @@
 "use client";
 
 import { useSyncExternalStore, useState } from "react";
-import { Download, Share2, Plus, MoreVertical, X } from "lucide-react";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
-
-// Compartido con InstallPrompt — misma referencia global
-declare global {
-  interface Window {
-    __pwaPrompt?: BeforeInstallPromptEvent;
-  }
-}
-
-let _prompt: BeforeInstallPromptEvent | null =
-  typeof window !== "undefined" ? (window.__pwaPrompt ?? null) : null;
-
-function subscribe(cb: () => void) {
-  const handler = (e: Event) => {
-    e.preventDefault();
-    _prompt = e as BeforeInstallPromptEvent;
-    cb();
-  };
-  window.addEventListener("beforeinstallprompt", handler);
-  return () => window.removeEventListener("beforeinstallprompt", handler);
-}
-
-type Snap = "hidden" | "ready" | "manual-samsung" | "manual-chrome" | "ios";
-
-function getSnapshot(): Snap {
-  if (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as { standalone?: boolean }).standalone === true
-  )
-    return "hidden";
-  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) return "ios";
-  if (_prompt) return "ready";
-  if (/SamsungBrowser/.test(navigator.userAgent)) return "manual-samsung";
-  return "manual-chrome";
-}
+import { Download, Share2, Plus, MoreVertical, X, Monitor } from "lucide-react";
+import { pwaSubscribe, pwaSnapshot, pwaServerSnapshot, pwaInstall } from "@/lib/pwa";
 
 export function InstallButton({ className = "" }: { className?: string }) {
-  const snap = useSyncExternalStore(subscribe, getSnapshot, () => "hidden" as Snap);
+  const snap = useSyncExternalStore(pwaSubscribe, pwaSnapshot, pwaServerSnapshot);
   const [modal, setModal] = useState(false);
   const [, tick] = useState(0);
 
   if (snap === "hidden") return null;
 
   async function handleClick() {
-    if (snap === "ready" && _prompt) {
-      await _prompt.prompt();
-      const { outcome } = await _prompt.userChoice;
-      _prompt = null;
+    if (snap === "prompt") {
+      // Chrome tiene el evento listo → diálogo nativo directo
+      await pwaInstall();
       tick((n) => n + 1);
-      if (outcome === "accepted") return;
+      return;
     }
+    // iOS / Samsung / Chrome sin evento → mostrar instrucciones
     setModal(true);
   }
 
@@ -86,33 +48,53 @@ export function InstallButton({ className = "" }: { className?: string }) {
               </button>
             </div>
 
-            {(snap === "manual-chrome" || snap === "ready") && (
-              <ol className="text-sm text-muted-foreground space-y-2">
+            {snap === "manual-chrome-desktop" && (
+              <ol className="text-sm text-muted-foreground space-y-3">
+                <li className="flex items-start gap-2">
+                  <span className="bg-secondary rounded px-1.5 py-0.5 font-medium shrink-0">1</span>
+                  <span>
+                    Busca el ícono <Monitor className="w-4 h-4 inline mx-0.5 align-text-bottom" /> en
+                    el extremo derecho de la barra de direcciones
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-secondary rounded px-1.5 py-0.5 font-medium shrink-0">2</span>
+                  Haz clic y selecciona{" "}
+                  <strong className="text-foreground">&ldquo;Instalar&rdquo;</strong>
+                </li>
+              </ol>
+            )}
+
+            {snap === "manual-chrome-mobile" && (
+              <ol className="text-sm text-muted-foreground space-y-3">
                 <li className="flex items-center gap-2">
                   <span className="bg-secondary rounded px-1.5 py-0.5 font-medium shrink-0">1</span>
                   Toca <MoreVertical className="w-4 h-4 inline mx-1" /> arriba a la derecha
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="bg-secondary rounded px-1.5 py-0.5 font-medium shrink-0">2</span>
-                  Selecciona <strong className="text-foreground">&ldquo;Instalar app&rdquo;</strong>
+                  Selecciona{" "}
+                  <strong className="text-foreground">&ldquo;Instalar app&rdquo;</strong>
                 </li>
               </ol>
             )}
 
             {snap === "manual-samsung" && (
               <>
-                <ol className="text-sm text-muted-foreground space-y-2">
+                <ol className="text-sm text-muted-foreground space-y-3">
                   <li className="flex items-start gap-2">
                     <span className="bg-secondary rounded px-1.5 py-0.5 font-medium shrink-0">1</span>
                     Toca el menú <strong className="text-foreground">≡</strong> o los 3 puntos
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="bg-secondary rounded px-1.5 py-0.5 font-medium shrink-0">2</span>
-                    Toca <strong className="text-foreground">&ldquo;Agregar página a&rdquo;</strong>
+                    Toca{" "}
+                    <strong className="text-foreground">&ldquo;Agregar página a&rdquo;</strong>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="bg-secondary rounded px-1.5 py-0.5 font-medium shrink-0">3</span>
-                    Elige <strong className="text-foreground">&ldquo;Pantalla de inicio&rdquo;</strong>
+                    Elige{" "}
+                    <strong className="text-foreground">&ldquo;Pantalla de inicio&rdquo;</strong>
                   </li>
                 </ol>
                 <p className="text-xs text-muted-foreground italic">
@@ -122,7 +104,7 @@ export function InstallButton({ className = "" }: { className?: string }) {
             )}
 
             {snap === "ios" && (
-              <ol className="text-sm text-muted-foreground space-y-2">
+              <ol className="text-sm text-muted-foreground space-y-3">
                 <li className="flex items-center gap-2">
                   <span className="bg-secondary rounded px-1.5 py-0.5 font-medium shrink-0">1</span>
                   Toca <Share2 className="w-4 h-4 inline mx-1" /> (Compartir) en Safari

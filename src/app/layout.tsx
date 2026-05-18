@@ -3,7 +3,6 @@ import { Manrope, Newsreader } from "next/font/google";
 import "./globals.css";
 import { AuthHashHandler } from "@/components/AuthHashHandler";
 import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
-import { InstallPrompt } from "@/components/InstallPrompt";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 const manrope = Manrope({
@@ -66,7 +65,6 @@ export default function RootLayout({
         <AuthHashHandler />
         {children}
         <ServiceWorkerRegister />
-        <InstallPrompt />
         <PushNotificationPrompt />
       </body>
     </html>
