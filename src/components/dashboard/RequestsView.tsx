@@ -2,9 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Users, MapPin, ChefHat, AlertCircle, UtensilsCrossed } from "lucide-react";
+import { CalendarDays, Users, MapPin, ChefHat, UtensilsCrossed, Lock } from "lucide-react";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
+
+export type MissingRequirement = {
+  key:      string
+  label:    string
+  current:  number
+  required: number
+  href:     string
+}
 
 export type RequestCard = {
   id:               string
@@ -58,14 +66,14 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
 };
 
 const OCCASION_LABELS: Record<string, string> = {
-  birthday:         "Cumpleaños",
-  bachelor_party:   "Despedida de soltero/a",
-  romantic_dinner:  "Cena romántica",
-  gastronomic:      "Experiencia gastronómica",
-  family_reunion:   "Reunión familiar",
-  friends_gathering:"Reunión de amigos",
-  corporate:        "Corporativo",
-  other:            "Otro",
+  birthday:          "Cumpleaños",
+  bachelor_party:    "Despedida de soltero/a",
+  romantic_dinner:   "Cena romántica",
+  gastronomic:       "Experiencia gastronómica",
+  family_reunion:    "Reunión familiar",
+  friends_gathering: "Reunión de amigos",
+  corporate:         "Corporativo",
+  other:             "Otro",
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -86,6 +94,64 @@ function formatBudget(min: number | null, max: number | null) {
   return `desde $${fmt(min!)}`;
 }
 
+// ── Gate de requisitos ─────────────────────────────────────────────────────────
+
+function RequirementItem({ item }: { item: MissingRequirement }) {
+  const pct = Math.min(100, Math.round((item.current / item.required) * 100));
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-sm font-medium text-zinc-800">{item.label}</span>
+        <span className="text-xs tabular-nums text-zinc-400">
+          {item.current} / {item.required}
+        </span>
+      </div>
+      <div className="h-1.5 bg-zinc-200 rounded-full mb-2">
+        <div
+          className="h-full bg-accent rounded-full transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <Link
+        href={item.href}
+        className="text-xs font-medium text-accent hover:underline underline-offset-2"
+      >
+        Completar →
+      </Link>
+    </div>
+  );
+}
+
+function RequestsGate({ missing }: { missing: MissingRequirement[] }) {
+  return (
+    <div className="p-6 md:p-10">
+      <div className="mb-6">
+        <h1 className="font-serif text-2xl font-semibold text-zinc-900">Solicitudes</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Solicitudes de servicio que coinciden con tus preferencias.
+        </p>
+      </div>
+
+      <div className="max-w-sm mx-auto text-center py-10">
+        <div className="w-14 h-14 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-5">
+          <Lock className="w-7 h-7 text-zinc-400" />
+        </div>
+        <h2 className="font-semibold text-zinc-900 text-lg mb-2">
+          Completá tu perfil para recibir solicitudes
+        </h2>
+        <p className="text-sm text-zinc-500 mb-8">
+          Los clientes podrán encontrarte una vez que cumplas con los siguientes requisitos.
+        </p>
+        <div className="text-left space-y-6 bg-zinc-50 rounded-xl p-6 border border-zinc-200">
+          {missing.map((item) => (
+            <RequirementItem key={item.key} item={item} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Card ───────────────────────────────────────────────────────────────────────
 
 function RequestCardItem({ req }: { req: RequestCard }) {
@@ -98,14 +164,15 @@ function RequestCardItem({ req }: { req: RequestCard }) {
   if (req.guests_adults) guestParts.push(`${req.guests_adults} adulto${req.guests_adults !== 1 ? 's' : ''}`);
   if (req.guests_teens)  guestParts.push(`${req.guests_teens} adolescente${req.guests_teens !== 1 ? 's' : ''}`);
   if (req.guests_kids)   guestParts.push(`${req.guests_kids} niño${req.guests_kids !== 1 ? 's' : ''}`);
-  const guestStr = guestParts.length > 0 ? guestParts.join(', ') : req.cuantas_personas ? `${req.cuantas_personas} personas` : null;
+  const guestStr = guestParts.length > 0
+    ? guestParts.join(', ')
+    : req.cuantas_personas ? `${req.cuantas_personas} personas` : null;
 
   return (
     <Link
       href={`/dashboard/requests/${req.id}`}
       className="block border border-zinc-200 rounded-xl p-5 bg-white hover:border-accent/40 hover:shadow-sm transition-all"
     >
-      {/* Status + date */}
       <div className="flex items-center justify-between gap-2 mb-3">
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${STATUS_COLORS[req.status] ?? "bg-zinc-100 text-zinc-600 border-zinc-200"}`}>
           {STATUS_LABELS[req.status] ?? req.status}
@@ -116,7 +183,6 @@ function RequestCardItem({ req }: { req: RequestCard }) {
         </span>
       </div>
 
-      {/* Client name */}
       <p className="font-semibold text-zinc-900 text-sm">{req.client_name}</p>
       <p className="text-xs text-zinc-500 mt-0.5 mb-3">
         {SERVICE_TYPE_LABELS[req.service_type] ?? req.service_type}
@@ -124,7 +190,6 @@ function RequestCardItem({ req }: { req: RequestCard }) {
         {budget && <> · <span className="font-medium text-zinc-700">{budget}</span></>}
       </p>
 
-      {/* Details */}
       <div className="space-y-1.5">
         {guestStr && (
           <div className="flex items-center gap-2 text-xs text-zinc-500">
@@ -158,13 +223,19 @@ function RequestCardItem({ req }: { req: RequestCard }) {
 // ── Vista principal ────────────────────────────────────────────────────────────
 
 export function RequestsView({
+  canReceive,
+  missing,
   requests,
-  profileComplete,
 }: {
-  requests:        RequestCard[]
-  profileComplete: boolean
+  canReceive: boolean
+  missing:    MissingRequirement[]
+  requests:   RequestCard[]
 }) {
   const [activeTab, setActiveTab] = useState<string>("all");
+
+  if (!canReceive) {
+    return <RequestsGate missing={missing} />;
+  }
 
   const filtered = activeTab === "all"
     ? requests
@@ -172,7 +243,6 @@ export function RequestsView({
 
   return (
     <div className="p-6 md:p-10">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="font-serif text-2xl font-semibold text-zinc-900">Solicitudes</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -180,20 +250,6 @@ export function RequestsView({
         </p>
       </div>
 
-      {/* Profile incomplete banner */}
-      {!profileComplete && (
-        <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 text-sm text-amber-800">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>
-            Completá tu perfil para que los clientes puedan encontrarte.{" "}
-            <Link href="/dashboard" className="font-semibold underline underline-offset-2">
-              Ver progreso
-            </Link>
-          </span>
-        </div>
-      )}
-
-      {/* Tabs */}
       <div className="flex gap-1 border-b border-zinc-200 mb-6 overflow-x-auto">
         {STATUS_TABS.map((tab) => {
           const count = tab.key === "all"
@@ -224,7 +280,6 @@ export function RequestsView({
         })}
       </div>
 
-      {/* Grid de cards */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-zinc-400">
           <ChefHat className="w-10 h-10 mx-auto mb-3 opacity-30" />

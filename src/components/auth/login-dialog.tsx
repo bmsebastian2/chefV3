@@ -54,6 +54,7 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
             <Input
               name="password"
               type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
               placeholder="Contraseña *"
               required
               className="rounded-full px-5 h-12 bg-muted border-0 pr-12"

@@ -22,8 +22,13 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
 
-  // Rutas de API y auth: siempre red
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) return;
+  // Rutas de API, auth y RSC de Next.js: siempre red, sin SW
+  if (
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/auth/") ||
+    url.searchParams.has("_rsc") ||
+    (url.pathname.startsWith("/_next/") && !url.pathname.startsWith("/_next/static/"))
+  ) return;
 
   if (event.request.mode === "navigate") {
     // Navegación: intenta red, cae a /offline si falla
@@ -31,7 +36,7 @@ self.addEventListener("fetch", (event) => {
       fetch(event.request).catch(() => caches.match(OFFLINE_URL))
     );
   } else {
-    // Assets: cache primero, luego red
+    // Assets estáticos: cache primero, luego red
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
@@ -41,7 +46,7 @@ self.addEventListener("fetch", (event) => {
             caches.open(CACHE).then((cache) => cache.put(event.request, clone));
           }
           return response;
-        });
+        }).catch(() => new Response("", { status: 503, statusText: "Service Unavailable" }));
       })
     );
   }

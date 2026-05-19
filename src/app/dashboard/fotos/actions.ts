@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 
 const STORAGE_BUCKET = 'chef-photos'
-const MAX_GALLERY = 10
+const MAX_GALLERY = 12
 
 function storagePathFromUrl(url: string): string | null {
   const marker = `/${STORAGE_BUCKET}/`

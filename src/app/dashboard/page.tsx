@@ -43,9 +43,17 @@ export default async function DashboardPage() {
 
   let completion: CompletionRow | null = null
   let profilePhotoUrl: string | null = null
+  let meetsRequirements = false
 
   if (chefProfile) {
-    const [{ data: completionData }, { data: photoData }] = await Promise.all([
+    const [
+      { data: completionData },
+      { data: photoData },
+      { count: profilePhotoCount },
+      { count: galleryCount },
+      { count: menuCount },
+      { count: dishCount },
+    ] = await Promise.all([
       supabase
         .from('profile_completion')
         .select('account_done, bio_done, location_done, profile_picture_done, gallery_done, menus_done, payments_done, request_prefs_done')
@@ -57,9 +65,34 @@ export default async function DashboardPage() {
         .eq('chef_id', chefProfile.id)
         .eq('type', 'profile')
         .maybeSingle(),
+      supabase
+        .from('chef_photos')
+        .select('*', { count: 'exact', head: true })
+        .eq('chef_id', chefProfile.id)
+        .eq('type', 'profile'),
+      supabase
+        .from('chef_photos')
+        .select('*', { count: 'exact', head: true })
+        .eq('chef_id', chefProfile.id)
+        .eq('type', 'gallery'),
+      supabase
+        .from('chef_menus')
+        .select('*', { count: 'exact', head: true })
+        .eq('chef_id', chefProfile.id)
+        .eq('is_active', true),
+      supabase
+        .from('dishes')
+        .select('*', { count: 'exact', head: true })
+        .eq('chef_id', chefProfile.id)
+        .eq('is_active', true),
     ])
     completion = completionData
     profilePhotoUrl = photoData?.url ?? null
+    meetsRequirements =
+      (profilePhotoCount ?? 0) >= 1 &&
+      (galleryCount ?? 0) >= 12 &&
+      (menuCount ?? 0) >= 3 &&
+      (dishCount ?? 0) >= 6
   }
 
   const doneCount = ITEMS.filter((item) => completion?.[item.key]).length
@@ -107,6 +140,7 @@ export default async function DashboardPage() {
           <ActiveToggle
             chefId={chefProfile.id}
             initialActive={chefProfile.is_active ?? false}
+            meetsRequirements={meetsRequirements}
           />
         )}
       </div>

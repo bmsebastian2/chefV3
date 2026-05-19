@@ -7,7 +7,7 @@ import { addGalleryPhoto, deleteGalleryPhoto } from "@/app/dashboard/fotos/actio
 import { compressImage } from "@/utils/images";
 
 const STORAGE_BUCKET = "chef-photos";
-const MAX_GALLERY = 10;
+const MAX_GALLERY = 12;
 const MAX_FILE_MB = 10;
 
 type Photo = { id: string; url: string };

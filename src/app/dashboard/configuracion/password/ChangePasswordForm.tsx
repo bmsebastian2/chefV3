@@ -21,6 +21,7 @@ export default function ChangePasswordForm() {
             <input
               type="password"
               name="newPassword"
+              autoComplete="new-password"
               placeholder="••••••••"
               required
               className="w-full px-3 py-2.5 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent transition-colors"
@@ -33,6 +34,7 @@ export default function ChangePasswordForm() {
             <input
               type="password"
               name="repeatPassword"
+              autoComplete="new-password"
               placeholder="••••••••"
               required
               className="w-full px-3 py-2.5 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent transition-colors"

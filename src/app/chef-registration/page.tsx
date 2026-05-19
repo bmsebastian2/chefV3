@@ -388,6 +388,7 @@ export default function ChefRegistrationPage() {
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 placeholder="Tu contraseña segura"
                 value={formData.password}
                 onChange={handleChange}

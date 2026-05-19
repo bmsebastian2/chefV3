@@ -54,7 +54,7 @@ export default async function FotosPage() {
             Fotos de Trabajo
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Muestra tus platos y eventos. Máximo 10 fotos.
+            Muestra tus platos y eventos. Máximo 12 fotos.
           </p>
         </div>
         <GaleriaUpload
