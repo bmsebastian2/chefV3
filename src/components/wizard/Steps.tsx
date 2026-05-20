@@ -518,24 +518,30 @@ function PhoneInput({
   );
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError]     = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const phoneDigits = (data.contact?.phone ?? '').replace(/\D/g, '');
-  const phoneValid  = phoneDigits.length >= 8;
-  const isValid = !!(data.contact?.name && data.contact?.email && phoneValid);
+  const email = data.contact?.email ?? "";
+  const emailValid  = EMAIL_REGEX.test(email);
+  const { local: phoneLocal } = parsePhone(data.contact?.phone ?? '');
+  const phoneValid  = phoneLocal.replace(/\D/g, '').length >= 6;
+  const isValid = !!(data.contact?.name && emailValid && phoneValid);
+
+  const blur = (field: string) => setTouched((p) => ({ ...p, [field]: true }));
 
   const handleSubmit = async () => {
-    if (!data.contact?.name || !data.contact?.email || !phoneValid) return;
-
+    if (!isValid) return;
     setLoading(true);
     setError("");
 
     const result = await registerOrVerifyClient(
-      data.contact.name!,
-      data.contact.email!,
-      data.contact.phone!
+      data.contact!.name!,
+      data.contact!.email!,
+      data.contact!.phone!
     );
 
     if (result.error) {
@@ -556,40 +562,80 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
   };
 
   return (
-    <div className="flex flex-col gap-5 items-center max-w-md mx-auto w-full">
-      <p className="text-zinc-600 mb-2 text-center font-sans">
-        <strong>Sólo un paso más.</strong> Añade tus datos y recibirás menús personalizados de nuestra red élite en menos de 30 minutos.
+    <div className="flex flex-col gap-5 max-w-md mx-auto w-full">
+      <p className="text-zinc-500 text-sm text-center mb-1">
+        Ahora, sólo tienes que añadir tus datos de contacto y te enviaremos propuestas de menú
+        personalizadas y gratuitas en menos de 20 minutos.
       </p>
-      <Input
-        placeholder="Nombre completo"
-        className="h-14 font-medium text-base border-zinc-200"
-        value={data.contact?.name || ""}
-        onChange={(e) => updateData({ contact: { ...data.contact, name: e.target.value } })}
-      />
-      <Input
-        placeholder="Correo electrónico"
-        type="email"
-        className="h-14 font-medium text-base border-zinc-200"
-        value={data.contact?.email || ""}
-        onChange={(e) => updateData({ contact: { ...data.contact, email: e.target.value } })}
-      />
-      <PhoneInput
-        value={data.contact?.phone ?? ""}
-        onChange={(val) => updateData({ contact: { ...data.contact, phone: val } })}
-      />
-      {error && (
-        <p className="text-red-500 text-sm text-center w-full">{error}</p>
-      )}
+
+      <div>
+        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
+          Nombre <span className="text-red-400">*</span>
+        </label>
+        <Input
+          placeholder="John Doe"
+          className="h-14 text-base border-zinc-200"
+          value={data.contact?.name ?? ""}
+          onChange={(e) => updateData({ contact: { ...data.contact, name: e.target.value } })}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
+          Email <span className="text-red-400">*</span>
+        </label>
+        <Input
+          placeholder="example@mail.com"
+          type="email"
+          className={`h-14 text-base ${touched.email && !emailValid ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
+          value={email}
+          onChange={(e) => updateData({ contact: { ...data.contact, email: e.target.value } })}
+          onBlur={() => blur("email")}
+        />
+        {touched.email && !emailValid && (
+          <p className="text-xs text-red-500 mt-1">Ingresá un email válido.</p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
+          Teléfono <span className="text-red-400">*</span>
+        </label>
+        <PhoneInput
+          value={data.contact?.phone ?? ""}
+          onChange={(val) => updateData({ contact: { ...data.contact, phone: val } })}
+          onBlur={() => blur("phone")}
+          hasError={touched.phone && !phoneValid}
+        />
+        {touched.phone && !phoneValid && (
+          <p className="text-xs text-red-500 mt-1">Ingresá un número de teléfono válido.</p>
+        )}
+      </div>
+
+      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
       <Button
         disabled={!isValid || loading}
         onClick={handleSubmit}
         size="lg"
-        className="w-full h-14 bg-accent text-zinc-900 font-bold text-lg rounded-md mt-4 hover:bg-accent/90 shadow-[0_8px_20px_rgb(224,159,62,0.2)] transition-all disabled:opacity-50"
+        className="w-auto mx-auto px-10 h-14 bg-accent text-zinc-900 font-bold text-base rounded-2xl mt-2 hover:bg-accent/90 shadow-[0_8px_20px_rgb(224,159,62,0.2)] transition-all disabled:opacity-50"
       >
-        {loading ? "Verificando..." : "Ver Menús y Chefs Recomendados"}
+        {loading ? (
+          <span className="flex items-center gap-2">
+            <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            Enviando...
+          </span>
+        ) : "Solicitar chefs y menús"}
       </Button>
-      <p className="text-xs text-zinc-400 mt-2 text-center max-w-xs">
-        Al continuar, aceptas nuestros Términos Legales y Política de Privacidad de Reserva Epicúrea.
+
+      <p className="text-xs text-zinc-400 text-center">
+        Al enviar este formulario, aceptas nuestros{" "}
+        <a href="/terms" className="underline">Términos</a>{" "}
+        y reconoces la{" "}
+        <a href="/privacy" className="underline">Declaración de privacidad global</a>.
       </p>
     </div>
   );
@@ -1148,9 +1194,6 @@ export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
   );
 }
 
-// ── StepContact1: formulario de contacto rediseñado ───────────────────────────
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
@@ -1203,7 +1246,6 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         personalizadas y gratuitas en menos de 20 minutos.
       </p>
 
-      {/* Nombre */}
       <div>
         <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
           Nombre <span className="text-red-400">*</span>
@@ -1216,7 +1258,6 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         />
       </div>
 
-      {/* Email */}
       <div>
         <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
           Email <span className="text-red-400">*</span>
@@ -1234,8 +1275,6 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         )}
       </div>
 
-
-      {/* Teléfono */}
       <div>
         <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
           Teléfono <span className="text-red-400">*</span>
@@ -1251,7 +1290,6 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         )}
       </div>
 
-
       {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
       <Button
@@ -1260,7 +1298,15 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         size="lg"
         className="w-auto mx-auto px-10 h-14 bg-accent text-zinc-900 font-bold text-base rounded-2xl mt-2 hover:bg-accent/90 shadow-[0_8px_20px_rgb(224,159,62,0.2)] transition-all disabled:opacity-50"
       >
-        {loading ? "Enviando..." : "Solicitar chefs y menús"}
+        {loading ? (
+          <span className="flex items-center gap-2">
+            <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            Enviando...
+          </span>
+        ) : "Solicitar chefs y menús"}
       </Button>
 
       <p className="text-xs text-zinc-400 text-center">

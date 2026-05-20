@@ -51,7 +51,24 @@ const getStepsForService = (serviceType?: string) => {
 export default function WizardPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
-  const [data, setData] = useState<WizardData>({});
+  const [data, setData] = useState<WizardData>(() => {
+    if (typeof window === 'undefined') return {};
+    const params = new URLSearchParams(window.location.search);
+    const name  = params.get('name');
+    const email = params.get('email');
+    const phone = params.get('phone');
+    if (name || email || phone) {
+      return {
+        contact: {
+          ...(name  ? { name }  : {}),
+          ...(email ? { email } : {}),
+          ...(phone ? { phone } : {}),
+          prefilled: true,
+        },
+      };
+    }
+    return {};
+  });
   const [submitted, setSubmitted] = useState<false | 'active' | 'pending'>(false);
   const [showWeeklyForm, setShowWeeklyForm] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -67,25 +84,6 @@ export default function WizardPage() {
     });
     return () => subscription.unsubscribe();
   }, [submitted, router]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const name  = params.get('name');
-    const email = params.get('email');
-    const phone = params.get('phone');
-    if (name || email || phone) {
-      setData((prev) => ({
-        ...prev,
-        contact: {
-          ...prev.contact,
-          ...(name  ? { name }  : {}),
-          ...(email ? { email } : {}),
-          ...(phone ? { phone } : {}),
-          prefilled: true,
-        },
-      }));
-    }
-  }, []);
 
   const stepsObj = getStepsForService(data.serviceType);
 

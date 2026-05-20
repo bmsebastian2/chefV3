@@ -13,7 +13,6 @@ export async function login(prevState: { error: string } | null, formData: FormD
 
   if (error) return { error: error.message }
 
-  revalidatePath('/', 'layout')
   redirect('/dashboard')
 }
 

@@ -23,10 +23,10 @@ export default async function ClientDashboardPage() {
 
     if (error) {
       console.error('[dashboard] activate pending requests:', error.message)
-    } else if (activated && (activated as any[]).length > 0) {
+    } else if (activated && (activated as (string | { id: string })[]).length > 0) {
       // El RPC puede devolver strings (UUID directo) u objetos con .id según el schema cache
-      const validIds = (activated as any[])
-        .map((r) => (typeof r === 'string' ? r : r?.id))
+      const validIds = (activated as (string | { id: string })[])
+        .map((r) => (typeof r === 'string' ? r : r.id))
         .filter(Boolean) as string[]
       console.log('[dashboard] validIds a notificar:', validIds)
       if (validIds.length > 0) {
