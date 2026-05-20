@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { WizardData, ClientExtras } from '@/components/wizard/types'
 import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
-import { sendClientEmails } from '@/lib/emails/client-emails'
+import { sendClientEmails, RequestSummary } from '@/lib/emails/client-emails'
 
 // ─── Mapeos Wizard → DB ───────────────────────────────────────────────────────
 
@@ -54,6 +54,32 @@ const GUESTS_RANGE_MAP: Record<string, number> = {
   '7-12': 9,
   '13+':  13,
 }
+
+const CUISINE_DISPLAY: Record<string, string> = {
+  'local':         'Local',
+  'italian':       'Italiana',
+  'mediterranean': 'Mediterránea',
+  'seafood':       'Mariscos/Pescados',
+  'french':        'Francesa',
+  'japanese':      'Japonesa',
+  'fusion':        'Fusión',
+  'chefs_special': 'A elección del Chef',
+}
+
+const BUDGET_DISPLAY: Record<string, string> = {
+  'casual':    'Casual',
+  'gourmet':   'Gourmet',
+  'exclusive': 'Exclusivo',
+}
+
+const GUESTS_DISPLAY: Record<string, string> = {
+  '2':    'Pareja (2 personas)',
+  '3-6':  '3 a 6 personas',
+  '7-12': '7 a 12 personas',
+  '13+':  '13 o más personas',
+}
+
+const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
 
 function formatLocalDate(date: Date): string {
   const y = date.getFullYear()
@@ -314,6 +340,22 @@ export async function submitServiceRequest(
   const clientEmail = data.contact.email!
   const clientName  = data.contact.name!
 
+  const restrictionLabels = restrictions.filter((r) => r !== 'Otras (Conversar con Chef)')
+  const requestSummary: RequestSummary = {
+    lugar:        data.location?.name,
+    hora:         data.mealTime ? (MEAL_TIME_MAP[data.mealTime] ?? undefined) : undefined,
+    fecha:        eventDateStart
+                    ? `${(eventDateStart as unknown as Date).getDate()} de ${MONTHS_ES[(eventDateStart as unknown as Date).getMonth()]} de ${(eventDateStart as unknown as Date).getFullYear()}`
+                    : undefined,
+    comensales:   data.guestsRange ? GUESTS_DISPLAY[data.guestsRange] : undefined,
+    precio:       budgetTier ? `desde ${budgetTier.min} UYU a ${budgetTier.max} UYU` : undefined,
+    experiencia:  data.budgetTier ? BUDGET_DISPLAY[data.budgetTier] : undefined,
+    gastronomia:  data.cuisine ? (CUISINE_DISPLAY[data.cuisine] ?? data.cuisine) : undefined,
+    restricciones: restrictionLabels.length > 0 ? restrictionLabels.join(', ') : 'No',
+    ocasion:      data.occasion ?? undefined,
+    notas:        data.details ?? undefined,
+  }
+
   // Para usuarios nuevos, los chefs se notifican solo después de confirmar el email
   // (en /auth/callback). Para usuarios existentes, notificar de inmediato.
   after(() =>
@@ -330,6 +372,7 @@ export async function submitServiceRequest(
         isNewUser:        extras?.isNewUser ?? false,
         tempPassword:     extras?.tempPassword,
         confirmationLink: extras?.confirmationLink,
+        requestSummary,
       }).catch((err) =>
         console.error('[wizard] sendClientEmails threw:', err)
       ),
