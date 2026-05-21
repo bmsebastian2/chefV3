@@ -335,6 +335,9 @@ export async function submitServiceRequest(
     budget_min:         budgetTier?.min ?? null,
     budget_max:         budgetTier?.max ?? null,
     descripcion_evento: data.details ?? null,
+    mealSlots:          data.serviceType === '2'
+                          ? (data.mealSlots ?? []).filter((s) => s.desayuno || s.almuerzo || s.cena)
+                          : undefined,
   }
 
   const clientEmail = data.contact.email!
@@ -354,6 +357,9 @@ export async function submitServiceRequest(
     restricciones: restrictionLabels.length > 0 ? restrictionLabels.join(', ') : 'No',
     ocasion:      data.occasion ?? undefined,
     notas:        data.details ?? undefined,
+    mealSlots:    data.serviceType === '2'
+                    ? (data.mealSlots ?? []).filter((s) => s.desayuno || s.almuerzo || s.cena)
+                    : undefined,
   }
 
   // Para usuarios nuevos, los chefs se notifican solo después de confirmar el email

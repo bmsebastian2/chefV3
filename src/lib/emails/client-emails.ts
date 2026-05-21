@@ -17,6 +17,13 @@ function pfx(email: string): string {
   return HAS_DOMAIN ? '' : `[TEST → ${email}] `
 }
 
+export interface MealSlotSummary {
+  fecha: string   // 'YYYY-MM-DD'
+  desayuno: boolean
+  almuerzo: boolean
+  cena: boolean
+}
+
 export interface RequestSummary {
   lugar?: string
   hora?: string
@@ -28,6 +35,7 @@ export interface RequestSummary {
   restricciones?: string
   ocasion?: string
   notas?: string
+  mealSlots?: MealSlotSummary[]
 }
 
 // ── HTML shell ────────────────────────────────────────────────────────────────
@@ -88,6 +96,48 @@ function section(title: string, rows: [string, string | undefined][]): string {
     </table>`
 }
 
+const DAYS_ES    = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+const MONTHS_ES_EMAIL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+
+function mealSlotsTable(slots: MealSlotSummary[]): string {
+  const active = slots.filter((s) => s.desayuno || s.almuerzo || s.cena)
+  if (!active.length) return ''
+
+  const check = (v: boolean) =>
+    v ? `<span style="color:#16A34A;font-weight:700;font-size:15px;">✓</span>`
+      : `<span style="color:#D4D4D8;">—</span>`
+
+  const fmtDate = (fecha: string) => {
+    const d   = new Date(fecha + 'T00:00:00')
+    const day = DAYS_ES[d.getDay()]
+    return `${day} ${d.getDate()} de ${MONTHS_ES_EMAIL[d.getMonth()]}`
+  }
+
+  const dataRows = active.map((s) => `
+      <tr>
+        <td style="padding:9px 14px;font-size:13px;color:#18181B;border-bottom:1px solid #F4F4F5;">${fmtDate(s.fecha)}</td>
+        <td style="padding:9px 14px;font-size:13px;text-align:center;border-bottom:1px solid #F4F4F5;">${check(s.desayuno)}</td>
+        <td style="padding:9px 14px;font-size:13px;text-align:center;border-bottom:1px solid #F4F4F5;">${check(s.almuerzo)}</td>
+        <td style="padding:9px 14px;font-size:13px;text-align:center;border-bottom:1px solid #F4F4F5;">${check(s.cena)}</td>
+      </tr>`).join('')
+
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;border:1px solid #E4E4E7;border-radius:8px;overflow:hidden;">
+      <tr>
+        <td colspan="4" style="background:#F4F4F5;padding:9px 16px;">
+          <p style="margin:0;font-size:10px;font-weight:700;color:#71717A;text-transform:uppercase;letter-spacing:0.08em;">Días y comidas solicitadas</p>
+        </td>
+      </tr>
+      <tr style="background:#FAFAFA;">
+        <td style="padding:8px 14px;font-size:11px;font-weight:600;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid #E4E4E7;">Día</td>
+        <td style="padding:8px 14px;font-size:11px;font-weight:600;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;text-align:center;border-bottom:1px solid #E4E4E7;">Desayuno</td>
+        <td style="padding:8px 14px;font-size:11px;font-weight:600;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;text-align:center;border-bottom:1px solid #E4E4E7;">Almuerzo</td>
+        <td style="padding:8px 14px;font-size:11px;font-weight:600;color:#71717A;text-transform:uppercase;letter-spacing:0.06em;text-align:center;border-bottom:1px solid #E4E4E7;">Cena</td>
+      </tr>
+      ${dataRows}
+    </table>`
+}
+
 function detailsBlock(r: RequestSummary): string {
   return `<div style="margin-top:24px;">
     ${section('Dónde y cuándo', [
@@ -95,6 +145,7 @@ function detailsBlock(r: RequestSummary): string {
       ['Hora', r.hora],
       ['Fecha', r.fecha],
     ])}
+    ${r.mealSlots?.length ? mealSlotsTable(r.mealSlots) : ''}
     ${section('Presupuesto', [
       ['Número de comensales', r.comensales],
       ['Precio por persona', r.precio],
