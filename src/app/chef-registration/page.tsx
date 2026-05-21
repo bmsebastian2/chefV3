@@ -351,6 +351,7 @@ export default function ChefRegistrationPage() {
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 placeholder="tu@email.com"
                 value={formData.email}
                 onChange={handleChange}
@@ -368,6 +369,7 @@ export default function ChefRegistrationPage() {
                 id="confirmEmail"
                 name="confirmEmail"
                 type="email"
+                autoComplete="email"
                 placeholder="Confirma tu email"
                 value={formData.confirmEmail}
                 onChange={handleChange}

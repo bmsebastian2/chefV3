@@ -44,6 +44,7 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
           <Input
             name="email"
             type="email"
+            autoComplete="username"
             placeholder="Email *"
             required
             className="rounded-full px-5 h-12 bg-muted border-0"

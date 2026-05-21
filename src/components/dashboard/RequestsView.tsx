@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CalendarDays, Users, MapPin, ChefHat, UtensilsCrossed, Lock } from "lucide-react";
 
@@ -232,6 +233,27 @@ export function RequestsView({
   requests:   RequestCard[]
 }) {
   const [activeTab, setActiveTab] = useState<string>("all");
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!canReceive) return;
+
+    const refresh = () => router.refresh();
+
+    // Refresh when user returns to the tab
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    // Poll every 60 seconds as background fallback
+    const interval = setInterval(refresh, 60_000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearInterval(interval);
+    };
+  }, [canReceive, router]);
 
   if (!canReceive) {
     return <RequestsGate missing={missing} />;
