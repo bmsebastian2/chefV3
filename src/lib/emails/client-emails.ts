@@ -96,6 +96,17 @@ function section(title: string, rows: [string, string | undefined][]): string {
     </table>`
 }
 
+const OCCASION_LABELS: Record<string, string> = {
+  birthday:          'Cumpleaños',
+  family_reunion:    'Reunión Familiar',
+  bachelor_party:    'Despedida de Soltero/a',
+  friends_gathering: 'Reunión con Amigos',
+  romantic_dinner:   'Cena Romántica',
+  corporate:         'Evento Corporativo',
+  gastronomic:       'Aventura Gastronómica',
+  other:             'Otro',
+}
+
 const DAYS_ES    = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
 const MONTHS_ES_EMAIL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
 
@@ -154,7 +165,7 @@ function detailsBlock(r: RequestSummary): string {
     ${section('Evento', [
       ['Preferencias gastronómicas', r.gastronomia],
       ['Restricciones alimentarias', r.restricciones],
-      ['Ocasión', r.ocasion],
+      ['Ocasión', r.ocasion ? (OCCASION_LABELS[r.ocasion] ?? r.ocasion) : undefined],
     ])}
     ${section('Algo que añadir', [
       ['Notas', r.notas],
