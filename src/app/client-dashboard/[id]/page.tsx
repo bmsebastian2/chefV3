@@ -144,7 +144,6 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
       </header>
 
       <main className="max-w-2xl mx-auto px-6 py-8 space-y-4">
-        {/* Back + título */}
         <div>
           <Link
             href="/client-dashboard"
@@ -171,7 +170,6 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        {/* Detalles del evento */}
         <Section title="Detalles del evento" icon={<CalendarDays className="w-4 h-4" />}>
           {request.occasion && <Row label="Ocasión" value={OCCASION_LABELS[request.occasion] ?? request.occasion} />}
           <Row label="Fecha" value={formatDate(request.event_date_start)} />
@@ -185,14 +183,12 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           />
         </Section>
 
-        {/* Invitados */}
         <Section title="Invitados" icon={<Users className="w-4 h-4" />}>
           <Row label="Adultos" value={request.guests_adults ?? 0} />
           {(request.guests_teens ?? 0) > 0 && <Row label="Adolescentes" value={request.guests_teens} />}
           {(request.guests_kids ?? 0) > 0 && <Row label="Niños" value={request.guests_kids} />}
         </Section>
 
-        {/* Preferencias */}
         <Section title="Preferencias" icon={<Utensils className="w-4 h-4" />}>
           {request.cuisine_type
             ? <Row label="Tipo de cocina" value={CUISINE_LABELS[request.cuisine_type] ?? request.cuisine_type} />
@@ -208,7 +204,6 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           )}
         </Section>
 
-        {/* Restricciones alimentarias */}
         {(activeRestrictions.length > 0 || restr?.alergias_adicionales || restr?.notas_adicionales) && (
           <Section title="Restricciones alimentarias" icon={<AlertCircle className="w-4 h-4" />}>
             {activeRestrictions.length > 0 && (
@@ -220,9 +215,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                 ))}
               </div>
             )}
-            {restr?.alergias_adicionales && (
-              <Row label="Alergias" value={restr.alergias_adicionales} />
-            )}
+            {restr?.alergias_adicionales && <Row label="Alergias" value={restr.alergias_adicionales} />}
             {restr?.notas_adicionales && (
               <div className="pt-2">
                 <p className="text-xs text-zinc-400 mb-1.5">Notas</p>
@@ -232,7 +225,6 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           </Section>
         )}
 
-        {/* Presupuesto */}
         {(request.budget_min || request.budget_max) && (
           <Section title="Presupuesto estimado" icon={<DollarSign className="w-4 h-4" />}>
             <p className="text-lg font-semibold text-zinc-900">
@@ -245,7 +237,6 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           </Section>
         )}
 
-        {/* Fechas del servicio (múltiple) */}
         {dates.length > 0 && (
           <Section title="Fechas del servicio" icon={<CalendarDays className="w-4 h-4" />}>
             <div className="space-y-0">
@@ -267,7 +258,6 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           </Section>
         )}
 
-        {/* Datos de contacto */}
         {contact && (
           <Section title="Datos de contacto" icon={<FileText className="w-4 h-4" />}>
             {contact.full_name && <Row label="Nombre" value={contact.full_name} />}
@@ -276,7 +266,6 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           </Section>
         )}
 
-        {/* Ubicación extra */}
         {request.location && (
           <Section title="Lugar del evento" icon={<MapPin className="w-4 h-4" />}>
             <p className="text-sm text-zinc-700">{request.location}</p>
@@ -284,7 +273,6 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           </Section>
         )}
 
-        {/* Footer actions */}
         <div className="flex items-center justify-between pt-2 pb-8">
           <Link
             href="/client-dashboard"

@@ -3,7 +3,16 @@
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CalendarDays, Users, MapPin, ChefHat, UtensilsCrossed, Lock } from "lucide-react";
+import {
+  CalendarDays, Users, MapPin, ChefHat, UtensilsCrossed,
+  Lock, SendHorizonal, Clock, CheckCircle2, XCircle, MessageCircle,
+} from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { submitProposal } from "@/app/dashboard/requests/actions";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -13,6 +22,13 @@ export type MissingRequirement = {
   current:  number
   required: number
   href:     string
+}
+
+export type ChefMenu = {
+  id:      string
+  title:   string
+  courses: { course: string; selection_mode: string }[]
+  dishes:  { name: string; course: string }[]
 }
 
 export type RequestCard = {
@@ -33,6 +49,7 @@ export type RequestCard = {
   city:             string | null
   cuisine_type:     string | null
   client_name:      string
+  proposal_status?: string | null
 }
 
 const STATUS_TABS = [
@@ -75,6 +92,61 @@ const OCCASION_LABELS: Record<string, string> = {
   friends_gathering: "Reunión de amigos",
   corporate:         "Corporativo",
   other:             "Otro",
+};
+
+const COURSE_LABELS: Record<string, string> = {
+  starter:      "Entrantes",
+  first_course: "Primer plato",
+  main:         "Principal",
+  dessert:      "Postres",
+};
+
+const SELECTION_MODE_LABELS: Record<string, string> = {
+  all_inclusive: "Todo incluido",
+  choose_1:      "Elegir 1 plato",
+  choose_2:      "Elegir 2 platos",
+  choose_3:      "Elegir 3 platos",
+};
+
+const COURSE_ORDER = ["starter", "first_course", "main", "dessert"];
+
+function buildMenuDescription(menu: ChefMenu): string {
+  const sections: string[] = [];
+  for (const course of COURSE_ORDER) {
+    const dishes = menu.dishes.filter((d) => d.course === course);
+    if (dishes.length === 0) continue;
+    const setting = menu.courses.find((c) => c.course === course);
+    const modeLabel = setting
+      ? (SELECTION_MODE_LABELS[setting.selection_mode] ?? setting.selection_mode)
+      : "Todo incluido";
+    const heading = `${COURSE_LABELS[course] ?? course} (${modeLabel})`;
+    const lines = dishes.map((d) => `• ${d.name}`);
+    sections.push([heading, ...lines].join("\n"));
+  }
+  return sections.join("\n\n");
+}
+
+const PROPOSAL_STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  pending: {
+    label: "Propuesta enviada",
+    color: "bg-amber-50 text-amber-700 border-amber-200",
+    icon: <Clock className="w-3 h-3" />,
+  },
+  accepted: {
+    label: "Propuesta aceptada",
+    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    icon: <CheckCircle2 className="w-3 h-3" />,
+  },
+  rejected: {
+    label: "Propuesta rechazada",
+    color: "bg-red-50 text-red-700 border-red-200",
+    icon: <XCircle className="w-3 h-3" />,
+  },
+  withdrawn: {
+    label: "Propuesta retirada",
+    color: "bg-zinc-100 text-zinc-600 border-zinc-200",
+    icon: null,
+  },
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -153,9 +225,160 @@ function RequestsGate({ missing }: { missing: MissingRequirement[] }) {
   );
 }
 
+// ── Formulario de propuesta ────────────────────────────────────────────────────
+
+function ProposalForm({ requestId, clientName, chefMenus, onSuccess, onClose }: {
+  requestId:  string
+  clientName: string
+  chefMenus:  ChefMenu[]
+  onSuccess:  () => void
+  onClose:    () => void
+}) {
+  const [message, setMessage] = useState("");
+  const [selectedMenuId, setSelectedMenuId] = useState("");
+  const [menuDescription, setMenuDescription] = useState("");
+  const [pricePerPerson, setPricePerPerson] = useState("");
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleMenuSelect(menuId: string) {
+    setSelectedMenuId(menuId);
+    if (!menuId) { setMenuDescription(""); return; }
+    const menu = chefMenus.find((m) => m.id === menuId);
+    if (menu) setMenuDescription(buildMenuDescription(menu));
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setServerError(null);
+    if (!menuDescription.trim()) { setServerError('La descripción del menú es obligatoria.'); return; }
+    startTransition(async () => {
+      const result = await submitProposal(
+        requestId,
+        message.trim() || null,
+        menuDescription.trim(),
+        null,
+        pricePerPerson ? parseFloat(pricePerPerson) : null,
+      );
+      if (result.error) {
+        setServerError(result.error);
+      } else {
+        onSuccess();
+        onClose();
+      }
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <DialogHeader>
+        <DialogTitle>Enviar propuesta</DialogTitle>
+        <DialogDescription>Para: {clientName}</DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+            Mensaje al cliente <span className="text-zinc-400 font-normal">(opcional)</span>
+          </label>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Contale por qué sos la persona ideal para este evento..."
+            rows={3}
+            className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none transition-colors"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+            Descripción del menú
+          </label>
+          {chefMenus.length > 0 && (
+            <select
+              value={selectedMenuId}
+              onChange={(e) => handleMenuSelect(e.target.value)}
+              className="mb-2 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm text-zinc-700 focus-visible:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 transition-colors"
+            >
+              <option value="">Elegir un menú para cargar...</option>
+              {chefMenus.map((m) => (
+                <option key={m.id} value={m.id}>{m.title}</option>
+              ))}
+            </select>
+          )}
+          <textarea
+            value={menuDescription}
+            onChange={(e) => setMenuDescription(e.target.value)}
+            placeholder="Describí los platos o la propuesta gastronómica..."
+            rows={5}
+            required
+            className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none transition-colors"
+          />
+        </div>
+
+        <div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+              Por persona <span className="text-zinc-400 font-normal">(opcional)</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">$</span>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={pricePerPerson}
+                onChange={(e) => setPricePerPerson(e.target.value)}
+                placeholder="0"
+                className="pl-6"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {serverError && (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          {serverError}
+        </p>
+      )}
+
+      <DialogFooter>
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={isPending}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+        >
+          {isPending ? (
+            <>
+              <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              Enviando...
+            </>
+          ) : (
+            <>
+              <SendHorizonal className="w-3.5 h-3.5" />
+              Enviar propuesta
+            </>
+          )}
+        </button>
+      </DialogFooter>
+    </form>
+  );
+}
+
 // ── Card ───────────────────────────────────────────────────────────────────────
 
-function RequestCardItem({ req }: { req: RequestCard }) {
+function RequestCardItem({ req, chefMenus }: { req: RequestCard; chefMenus: ChefMenu[] }) {
+  const [proposalStatus, setProposalStatus] = useState<string | null>(req.proposal_status ?? null);
+  const [showProposal, setShowProposal] = useState(false);
+
   const budget  = formatBudget(req.budget_min, req.budget_max);
   const dateStr = req.event_date_end && req.event_date_end !== req.event_date_start
     ? `${formatDate(req.event_date_start)} → ${formatDate(req.event_date_end)}`
@@ -169,11 +392,11 @@ function RequestCardItem({ req }: { req: RequestCard }) {
     ? guestParts.join(', ')
     : req.cuantas_personas ? `${req.cuantas_personas} personas` : null;
 
+  const proposalCfg = proposalStatus ? PROPOSAL_STATUS_CONFIG[proposalStatus] : null;
+  const canApply = req.status === 'new' && !proposalStatus;
+
   return (
-    <Link
-      href={`/dashboard/requests/${req.id}`}
-      className="block border border-zinc-200 rounded-xl p-5 bg-white hover:border-accent/40 hover:shadow-sm transition-all"
-    >
+    <div className="border border-zinc-200 rounded-xl p-5 bg-white hover:border-zinc-300 hover:shadow-sm transition-all">
       <div className="flex items-center justify-between gap-2 mb-3">
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${STATUS_COLORS[req.status] ?? "bg-zinc-100 text-zinc-600 border-zinc-200"}`}>
           {STATUS_LABELS[req.status] ?? req.status}
@@ -191,7 +414,7 @@ function RequestCardItem({ req }: { req: RequestCard }) {
         {budget && <> · <span className="font-medium text-zinc-700">{budget}</span></>}
       </p>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1.5 mb-4">
         {guestStr && (
           <div className="flex items-center gap-2 text-xs text-zinc-500">
             <Users className="w-3.5 h-3.5 flex-shrink-0" />
@@ -217,7 +440,48 @@ function RequestCardItem({ req }: { req: RequestCard }) {
           </div>
         )}
       </div>
-    </Link>
+
+      <div className="pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
+        {proposalCfg ? (
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${proposalCfg.color}`}>
+            {proposalCfg.icon}
+            {proposalCfg.label}
+          </span>
+        ) : <span />}
+
+        {proposalStatus ? (
+          <Link
+            href={`/dashboard/requests/${req.id}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 text-white text-xs font-semibold hover:bg-zinc-700 transition-colors"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            Chat
+          </Link>
+        ) : canApply ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowProposal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent/90 transition-colors"
+            >
+              <SendHorizonal className="w-3.5 h-3.5" />
+              Postularse
+            </button>
+            <Dialog open={showProposal} onOpenChange={setShowProposal}>
+              <DialogContent>
+                <ProposalForm
+                  requestId={req.id}
+                  clientName={req.client_name}
+                  chefMenus={chefMenus}
+                  onSuccess={() => setProposalStatus('pending')}
+                  onClose={() => setShowProposal(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -227,10 +491,12 @@ export function RequestsView({
   canReceive,
   missing,
   requests,
+  chefMenus,
 }: {
   canReceive: boolean
   missing:    MissingRequirement[]
   requests:   RequestCard[]
+  chefMenus:  ChefMenu[]
 }) {
   const [activeTab, setActiveTab] = useState<string>("all");
   const router = useRouter();
@@ -241,16 +507,13 @@ export function RequestsView({
 
     const refresh = () => startTransition(() => router.refresh());
 
-    // Refresh immediately on mount (catches navigation from wizard)
     refresh();
 
-    // Refresh when user returns to the tab from another app/window
     const onVisibility = () => {
       if (document.visibilityState === "visible") refresh();
     };
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Poll every 30 seconds as background fallback
     const interval = setInterval(refresh, 30_000);
 
     return () => {
@@ -324,7 +587,7 @@ export function RequestsView({
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {filtered.map((req) => (
-            <RequestCardItem key={req.id} req={req} />
+            <RequestCardItem key={req.id} req={req} chefMenus={chefMenus} />
           ))}
         </div>
       )}

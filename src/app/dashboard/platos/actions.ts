@@ -9,11 +9,13 @@ export type Dish = {
   id: string
   name: string
   course: Course
+  description?: string | null
 }
 
 export async function addDish(
   name: string,
-  course: Course
+  course: Course,
+  description?: string
 ): Promise<{ error?: string; id?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -22,6 +24,7 @@ export async function addDish(
   const { data, error } = await supabase.rpc('add_dish', {
     p_name: name.trim(),
     p_course: course,
+    p_description: description?.trim() || null,
   })
 
   if (error) {
@@ -36,7 +39,8 @@ export async function addDish(
 export async function updateDish(
   dishId: string,
   name: string,
-  course: Course
+  course: Course,
+  description?: string
 ): Promise<{ error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -46,6 +50,7 @@ export async function updateDish(
     p_dish_id: dishId,
     p_name: name.trim(),
     p_course: course,
+    p_description: description?.trim() || null,
   })
 
   if (error) {

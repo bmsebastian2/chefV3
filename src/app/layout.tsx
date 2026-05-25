@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Newsreader } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { AuthHashHandler } from "@/components/AuthHashHandler";
 import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
@@ -53,15 +54,15 @@ export default function RootLayout({
       lang="es"
       className={`${manrope.variable} ${newsreader.variable} h-full antialiased`}
     >
-      <head>
-        {/* Captura beforeinstallprompt antes de que React monte */}
-        <script
+      <head />
+      <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
+        <Script
+          id="pwa-prompt"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaPrompt=e;});`,
           }}
         />
-      </head>
-      <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
         <AuthHashHandler />
         {children}
         <ServiceWorkerRegister />

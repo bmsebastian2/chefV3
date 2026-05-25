@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { ClientSidebar } from '@/components/client-dashboard/ClientSidebar'
 
 export default async function ClientDashboardLayout({
   children,
@@ -16,12 +17,16 @@ export default async function ClientDashboardLayout({
     .eq('id', user.id)
     .single()
 
-  // Solo clientes pueden acceder al dashboard de cliente
   if (userData?.role !== 'client') redirect('/dashboard')
 
   return (
     <div className="min-h-screen bg-zinc-50">
-      {children}
+      <ClientSidebar />
+      <div className="md:pl-64">
+        <main className="min-h-screen">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

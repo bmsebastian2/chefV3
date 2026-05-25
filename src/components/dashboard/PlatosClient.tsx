@@ -35,6 +35,7 @@ function DishForm({
   title,
   initialName = "",
   initialCourse = "starter",
+  initialDescription = "",
   onSave,
   onCancel,
   pending,
@@ -43,13 +44,15 @@ function DishForm({
   title: string
   initialName?: string
   initialCourse?: Course
-  onSave: (name: string, course: Course) => void
+  initialDescription?: string
+  onSave: (name: string, course: Course, description: string) => void
   onCancel: () => void
   pending: boolean
   error?: string
 }) {
   const [name, setName] = useState(initialName)
   const [course, setCourse] = useState<Course>(initialCourse)
+  const [description, setDescription] = useState(initialDescription)
 
   return (
     <Overlay>
@@ -91,6 +94,19 @@ function DishForm({
           </div>
         </div>
 
+        <div>
+          <label className="block text-sm font-medium mb-1.5">
+            Descripción <span className="text-muted-foreground font-normal">(opcional)</span>
+          </label>
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Ingredientes, preparación, alérgenos..."
+            rows={3}
+            className="w-full resize-none rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 placeholder:text-muted-foreground"
+          />
+        </div>
+
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
 
@@ -107,7 +123,7 @@ function DishForm({
         <Button
           type="button"
           className="flex-1 rounded-full bg-accent hover:bg-accent/90 text-white"
-          onClick={() => onSave(name, course)}
+          onClick={() => onSave(name, course, description)}
           disabled={pending || !name.trim() || !course}
         >
           {pending ? "Guardando..." : "Guardar"}
@@ -183,30 +199,30 @@ export function PlatosClient({ initialDishes }: { initialDishes: Dish[] }) {
     setError(undefined)
   }
 
-  const handleAdd = (name: string, course: Course) => {
+  const handleAdd = (name: string, course: Course, description: string) => {
     setError(undefined)
     startTransition(async () => {
-      const result = await addDish(name, course)
+      const result = await addDish(name, course, description)
       if (result.error) {
         setError(result.error)
         return
       }
-      setDishes(prev => [...prev, { id: result.id!, name, course }])
+      setDishes(prev => [...prev, { id: result.id!, name, course, description: description || null }])
       closeModal()
     })
   }
 
-  const handleEdit = (name: string, course: Course) => {
+  const handleEdit = (name: string, course: Course, description: string) => {
     if (modal.type !== "edit") return
     const dishId = modal.dish.id
     setError(undefined)
     startTransition(async () => {
-      const result = await updateDish(dishId, name, course)
+      const result = await updateDish(dishId, name, course, description)
       if (result.error) {
         setError(result.error)
         return
       }
-      setDishes(prev => prev.map(d => d.id === dishId ? { ...d, name, course } : d))
+      setDishes(prev => prev.map(d => d.id === dishId ? { ...d, name, course, description: description || null } : d))
       closeModal()
     })
   }
@@ -282,7 +298,12 @@ export function PlatosClient({ initialDishes }: { initialDishes: Dish[] }) {
                   key={dish.id}
                   className={`flex items-center justify-between px-4 py-3 ${di < courseDishes.length - 1 ? "border-b border-border/50" : ""}`}
                 >
-                  <span className="text-sm">{dish.name}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm">{dish.name}</p>
+                    {dish.description && (
+                      <p className="text-xs text-muted-foreground truncate max-w-[200px]">{dish.description}</p>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1 ml-4 shrink-0">
                     <button
                       type="button"
@@ -329,6 +350,7 @@ export function PlatosClient({ initialDishes }: { initialDishes: Dish[] }) {
           title="Editar plato"
           initialName={modal.dish.name}
           initialCourse={modal.dish.course}
+          initialDescription={modal.dish.description ?? ""}
           onSave={handleEdit}
           onCancel={closeModal}
           pending={isPending}

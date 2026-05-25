@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { RequestsView } from '@/components/dashboard/RequestsView'
-import type { RequestCard, MissingRequirement } from '@/components/dashboard/RequestsView'
+import type { RequestCard, MissingRequirement, ChefMenu } from '@/components/dashboard/RequestsView'
 
 type ChefRequestsState = {
   can_receive: boolean
@@ -20,11 +20,77 @@ export default async function RequestsPage() {
   const state = data as ChefRequestsState
   if (!state) redirect('/dashboard')
 
+  const { data: chef } = await supabase
+    .from('chef_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .single()
+
+  const proposalMap: Record<string, string> = {}
+  const chefMenus: ChefMenu[] = []
+
+  if (chef) {
+    const { data: proposals } = await supabase
+      .from('proposals')
+      .select('request_id, status')
+      .eq('chef_id', chef.id)
+
+    for (const p of proposals ?? []) {
+      proposalMap[p.request_id] = p.status
+    }
+
+    if (state.can_receive) {
+      const { data: menus } = await supabase
+        .from('chef_menus')
+        .select('id, title')
+        .eq('chef_id', chef.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+
+      const menuIds = (menus ?? []).map((m) => m.id as string)
+
+      const [{ data: courseRows }, { data: dishRows }] = await Promise.all([
+        supabase
+          .from('menu_course_settings')
+          .select('menu_id, course, selection_mode')
+          .in('menu_id', menuIds.length ? menuIds : ['']),
+        supabase
+          .from('menu_dishes')
+          .select('menu_id, dish_id, dishes(name, course)')
+          .in('menu_id', menuIds.length ? menuIds : ['']),
+      ])
+
+      for (const m of menus ?? []) {
+        const id = m.id as string
+        const courses = (courseRows ?? [])
+          .filter((r) => r.menu_id === id)
+          .map((r) => ({ course: r.course as string, selection_mode: r.selection_mode as string }))
+
+        const dishes = (dishRows ?? [])
+          .filter((r) => r.menu_id === id)
+          .flatMap((r) => {
+            const d = r.dishes
+            if (Array.isArray(d)) return d as { name: string; course: string }[]
+            if (d && typeof d === 'object' && d !== null) return [d as { name: string; course: string }]
+            return []
+          })
+
+        chefMenus.push({ id, title: m.title as string, courses, dishes })
+      }
+    }
+  }
+
+  const requests = state.requests.map((r) => ({
+    ...r,
+    proposal_status: proposalMap[r.id] ?? null,
+  }))
+
   return (
     <RequestsView
       canReceive={state.can_receive}
       missing={state.missing}
-      requests={state.requests}
+      requests={requests}
+      chefMenus={chefMenus}
     />
   )
 }

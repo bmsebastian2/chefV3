@@ -4,9 +4,9 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
 import Link from 'next/link'
-import { logout } from '@/app/auth/actions'
-import { ClipboardList, Plus, LogOut } from 'lucide-react'
+import { ClipboardList, Plus } from 'lucide-react'
 import { CancelButton } from './CancelButtonClient'
+import { ProposalsLink } from './ProposalsLink'
 
 export default async function ClientDashboardPage() {
   const supabase = await createClient()
@@ -44,6 +44,23 @@ export default async function ClientDashboardPage() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false }),
   ])
+
+  // Fetch proposal counts + first proposalId per request
+  const requestIds = (requests ?? []).map((r) => r.id)
+  const proposalCountMap: Record<string, number> = {}
+  const proposalIdMap: Record<string, string> = {}
+  if (requestIds.length > 0) {
+    const { data: proposals } = await supabase
+      .from('proposals')
+      .select('id, request_id, status')
+      .in('request_id', requestIds)
+      .neq('status', 'withdrawn')
+      .order('created_at', { ascending: true })
+    for (const p of proposals ?? []) {
+      proposalCountMap[p.request_id] = (proposalCountMap[p.request_id] ?? 0) + 1
+      if (!proposalIdMap[p.request_id]) proposalIdMap[p.request_id] = p.id
+    }
+  }
 
   const name = [userData?.first_name, userData?.first_surname].filter(Boolean).join(' ') || user.email
 
@@ -109,25 +126,7 @@ export default async function ClientDashboardPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50">
-      <header className="bg-white border-b border-zinc-200 px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="font-serif text-xl font-bold text-zinc-900">
-          GetChef.com
-        </Link>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-zinc-500 hidden sm:block">{name}</span>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Salir</span>
-            </button>
-          </form>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-6 py-10">
+      <main className="max-w-4xl px-6 pt-16 pb-10">
         <div className="mb-8">
           <h1 className="font-serif text-2xl font-semibold text-zinc-900">
             Hola, {userData?.first_name || 'bienvenido/a'}
@@ -184,8 +183,9 @@ export default async function ClientDashboardPage() {
                 ].filter(Boolean).join(' · ')
 
                 const lugar = [req.location, req.city].filter(Boolean).join(', ')
-                const canCancel = req.status !== 'cancelled' && req.status !== 'completed'
-                const isActive  = ACTIVE_STATUSES.has(req.status)
+                const canCancel      = req.status !== 'cancelled' && req.status !== 'completed'
+                const isActive       = ACTIVE_STATUSES.has(req.status)
+                const proposalCount  = proposalCountMap[req.id] ?? 0
 
                 return (
                   <div
@@ -225,9 +225,16 @@ export default async function ClientDashboardPage() {
                       <Row
                         label="Propuestas"
                         value={
-                          <span className={isActive ? 'text-amber-600 font-medium' : ''}>
-                            Tienes 0 propuestas
-                          </span>
+                          proposalCount > 0 ? (
+                            <ProposalsLink
+                              href={`/client-dashboard/${req.id}/proposals`}
+                              count={proposalCount}
+                            />
+                          ) : (
+                            <span className={isActive ? 'text-amber-600 font-medium' : 'text-zinc-400'}>
+                              Sin propuestas aún
+                            </span>
+                          )
                         }
                       />
                     </div>
@@ -236,7 +243,9 @@ export default async function ClientDashboardPage() {
                     {isActive && (
                       <div className="border-t border-zinc-100 px-5 py-3">
                         <p className="text-sm font-medium text-zinc-700">
-                          En breve recibirás propuestas de nuestros chefs
+                          {proposalCount > 0
+                            ? `Tenés ${proposalCount} propuesta${proposalCount !== 1 ? 's' : ''} de chefs`
+                            : 'En breve recibirás propuestas de nuestros chefs'}
                         </p>
                       </div>
                     )}

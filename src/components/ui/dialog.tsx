@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-
 import { cn } from "@/lib/utils"
 
 type DialogContextValue = {
@@ -11,7 +10,7 @@ type DialogContextValue = {
 
 const DialogContext = React.createContext<DialogContextValue | null>(null)
 
-function useDialogContext() {
+export function useDialogContext() {
   const context = React.useContext(DialogContext)
   if (!context) {
     throw new Error("Dialog components must be used inside a <Dialog />")
@@ -19,8 +18,26 @@ function useDialogContext() {
   return context
 }
 
-function Dialog({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = React.useState(false)
+export function Dialog({
+  children,
+  open: controlledOpen,
+  onOpenChange,
+}: {
+  children: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [internalOpen, setInternalOpen] = React.useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen: React.Dispatch<React.SetStateAction<boolean>> = React.useCallback(
+    (val) => {
+      const next = typeof val === "function" ? (val as (p: boolean) => boolean)(open) : val
+      if (isControlled) onOpenChange?.(next)
+      else setInternalOpen(next)
+    },
+    [isControlled, open, onOpenChange],
+  )
 
   return (
     <DialogContext.Provider value={{ open, setOpen }}>
@@ -29,7 +46,7 @@ function Dialog({ children }: { children: React.ReactNode }) {
   )
 }
 
-function DialogTrigger({
+export function DialogTrigger({
   children,
   asChild = false,
   className,
@@ -40,13 +57,11 @@ function DialogTrigger({
   className?: string
 } & React.HTMLAttributes<HTMLElement>) {
   const { setOpen } = useDialogContext()
-
   const handleClick = () => setOpen(true)
 
   if (asChild && React.isValidElement(children)) {
     const child = children as React.ReactElement<React.HTMLAttributes<HTMLElement>>
     const existingOnClick = child.props.onClick
-
     return React.cloneElement(child, {
       ...props,
       className: cn(child.props.className, className),
@@ -69,7 +84,7 @@ function DialogTrigger({
   )
 }
 
-function DialogClose({
+export function DialogClose({
   children,
   asChild = false,
   className,
@@ -80,13 +95,11 @@ function DialogClose({
   className?: string
 } & React.HTMLAttributes<HTMLElement>) {
   const { setOpen } = useDialogContext()
-
   const handleClose = () => setOpen(false)
 
   if (asChild && React.isValidElement(children)) {
     const child = children as React.ReactElement<React.HTMLAttributes<HTMLElement>>
     const existingOnClick = child.props.onClick
-
     return React.cloneElement(child, {
       ...props,
       className: cn(child.props.className, className),
@@ -109,7 +122,7 @@ function DialogClose({
   )
 }
 
-function DialogContent({
+export function DialogContent({
   children,
   className,
   ...props
@@ -119,9 +132,7 @@ function DialogContent({
 } & React.HTMLAttributes<HTMLDivElement>) {
   const { open, setOpen } = useDialogContext()
 
-  if (!open) {
-    return null
-  }
+  if (!open) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -144,7 +155,7 @@ function DialogContent({
   )
 }
 
-function DialogHeader({
+export function DialogHeader({
   children,
   className,
   ...props
@@ -159,7 +170,7 @@ function DialogHeader({
   )
 }
 
-function DialogTitle({
+export function DialogTitle({
   children,
   className,
   ...props
@@ -174,7 +185,7 @@ function DialogTitle({
   )
 }
 
-function DialogDescription({
+export function DialogDescription({
   children,
   className,
   ...props
@@ -189,7 +200,7 @@ function DialogDescription({
   )
 }
 
-function DialogFooter({
+export function DialogFooter({
   children,
   className,
   ...props
@@ -202,15 +213,4 @@ function DialogFooter({
       {children}
     </div>
   )
-}
-
-export {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
 }
