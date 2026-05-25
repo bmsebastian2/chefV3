@@ -22,7 +22,7 @@ export function CancelButton({ requestId }: { requestId: string }) {
   function handleConfirm() {
     if (!reason) return
     startTransition(async () => {
-      const result = await cancelRequest(requestId)
+      const result = await cancelRequest(requestId, reason)
       if (!result.error) {
         setOpen(false)
         router.refresh()
