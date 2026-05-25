@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CalendarDays, Users, MapPin, ChefHat, UtensilsCrossed, Lock } from "lucide-react";
@@ -234,26 +234,31 @@ export function RequestsView({
 }) {
   const [activeTab, setActiveTab] = useState<string>("all");
   const router = useRouter();
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     if (!canReceive) return;
 
-    const refresh = () => router.refresh();
+    const refresh = () => startTransition(() => router.refresh());
 
-    // Refresh when user returns to the tab
+    // Refresh immediately on mount (catches navigation from wizard)
+    refresh();
+
+    // Refresh when user returns to the tab from another app/window
     const onVisibility = () => {
       if (document.visibilityState === "visible") refresh();
     };
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Poll every 60 seconds as background fallback
-    const interval = setInterval(refresh, 60_000);
+    // Poll every 30 seconds as background fallback
+    const interval = setInterval(refresh, 30_000);
 
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       clearInterval(interval);
     };
-  }, [canReceive, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canReceive]);
 
   if (!canReceive) {
     return <RequestsGate missing={missing} />;
