@@ -226,6 +226,71 @@ function buildMagicLinkEmail(name: string, magicLink: string, tempPassword?: str
 }
 
 
+// ── Email: nueva propuesta del chef ──────────────────────────────────────────
+const MONTHS_ES_PROPOSAL = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+
+function buildProposalEmail(opts: {
+  clientName: string
+  chefName: string
+  mealTime: string | null
+  eventDate: string | null
+  requestId: string
+}): string {
+  const fmtDate = (d: string) => {
+    const date = new Date(d + 'T00:00:00')
+    return `${date.getDate()} de ${MONTHS_ES_PROPOSAL[date.getMonth()]} de ${date.getFullYear()}`
+  }
+
+  const dateStr = opts.eventDate ? fmtDate(opts.eventDate) : null
+  const mealStr = opts.mealTime ? opts.mealTime.toLowerCase() : null
+
+  const serviceInfo = mealStr && dateStr
+    ? `para la <strong>${mealStr}</strong> el día <strong>${dateStr}</strong>`
+    : dateStr
+      ? `para el día <strong>${dateStr}</strong>`
+      : 'para tu solicitud de servicio'
+
+  return shell(`
+    <p style="margin:0 0 20px;font-size:22px;font-weight:700;line-height:1.3;color:#18181B;">
+      Hola ${opts.clientName}!
+    </p>
+    <p style="margin:0 0 28px;font-size:16px;line-height:1.7;color:#3F3F46;">
+      El/La Chef <strong>${opts.chefName}</strong> te ha enviado
+      <em style="font-style:italic;font-weight:600;">una propuesta</em> ${serviceInfo}
+    </p>
+    <p style="margin:0 0 8px;font-size:15px;color:#3F3F46;text-align:center;">
+      Puedes ver la propuesta en el siguiente enlace
+    </p>
+    ${cta(`${SITE_URL}/client-dashboard/${opts.requestId}/proposals`, 'Ver Propuesta')}
+  `)
+}
+
+export async function sendProposalEmail(opts: {
+  clientEmail: string
+  clientName: string
+  chefName: string
+  mealTime: string | null
+  eventDate: string | null
+  requestId: string
+}): Promise<void> {
+  if (!resend) {
+    console.warn('[client-emails] RESEND_API_KEY no configurado, omitiendo email de propuesta')
+    return
+  }
+
+  const recipient = to(opts.clientEmail)
+  const prefix    = pfx(opts.clientEmail)
+
+  const { error } = await resend.emails.send({
+    from:    FROM,
+    to:      recipient,
+    subject: `${prefix}${opts.chefName} te envió una propuesta — GetChef`,
+    html:    buildProposalEmail(opts),
+  })
+
+  if (error) console.error('[client-emails] sendProposalEmail falló:', error)
+}
+
 // ── Punto de entrada ──────────────────────────────────────────────────────────
 export async function sendClientEmails(opts: {
   email: string
