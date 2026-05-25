@@ -28,6 +28,7 @@ export default async function RequestsPage() {
 
   const proposalMap: Record<string, string> = {}
   const chefMenus: ChefMenu[] = []
+  let cancelledApplied: RequestCard[] = []
 
   if (chef) {
     const { data: proposals } = await supabase
@@ -37,6 +38,14 @@ export default async function RequestsPage() {
 
     for (const p of proposals ?? []) {
       proposalMap[p.request_id] = p.status
+    }
+
+    const { data: cancelledData } = await supabase.rpc('get_cancelled_applied_requests')
+    if (Array.isArray(cancelledData)) {
+      cancelledApplied = (cancelledData as RequestCard[]).map((r) => ({
+        ...r,
+        proposal_status: proposalMap[r.id] ?? null,
+      }))
     }
 
     if (state.can_receive) {
@@ -80,10 +89,14 @@ export default async function RequestsPage() {
     }
   }
 
-  const requests = state.requests.map((r) => ({
-    ...r,
-    proposal_status: proposalMap[r.id] ?? null,
-  }))
+  const existingIds = new Set(state.requests.map((r) => r.id))
+  const requests = [
+    ...state.requests.map((r) => ({
+      ...r,
+      proposal_status: proposalMap[r.id] ?? null,
+    })),
+    ...cancelledApplied.filter((r) => !existingIds.has(r.id)),
+  ]
 
   return (
     <RequestsView
