@@ -16,11 +16,12 @@ export async function sendMessage(
 
   const admin = createAdminClient()
 
-  const { data: proposal } = await admin
+  const { data: proposal, error: proposalError } = await admin
     .from('proposals')
     .select('id, chef_id')
     .eq('id', proposalId)
     .single()
+  console.error('[sendMessage] proposalId:', proposalId, '| proposal:', proposal, '| error:', proposalError)
   if (!proposal) return { error: 'Propuesta no encontrada' }
 
   const { data: chefProfile } = await admin
