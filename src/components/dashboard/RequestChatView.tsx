@@ -94,16 +94,14 @@ function fmt(n: number) {
 // ── Componente principal ───────────────────────────────────────────────────────
 
 export function RequestChatView({
-  requestId,
-  chefId,
+  proposalId,
   currentUserId,
   request,
   clientName,
   proposal,
   initialMessages,
 }: {
-  requestId:       string
-  chefId:          string
+  proposalId:      string
   currentUserId:   string
   request:         RequestInfo
   clientName:      string
@@ -126,19 +124,17 @@ export function RequestChatView({
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
-      .channel(`messages:${requestId}:${chefId}`)
+      .channel(`messages:${proposalId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `request_id=eq.${requestId}`,
+          filter: `proposal_id=eq.${proposalId}`,
         },
         (payload) => {
           const m = payload.new as ChatMessage;
-          // Only add if it belongs to this thread and not already in state
-          if ((m as { chef_id?: string }).chef_id !== chefId) return;
           setMessages((prev) =>
             prev.some((x) => x.id === m.id) ? prev : [...prev, m]
           );
@@ -147,7 +143,7 @@ export function RequestChatView({
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [requestId, chefId]);
+  }, [proposalId]);
 
   const handleSend = () => {
     const text = input.trim();
@@ -167,7 +163,7 @@ export function RequestChatView({
     setMessages((prev) => [...prev, optimistic]);
 
     startTransition(async () => {
-      const result = await sendMessage(requestId, chefId, text);
+      const result = await sendMessage(proposalId, text);
       if (result.error) {
         setError(result.error);
         setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));

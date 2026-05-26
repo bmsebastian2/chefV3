@@ -30,7 +30,6 @@ type OtherProposal = {
 
 type Props = {
   requestId:   string
-  chefId:      string
   currentUserId: string
   proposal: {
     id:               string
@@ -211,7 +210,6 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
 
 export function ProposalDetailView({
   requestId,
-  chefId,
   currentUserId,
   proposal,
   chef,
@@ -242,20 +240,19 @@ export function ProposalDetailView({
   useEffect(() => {
     const supabase = createClient()
     const channel = supabase
-      .channel(`client-msgs:${requestId}:${chefId}`)
+      .channel(`client-msgs:${proposal.id}`)
       .on("postgres_changes", {
         event:  "INSERT",
         schema: "public",
         table:  "messages",
-        filter: `request_id=eq.${requestId}`,
+        filter: `proposal_id=eq.${proposal.id}`,
       }, (payload) => {
-        const m = payload.new as ChatMessage & { chef_id?: string }
-        if (m.chef_id !== chefId) return
+        const m = payload.new as ChatMessage
         setMessages((prev) => prev.some((x) => x.id === m.id) ? prev : [...prev, m])
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [requestId, chefId])
+  }, [proposal.id])
 
   const handleSend = () => {
     const text = input.trim()
@@ -268,7 +265,7 @@ export function ProposalDetailView({
     }
     setMessages((prev) => [...prev, optimistic])
     startMsgTransition(async () => {
-      const result = await sendClientMessage(requestId, chefId, text)
+      const result = await sendClientMessage(proposal.id, text)
       if (result.error) {
         setMsgError(result.error)
         setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))

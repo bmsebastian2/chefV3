@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { RequestChatView } from '@/components/dashboard/RequestChatView'
 
 export default async function RequestDetailPage({
@@ -49,17 +50,16 @@ export default async function RequestDetailPage({
   if (!proposal) redirect('/dashboard/requests')
 
   // Fetch messages
-  const { data: messages } = await supabase
+  const admin = createAdminClient()
+  const { data: messages } = await admin
     .from('messages')
     .select('id, sender_id, sender_name, content, is_read, sent_at')
-    .eq('request_id', id)
-    .eq('chef_id', chef.id)
+    .eq('proposal_id', proposal.id)
     .order('sent_at', { ascending: true })
 
   return (
     <RequestChatView
-      requestId={id}
-      chefId={chef.id}
+      proposalId={proposal.id as string}
       currentUserId={user.id}
       request={{
         status:           request.status as string,
@@ -86,7 +86,7 @@ export default async function RequestDetailPage({
         status:           proposal.status as string,
         created_at:       proposal.created_at as string,
       }}
-      initialMessages={(messages ?? []).map((m) => ({
+      initialMessages={(messages ?? []).map((m: Record<string, unknown>) => ({
         id:          m.id as string,
         sender_id:   m.sender_id as string,
         sender_name: m.sender_name as string,

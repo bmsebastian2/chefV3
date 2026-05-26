@@ -63,18 +63,48 @@ export async function rejectProposal(
 }
 
 export async function sendClientMessage(
-  requestId: string,
-  chefId: string,
+  proposalId: string,
   content: string,
 ): Promise<{ error?: string }> {
+  const trimmed = content?.trim()
+  if (!trimmed) return { error: 'Mensaje vacío' }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
-  const { error } = await supabase.rpc('send_message', {
-    p_request_id: requestId,
-    p_chef_id:    chefId,
-    p_content:    content.trim(),
+  const admin = createAdminClient()
+
+  const { data: proposal } = await admin
+    .from('proposals')
+    .select('id, request_id')
+    .eq('id', proposalId)
+    .single()
+  if (!proposal) return { error: 'Propuesta no encontrada' }
+
+  const { data: request } = await admin
+    .from('service_requests')
+    .select('user_id')
+    .eq('id', proposal.request_id)
+    .eq('user_id', user.id)
+    .single()
+  if (!request) return { error: 'No autorizado' }
+
+  const { data: userData } = await admin
+    .from('users')
+    .select('first_name, first_surname, email')
+    .eq('id', user.id)
+    .single()
+  const senderName =
+    [userData?.first_name, userData?.first_surname].filter(Boolean).join(' ') ||
+    userData?.email ||
+    'Cliente'
+
+  const { error } = await admin.from('messages').insert({
+    proposal_id: proposalId,
+    sender_id:   user.id,
+    sender_name: senderName,
+    content:     trimmed,
   })
   if (error) {
     console.error('sendClientMessage:', error)

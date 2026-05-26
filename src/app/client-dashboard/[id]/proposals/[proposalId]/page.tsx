@@ -47,6 +47,8 @@ export default async function ProposalDetailPage({
     ...(otherProposalsRaw ?? []).map((p) => p.chef_id as string),
   ]
 
+  const admin = createAdminClient()
+
   // Parallel: chef profiles, all photos, messages, meal date
   const [
     { data: chefProfiles },
@@ -62,11 +64,10 @@ export default async function ProposalDetailPage({
       .from('chef_photos')
       .select('id, chef_id, url, type')
       .in('chef_id', allChefIds),
-    supabase
+    admin
       .from('messages')
       .select('id, sender_id, sender_name, content, is_read, sent_at')
-      .eq('request_id', requestId)
-      .eq('chef_id', proposal.chef_id)
+      .eq('proposal_id', proposalId)
       .order('sent_at', { ascending: true }),
     supabase
       .from('request_dates')
@@ -78,7 +79,6 @@ export default async function ProposalDetailPage({
 
   // Fetch names via admin to bypass RLS (chef rows not readable by client user)
   const userIds = (chefProfiles ?? []).map((cp) => cp.user_id as string)
-  const admin = createAdminClient()
   const { data: chefUsers } = userIds.length > 0
     ? await admin
         .from('users')
@@ -122,7 +122,6 @@ export default async function ProposalDetailPage({
   return (
     <ProposalDetailView
       requestId={requestId}
-      chefId={proposal.chef_id as string}
       currentUserId={user.id}
       proposal={{
         id:               proposal.id as string,
