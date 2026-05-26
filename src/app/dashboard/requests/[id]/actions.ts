@@ -14,23 +14,23 @@ export async function sendMessage(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
-  const admin = createAdminClient()
-
-  const { data: proposal, error: proposalError } = await admin
-    .from('proposals')
-    .select('id, chef_id')
-    .eq('id', proposalId)
-    .single()
-  console.error('[sendMessage] proposalId:', proposalId, '| proposal:', proposal, '| error:', proposalError)
-  if (!proposal) return { error: 'Propuesta no encontrada' }
-
-  const { data: chefProfile } = await admin
+  // Verify chef owns this proposal using user session (RLS-compatible)
+  const { data: chefProfile } = await supabase
     .from('chef_profiles')
-    .select('user_id')
-    .eq('id', proposal.chef_id)
+    .select('id')
     .eq('user_id', user.id)
     .single()
   if (!chefProfile) return { error: 'No autorizado' }
+
+  const { data: proposal } = await supabase
+    .from('proposals')
+    .select('id')
+    .eq('id', proposalId)
+    .eq('chef_id', chefProfile.id)
+    .single()
+  if (!proposal) return { error: 'No autorizado' }
+
+  const admin = createAdminClient()
 
   const { data: userData } = await admin
     .from('users')

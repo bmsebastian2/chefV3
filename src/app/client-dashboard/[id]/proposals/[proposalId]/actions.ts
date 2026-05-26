@@ -73,22 +73,23 @@ export async function sendClientMessage(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
-  const admin = createAdminClient()
-
-  const { data: proposal } = await admin
+  // Verify client owns the request linked to this proposal using user session (RLS-compatible)
+  const { data: proposal } = await supabase
     .from('proposals')
     .select('id, request_id')
     .eq('id', proposalId)
     .single()
-  if (!proposal) return { error: 'Propuesta no encontrada' }
+  if (!proposal) return { error: 'No autorizado' }
 
-  const { data: request } = await admin
+  const { data: request } = await supabase
     .from('service_requests')
-    .select('user_id')
+    .select('id')
     .eq('id', proposal.request_id)
     .eq('user_id', user.id)
     .single()
   if (!request) return { error: 'No autorizado' }
+
+  const admin = createAdminClient()
 
   const { data: userData } = await admin
     .from('users')
