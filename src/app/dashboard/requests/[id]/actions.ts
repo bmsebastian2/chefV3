@@ -50,8 +50,8 @@ export async function sendMessage(
   })
 
   if (error) {
-    console.error('sendMessage:', error)
-    return { error: 'Error al enviar el mensaje' }
+    console.error('sendMessage insert:', error)
+    return { error: `INSERT error: ${error.code} - ${error.message}` }
   }
 
   return {}

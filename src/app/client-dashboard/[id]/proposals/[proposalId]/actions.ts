@@ -108,8 +108,8 @@ export async function sendClientMessage(
     content:     trimmed,
   })
   if (error) {
-    console.error('sendClientMessage:', error)
-    return { error: 'Error al enviar el mensaje' }
+    console.error('sendClientMessage insert:', error)
+    return { error: `INSERT error: ${error.code} - ${error.message}` }
   }
 
   return {}
