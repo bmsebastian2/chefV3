@@ -245,9 +245,9 @@ export function ProposalDetailView({
         event:  "INSERT",
         schema: "public",
         table:  "messages",
-        filter: `proposal_id=eq.${proposal.id}`,
       }, (payload) => {
-        const m = payload.new as ChatMessage
+        const m = payload.new as ChatMessage & { proposal_id?: string }
+        if (m.proposal_id !== proposal.id) return
         setMessages((prev) => prev.some((x) => x.id === m.id) ? prev : [...prev, m])
       })
       .subscribe()

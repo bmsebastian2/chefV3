@@ -131,10 +131,10 @@ export function RequestChatView({
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `proposal_id=eq.${proposalId}`,
         },
         (payload) => {
-          const m = payload.new as ChatMessage;
+          const m = payload.new as ChatMessage & { proposal_id?: string };
+          if (m.proposal_id !== proposalId) return;
           setMessages((prev) =>
             prev.some((x) => x.id === m.id) ? prev : [...prev, m]
           );
