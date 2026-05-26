@@ -238,21 +238,19 @@ export function ProposalDetailView({
   }, [messages, activeTab])
 
   useEffect(() => {
+    if (activeTab !== "mensajes") return
     const supabase = createClient()
-    const channel = supabase
-      .channel(`client-msgs:${proposal.id}`)
-      .on("postgres_changes", {
-        event:  "INSERT",
-        schema: "public",
-        table:  "messages",
-      }, (payload) => {
-        const m = payload.new as ChatMessage & { proposal_id?: string }
-        if (m.proposal_id !== proposal.id) return
-        setMessages((prev) => prev.some((x) => x.id === m.id) ? prev : [...prev, m])
-      })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [proposal.id])
+    const poll = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("id, sender_id, sender_name, content, is_read, sent_at")
+        .eq("proposal_id", proposal.id)
+        .order("sent_at", { ascending: true })
+      if (data) setMessages(data as ChatMessage[])
+    }
+    const interval = setInterval(poll, 3000)
+    return () => clearInterval(interval)
+  }, [proposal.id, activeTab])
 
   const handleSend = () => {
     const text = input.trim()

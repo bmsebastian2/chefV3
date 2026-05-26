@@ -120,29 +120,18 @@ export function RequestChatView({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Real-time subscription
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
-      .channel(`messages:${proposalId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        (payload) => {
-          const m = payload.new as ChatMessage & { proposal_id?: string };
-          if (m.proposal_id !== proposalId) return;
-          setMessages((prev) =>
-            prev.some((x) => x.id === m.id) ? prev : [...prev, m]
-          );
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    const poll = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("id, sender_id, sender_name, content, is_read, sent_at")
+        .eq("proposal_id", proposalId)
+        .order("sent_at", { ascending: true });
+      if (data) setMessages(data as ChatMessage[]);
+    };
+    const interval = setInterval(poll, 3000);
+    return () => clearInterval(interval);
   }, [proposalId]);
 
   const handleSend = () => {
