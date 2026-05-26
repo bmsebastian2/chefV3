@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   CalendarDays, Users, MapPin, ChefHat, UtensilsCrossed,
-  Lock, SendHorizonal, Clock, CheckCircle2, XCircle, MessageCircle,
+  Lock, SendHorizonal, Clock, CheckCircle2, XCircle, MessageCircle, Loader2,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -378,6 +378,8 @@ function ProposalForm({ requestId, clientName, chefMenus, onSuccess, onClose }: 
 function RequestCardItem({ req, chefMenus }: { req: RequestCard; chefMenus: ChefMenu[] }) {
   const [proposalStatus, setProposalStatus] = useState<string | null>(req.proposal_status ?? null);
   const [showProposal, setShowProposal] = useState(false);
+  const [navigating, setNavigating] = useState(false);
+  const router = useRouter();
 
   const budget  = formatBudget(req.budget_min, req.budget_max);
   const dateStr = req.event_date_end && req.event_date_end !== req.event_date_start
@@ -450,13 +452,17 @@ function RequestCardItem({ req, chefMenus }: { req: RequestCard; chefMenus: Chef
         ) : <span />}
 
         {proposalStatus ? (
-          <Link
-            href={`/dashboard/requests/${req.id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 text-white text-xs font-semibold hover:bg-zinc-700 transition-colors"
+          <button
+            type="button"
+            onClick={() => { setNavigating(true); router.push(`/dashboard/requests/${req.id}`); }}
+            disabled={navigating}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 text-white text-xs font-semibold hover:bg-zinc-700 transition-colors disabled:opacity-70"
           >
-            <MessageCircle className="w-3.5 h-3.5" />
+            {navigating
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <MessageCircle className="w-3.5 h-3.5" />}
             Chat
-          </Link>
+          </button>
         ) : canApply ? (
           <>
             <button
