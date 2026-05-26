@@ -89,27 +89,14 @@ export async function sendClientMessage(
     .single()
   if (!request) return { error: 'No autorizado' }
 
-  const admin = createAdminClient()
-
-  const { data: userData } = await admin
-    .from('users')
-    .select('first_name, first_surname, email')
-    .eq('id', user.id)
-    .single()
-  const senderName =
-    [userData?.first_name, userData?.first_surname].filter(Boolean).join(' ') ||
-    userData?.email ||
-    'Cliente'
-
-  const { error } = await admin.from('messages').insert({
-    proposal_id: proposalId,
-    sender_id:   user.id,
-    sender_name: senderName,
-    content:     trimmed,
+  const { error } = await supabase.rpc('insert_message', {
+    p_proposal_id: proposalId,
+    p_sender_id:   user.id,
+    p_content:     trimmed,
   })
   if (error) {
-    console.error('sendClientMessage insert:', error)
-    return { error: `INSERT error: ${error.code} - ${error.message}` }
+    console.error('sendClientMessage:', error)
+    return { error: 'Error al enviar el mensaje' }
   }
 
   return {}
