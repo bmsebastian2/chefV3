@@ -7,8 +7,7 @@ import {
   ArrowLeft, Send, CalendarDays, Users, MapPin,
   ChefHat, UtensilsCrossed, Clock, CheckCircle2, XCircle,
 } from "lucide-react";
-import { createClient } from "@/utils/supabase/clients";
-import { sendMessage } from "@/app/dashboard/requests/[id]/actions";
+import { sendMessage, getMessages } from "@/app/dashboard/requests/[id]/actions";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -121,14 +120,9 @@ export function RequestChatView({
   }, [messages]);
 
   useEffect(() => {
-    const supabase = createClient();
     const poll = async () => {
-      const { data } = await supabase
-        .from("messages")
-        .select("id, sender_id, sender_name, content, is_read, sent_at")
-        .eq("proposal_id", proposalId)
-        .order("sent_at", { ascending: true });
-      if (data) setMessages(data as ChatMessage[]);
+      const data = await getMessages(proposalId);
+      if (data.length > 0) setMessages(data as ChatMessage[]);
     };
     const interval = setInterval(poll, 3000);
     return () => clearInterval(interval);

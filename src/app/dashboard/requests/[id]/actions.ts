@@ -2,6 +2,18 @@
 
 import { createClient } from '@/utils/supabase/server'
 
+export async function getMessages(proposalId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data } = await supabase
+    .from('messages')
+    .select('id, sender_id, sender_name, content, is_read, sent_at')
+    .eq('proposal_id', proposalId)
+    .order('sent_at', { ascending: true })
+  return data ?? []
+}
+
 export async function sendMessage(
   proposalId: string,
   content: string,

@@ -7,8 +7,7 @@ import {
   ArrowLeft, Send, Share2, MoreHorizontal,
   Star, CheckCircle2, XCircle, Loader2,
 } from "lucide-react"
-import { createClient } from "@/utils/supabase/clients"
-import { acceptProposal, rejectProposal, sendClientMessage } from "./actions"
+import { acceptProposal, rejectProposal, sendClientMessage, getMessages } from "./actions"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -239,14 +238,9 @@ export function ProposalDetailView({
 
   useEffect(() => {
     if (activeTab !== "mensajes") return
-    const supabase = createClient()
     const poll = async () => {
-      const { data } = await supabase
-        .from("messages")
-        .select("id, sender_id, sender_name, content, is_read, sent_at")
-        .eq("proposal_id", proposal.id)
-        .order("sent_at", { ascending: true })
-      if (data) setMessages(data as ChatMessage[])
+      const data = await getMessages(proposal.id)
+      if (data.length > 0) setMessages(data as ChatMessage[])
     }
     const interval = setInterval(poll, 3000)
     return () => clearInterval(interval)
