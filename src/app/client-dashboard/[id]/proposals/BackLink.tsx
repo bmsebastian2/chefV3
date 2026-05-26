@@ -8,7 +8,10 @@ export function BackLink({ href }: { href: string }) {
   const [loading, setLoading] = useState(false)
 
   return (
-    <Link
+
+<div className="sticky top-0 z-10 bg-zinc-50/90 backdrop-blur border-b border-zinc-200 px-6 py-3 flex items-center gap-3">
+
+<Link
       href={href}
       onClick={() => setLoading(true)}
       className="pl-12 inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors mb-8 py-6 -mx-3 rounded-lg hover:bg-zinc-100"
@@ -20,5 +23,13 @@ export function BackLink({ href }: { href: string }) {
       )}
       Mis solicitudes
     </Link>
+</div>
+   
+
+      
+    
+    
   )
 }
+
+

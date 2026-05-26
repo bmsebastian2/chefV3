@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { logout } from '@/app/auth/actions'
+import { BackLink } from './proposals/BackLink'
 import {
   LogOut, ArrowLeft, CalendarDays, MapPin,
   Users, Utensils, DollarSign, FileText, AlertCircle,
@@ -145,13 +146,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
       <main className="max-w-2xl mx-auto px-6 py-8 space-y-4">
         <div>
-          <Link
-            href="/client-dashboard"
-            className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors mb-4"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Mis solicitudes
-          </Link>
+          <BackLink href="/client-dashboard" />
 
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>

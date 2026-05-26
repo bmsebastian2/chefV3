@@ -1,8 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
 import { BackLink } from './BackLink'
+import { ProposalCard } from './ProposalCard'
 
 const SERVICE_LABELS: Record<string, string> = {
   single:   'Servicio único',
@@ -93,43 +92,17 @@ export default async function ProposalsListPage({ params }: { params: Promise<{ 
                 : 'Chef'
 
               return (
-                <Link
+                <ProposalCard
                   key={proposal.id}
                   href={`/client-dashboard/${id}/proposals/${proposal.id}`}
-                  className="flex items-center gap-4 px-5 py-4 hover:bg-zinc-50 transition-colors group"
-                >
-                  {/* Avatar */}
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-zinc-100 flex-shrink-0 ring-1 ring-zinc-200">
-                    {photoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={photoUrl}
-                        alt={chefName}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-400 text-base font-semibold">
-                        {chefName[0]?.toUpperCase() ?? 'C'}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-zinc-900 group-hover:text-zinc-700">{chefName}</p>
-                    <p className="text-sm text-zinc-500 mt-0.5">
-                      {proposal.price_per_person
-                        ? `$${Number(proposal.price_per_person).toLocaleString('es-AR')} / persona`
-                        : 'Precio a consultar'}
-                    </p>
-                  </div>
-
-                  {/* CTA */}
-                  <div className="flex items-center gap-0.5 text-sm text-accent font-medium flex-shrink-0">
-                    Ver propuesta
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                </Link>
+                  photoUrl={photoUrl}
+                  chefName={chefName}
+                  priceText={
+                    proposal.price_per_person
+                      ? `$${Number(proposal.price_per_person).toLocaleString('es-AR')} / persona`
+                      : 'Precio a consultar'
+                  }
+                />
               )
             })}
           </div>

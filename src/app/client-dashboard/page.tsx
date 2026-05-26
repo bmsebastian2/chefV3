@@ -138,7 +138,7 @@ export default async function ClientDashboardPage() {
 
         <Link
           href={wizardUrl}
-          className="flex items-center gap-3 w-full bg-accent hover:bg-accent/90 text-white font-medium text-sm px-5 py-4 rounded-xl transition-colors mb-8"
+          className="inline-flex items-center gap-3 bg-accent hover:bg-accent/90 text-white font-medium text-sm px-5 py-4 rounded-xl transition-colors mb-8"
         >
           <Plus className="w-5 h-5" />
           Nueva solicitud de chef
