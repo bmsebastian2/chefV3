@@ -64,7 +64,7 @@ export default async function ProposalDetailPage({
       .from('chef_photos')
       .select('id, chef_id, url, type')
       .in('chef_id', allChefIds),
-    admin
+    supabase
       .from('messages')
       .select('id, sender_id, sender_name, content, is_read, sent_at')
       .eq('proposal_id', proposalId)

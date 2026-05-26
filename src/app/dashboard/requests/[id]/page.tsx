@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { createAdminClient } from '@/utils/supabase/admin'
 import { RequestChatView } from '@/components/dashboard/RequestChatView'
 
 export default async function RequestDetailPage({
@@ -50,8 +49,7 @@ export default async function RequestDetailPage({
   if (!proposal) redirect('/dashboard/requests')
 
   // Fetch messages
-  const admin = createAdminClient()
-  const { data: messages } = await admin
+  const { data: messages } = await supabase
     .from('messages')
     .select('id, sender_id, sender_name, content, is_read, sent_at')
     .eq('proposal_id', proposal.id)
