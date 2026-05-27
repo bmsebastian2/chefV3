@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronRight, Loader2 } from 'lucide-react'
 
@@ -22,8 +23,7 @@ export function ProposalCard({ href, photoUrl, chefName, priceText }: Props) {
     >
       <div className="w-12 h-12 rounded-full overflow-hidden bg-zinc-100 flex-shrink-0 ring-1 ring-zinc-200">
         {photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoUrl} alt={chefName} className="w-full h-full object-cover" />
+          <Image src={photoUrl} alt={chefName} width={48} height={48} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-zinc-400 text-base font-semibold">
             {chefName[0]?.toUpperCase() ?? 'C'}

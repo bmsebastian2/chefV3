@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -151,7 +152,7 @@ function ProfileMenu({
           <div className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden bg-zinc-100 flex-shrink-0 border border-zinc-200">
               {profilePhotoUrl ? (
-                <img src={profilePhotoUrl} alt={displayName} className="w-full h-full object-cover" />
+                <Image src={profilePhotoUrl} alt={displayName} width={40} height={40} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-zinc-500 font-semibold">
                   {initial}
@@ -214,7 +215,7 @@ function ProfileMenu({
       >
         <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-100 flex-shrink-0 border border-zinc-200">
           {profilePhotoUrl ? (
-            <img src={profilePhotoUrl} alt={displayName} className="w-full h-full object-cover" />
+            <Image src={profilePhotoUrl} alt={displayName} width={32} height={32} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-zinc-500 text-sm font-semibold">
               {initial}

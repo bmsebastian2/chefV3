@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition, useMemo, useRef } from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Plus, X, ChevronDown, AlertTriangle, Loader2, Info, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -335,7 +336,7 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
         >
           {imageUrl ? (
             <>
-              <img src={imageUrl} alt="Imagen del menú" className="w-full h-full object-cover" />
+              <Image src={imageUrl} alt="Imagen del menú" fill sizes="144px" className="object-cover" />
               <button
                 type="button"
                 onClick={e => { e.stopPropagation(); setImageUrl(null) }}

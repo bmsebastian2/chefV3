@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, ChevronRight, UtensilsCrossed } from 'lucide-react'
@@ -60,7 +61,7 @@ export default async function MenusPage() {
             >
               <div className="w-12 h-12 rounded-lg overflow-hidden bg-zinc-100 shrink-0">
                 {menu.image_url ? (
-                  <img src={menu.image_url} alt={menu.title} className="w-full h-full object-cover" />
+                  <Image src={menu.image_url} alt={menu.title} width={48} height={48} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <UtensilsCrossed size={18} className="text-zinc-400" />

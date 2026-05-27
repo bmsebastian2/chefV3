@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
@@ -106,7 +107,7 @@ export default async function DashboardPage() {
         <div className="flex items-center gap-4 mb-4">
           <div className="w-14 h-14 rounded-full overflow-hidden bg-zinc-100 border border-zinc-200 flex-shrink-0">
             {profilePhotoUrl ? (
-              <img src={profilePhotoUrl} alt={firstName} className="w-full h-full object-cover" />
+              <Image src={profilePhotoUrl} alt={firstName} width={56} height={56} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-zinc-400 font-serif text-xl font-semibold">
                 {firstName.charAt(0).toUpperCase()}
