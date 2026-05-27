@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import Link from "next/link";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -52,7 +53,7 @@ export function Menus() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           {menuItems.map((item, idx) => (
             <div key={idx} className="menu-item opacity-0 group relative h-80 rounded-xl overflow-hidden cursor-pointer ring-1 ring-transparent hover:ring-accent transition-all duration-300">
-              <img src={item.img} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+              <Image src={item.img} alt={item.name} fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw" className="object-cover transition-transform duration-700 group-hover:scale-110" />
               {/* Gradiente base siempre visible */}
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 via-zinc-900/10 to-transparent transition-opacity duration-300 group-hover:opacity-0" />
               {/* Gradiente accent en hover */}
