@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useActionState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { login, loginWithGoogle } from '@/app/auth/actions'
 import {
   Dialog,
@@ -65,7 +66,7 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
             >
-              {showPassword ? '🙈' : '👁'}
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
 
@@ -75,16 +76,18 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
           )}
 
           {/* Submit */}
-          <Button
-            type="submit"
-            disabled={isPending}
-            className="h-8 px-4 w-full rounded-full h-12 bg-amber-500 hover:bg-amber-600 text-white font-medium disabled:opacity-70"
-          >
-            {isPending
-              ? <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-              : 'Acceder'
-            }
-          </Button>
+          <div className="flex justify-center">
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="h-8 px-4 w-1/2 rounded-full h-12 bg-amber-500 hover:bg-amber-600 text-white font-medium disabled:opacity-70"
+            >
+              {isPending
+                ? <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                : 'Acceder'
+              }
+            </Button>
+          </div>
 
         </form>
 

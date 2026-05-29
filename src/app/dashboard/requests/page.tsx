@@ -51,7 +51,7 @@ export default async function RequestsPage() {
     if (state.can_receive) {
       const { data: menus } = await supabase
         .from('chef_menus')
-        .select('id, title')
+        .select('id, title, price_2, price_3_6, price_7_20')
         .eq('chef_id', chef.id)
         .eq('is_active', true)
         .order('created_at', { ascending: false })
@@ -84,7 +84,15 @@ export default async function RequestsPage() {
             return []
           })
 
-        chefMenus.push({ id, title: m.title as string, courses, dishes })
+        chefMenus.push({
+          id,
+          title:      m.title as string,
+          courses,
+          dishes,
+          price_2:    (m.price_2    as number | null) ?? null,
+          price_3_6:  (m.price_3_6  as number | null) ?? null,
+          price_7_20: (m.price_7_20 as number | null) ?? null,
+        })
       }
     }
   }

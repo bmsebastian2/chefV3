@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect, useRef, useTransition } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeft, Send, Share2, MoreHorizontal,
   Star, CheckCircle2, XCircle, Loader2,
 } from "lucide-react"
-import { acceptProposal, rejectProposal, sendClientMessage, getMessages } from "./actions"
+import { rejectProposal, sendClientMessage, getMessages } from "./actions"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -221,7 +222,7 @@ export function ProposalDetailView({
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [input, setInput] = useState("")
   const [isPendingMsg, startMsgTransition] = useTransition()
-  const [isAccepting, startAcceptTransition] = useTransition()
+  const [isAccepting, setIsAccepting] = useState(false)
   const [isRejecting, startRejectTransition] = useTransition()
   const [status, setStatus] = useState(proposal.status)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -267,10 +268,8 @@ export function ProposalDetailView({
   }
 
   const handleAccept = () => {
-    startAcceptTransition(async () => {
-      const result = await acceptProposal(proposal.id, requestId)
-      if (!result.error) { setStatus("accepted"); router.refresh() }
-    })
+    setIsAccepting(true)
+    router.push(`/client-dashboard/${requestId}/proposals/${proposal.id}/booking`)
   }
 
   const handleReject = () => {
@@ -329,8 +328,7 @@ export function ProposalDetailView({
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-16 rounded-full overflow-hidden bg-zinc-200 flex-shrink-0 ring-2 ring-white shadow-sm">
               {chef.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={chef.photoUrl} alt={chef.name} className="w-full h-full object-cover" />
+                <Image src={chef.photoUrl} alt={chef.name} width={64} height={64} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-zinc-500 text-xl font-bold">
                   {chef.name[0]?.toUpperCase()}
@@ -582,8 +580,7 @@ export function ProposalDetailView({
                     >
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-zinc-100 flex-shrink-0 ring-1 ring-zinc-200">
                         {op.photoUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={op.photoUrl} alt={op.chefName} className="w-full h-full object-cover" />
+                          <Image src={op.photoUrl} alt={op.chefName} width={40} height={40} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-zinc-400 text-sm font-bold">
                             {op.chefName[0]?.toUpperCase()}

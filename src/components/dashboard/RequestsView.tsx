@@ -11,7 +11,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { submitProposal } from "@/app/dashboard/requests/actions";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
@@ -25,10 +24,13 @@ export type MissingRequirement = {
 }
 
 export type ChefMenu = {
-  id:      string
-  title:   string
-  courses: { course: string; selection_mode: string }[]
-  dishes:  { name: string; course: string }[]
+  id:        string
+  title:     string
+  courses:   { course: string; selection_mode: string }[]
+  dishes:    { name: string; course: string }[]
+  price_2:     number | null
+  price_3_6:   number | null
+  price_7_20:  number | null
 }
 
 export type RequestCard = {
@@ -109,6 +111,13 @@ const SELECTION_MODE_LABELS: Record<string, string> = {
 };
 
 const COURSE_ORDER = ["starter", "first_course", "main", "dessert"];
+
+function priceForGuests(menu: ChefMenu, guests: number | null): number | null {
+  if (guests === null) return null;
+  if (guests <= 2)  return menu.price_2;
+  if (guests <= 6)  return menu.price_3_6;
+  return menu.price_7_20;
+}
 
 function buildMenuDescription(menu: ChefMenu): string {
   const sections: string[] = [];
@@ -227,24 +236,26 @@ function RequestsGate({ missing }: { missing: MissingRequirement[] }) {
 
 // ── Formulario de propuesta ────────────────────────────────────────────────────
 
-function ProposalForm({ requestId, clientName, chefMenus, onSuccess, onClose }: {
+function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess, onClose }: {
   requestId:  string
   clientName: string
   chefMenus:  ChefMenu[]
+  guestCount: number | null
   onSuccess:  () => void
   onClose:    () => void
 }) {
   const [message, setMessage] = useState("");
   const [selectedMenuId, setSelectedMenuId] = useState("");
   const [menuDescription, setMenuDescription] = useState("");
-  const [pricePerPerson, setPricePerPerson] = useState("");
+  const [selectedMenu, setSelectedMenu] = useState<ChefMenu | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleMenuSelect(menuId: string) {
     setSelectedMenuId(menuId);
-    if (!menuId) { setMenuDescription(""); return; }
-    const menu = chefMenus.find((m) => m.id === menuId);
+    if (!menuId) { setMenuDescription(""); setSelectedMenu(null); return; }
+    const menu = chefMenus.find((m) => m.id === menuId) ?? null;
+    setSelectedMenu(menu);
     if (menu) setMenuDescription(buildMenuDescription(menu));
   }
 
@@ -258,7 +269,7 @@ function ProposalForm({ requestId, clientName, chefMenus, onSuccess, onClose }: 
         message.trim() || null,
         menuDescription.trim(),
         null,
-        pricePerPerson ? parseFloat(pricePerPerson) : null,
+        selectedMenu ? priceForGuests(selectedMenu, guestCount) : null,
       );
       if (result.error) {
         setServerError(result.error);
@@ -277,18 +288,7 @@ function ProposalForm({ requestId, clientName, chefMenus, onSuccess, onClose }: 
       </DialogHeader>
 
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-            Mensaje al cliente <span className="text-zinc-400 font-normal">(opcional)</span>
-          </label>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Contale por qué sos la persona ideal para este evento..."
-            rows={3}
-            className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none transition-colors"
-          />
-        </div>
+       
 
         <div>
           <label className="block text-sm font-medium text-zinc-700 mb-1.5">
@@ -315,26 +315,44 @@ function ProposalForm({ requestId, clientName, chefMenus, onSuccess, onClose }: 
             className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none transition-colors"
           />
         </div>
-
-        <div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-              Por persona <span className="text-zinc-400 font-normal">(opcional)</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">$</span>
-              <Input
-                type="number"
-                min={0}
-                step={0.01}
-                value={pricePerPerson}
-                onChange={(e) => setPricePerPerson(e.target.value)}
-                placeholder="0"
-                className="pl-6"
-              />
-            </div>
-          </div>
+      <div>
+          <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+            Mensaje al cliente <span className="text-zinc-400 font-normal">(opcional)</span>
+          </label>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Contale por qué sos la persona ideal para este evento..."
+            rows={3}
+            className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none transition-colors"
+          />
         </div>
+        {selectedMenu && (selectedMenu.price_2 || selectedMenu.price_3_6 || selectedMenu.price_7_20) && (() => {
+          const activePrice = priceForGuests(selectedMenu, guestCount);
+          const row = (label: string, price: number | null, isActive: boolean) =>
+            price != null ? (
+              <div className={`flex items-center justify-between text-sm rounded-md px-2 py-1 -mx-2 ${isActive ? "bg-accent/10 ring-1 ring-accent/30" : ""}`}>
+                <span className={isActive ? "text-accent font-medium" : "text-zinc-600"}>
+                  {label}{isActive && guestCount !== null ? ` (${guestCount})` : ""}
+                </span>
+                <span className={`font-semibold ${isActive ? "text-accent" : "text-zinc-900"}`}>
+                  ${fmt(price)}
+                </span>
+              </div>
+            ) : null;
+          return (
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">
+                Precios del menú (por persona)
+              </p>
+              <div className="space-y-0.5">
+                {row("2 personas",    selectedMenu.price_2,    activePrice === selectedMenu.price_2    && selectedMenu.price_2    != null)}
+                {row("3–6 personas",  selectedMenu.price_3_6,  activePrice === selectedMenu.price_3_6  && selectedMenu.price_3_6  != null)}
+                {row("7–20 personas", selectedMenu.price_7_20, activePrice === selectedMenu.price_7_20 && selectedMenu.price_7_20 != null)}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {serverError && (
@@ -479,6 +497,10 @@ function RequestCardItem({ req, chefMenus }: { req: RequestCard; chefMenus: Chef
                   requestId={req.id}
                   clientName={req.client_name}
                   chefMenus={chefMenus}
+                  guestCount={
+                    req.cuantas_personas ??
+                    (((req.guests_adults ?? 0) + (req.guests_teens ?? 0) + (req.guests_kids ?? 0)) || null)
+                  }
                   onSuccess={() => setProposalStatus('pending')}
                   onClose={() => setShowProposal(false)}
                 />
