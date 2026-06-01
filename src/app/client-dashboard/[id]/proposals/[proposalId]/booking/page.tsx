@@ -17,7 +17,7 @@ export default async function BookingPage({
 
   const { data: request } = await supabase
     .from('service_requests')
-    .select('id, event_date_start, cuisine_type')
+    .select('id, event_date_start, cuisine_type, cuantas_personas')
     .eq('id', requestId)
     .eq('user_id', user.id)
     .single()
