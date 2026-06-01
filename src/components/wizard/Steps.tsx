@@ -17,7 +17,6 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import "./daterange.css";
 import { Country as LibCountry } from "country-state-city";
-import { getUserCountryClient } from "@/utils/country";
 
 export function StepServiceType({ data, updateData, nextStep, onService3Selected, onServiceTypeSelected }: StepProps) {
   const options = [
@@ -91,7 +90,6 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [userCoords, setUserCoords] = useState<{ lat: number, lon: number } | null>(null);
-  const [countryCode] = useState(() => getUserCountryClient());
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -99,11 +97,6 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
         setUserCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
       }, () => console.log("Geolocalización denegada"));
     }
-  }, []);
-
-  useEffect(() => {
-    // TODO: remove after testing
-    console.log("[getUserCountry] país detectado:", getUserCountryClient());
   }, []);
 
   useEffect(() => {
@@ -118,7 +111,7 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&autocomplete=true&language=es&country=${countryCode.toLowerCase()}&types=address,place&limit=5`;
+        let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&autocomplete=true&language=es&types=address,place&limit=5`;
         if (userCoords) {
           url += `&proximity=${userCoords.lon},${userCoords.lat}`;
         }
