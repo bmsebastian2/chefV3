@@ -118,14 +118,14 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        let url = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?SingleLine=${encodeURIComponent(query)}&f=json&maxLocations=5&outFields=City,Region&countryCode=${countryCode}`;
+        let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&autocomplete=true&language=es&country=${countryCode.toLowerCase()}&types=address,place&limit=5`;
         if (userCoords) {
-          url += `&location=${userCoords.lon},${userCoords.lat}&distance=50000`;
+          url += `&proximity=${userCoords.lon},${userCoords.lat}`;
         }
         const res = await fetch(url, { signal });
         if (!res.ok) throw new Error("Network Error");
         const json = await res.json();
-        setResults(json.candidates || []);
+        setResults(json.features || []);
       } catch (e: unknown) {
         if (e instanceof Error && e.name !== 'AbortError') {
           // El API devolvió un timeout o límite. Vaciamos en modo silencioso.
@@ -182,12 +182,12 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
               <button
                 key={idx}
                 type="button"
-                onClick={() => selectLocation(r.address, r.attributes?.City || r.attributes?.Region || r.address.split(",")[0], r.location.y, r.location.x)}
+                onClick={() => selectLocation(r.place_name, r.place_name.split(",")[1]?.trim() || r.place_name.split(",")[0], r.center[1], r.center[0])}
                 className="w-full text-left px-4 py-3 hover:bg-zinc-50 border-b border-zinc-100 last:border-none focus:outline-none focus:bg-zinc-50 transition-colors"
               >
-                <div className="font-medium text-zinc-900">{r.address.split(",")[0]}</div>
+                <div className="font-medium text-zinc-900">{r.place_name.split(",")[0]}</div>
                 <div className="text-xs text-zinc-500">
-                  {r.address.split(",").slice(1).join(",").trim()}
+                  {r.place_name.split(",").slice(1).join(",").trim()}
                 </div>
               </button>
             ))}
