@@ -17,6 +17,7 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import "./daterange.css";
 import { Country as LibCountry } from "country-state-city";
+import { getUserCountryClient } from "@/utils/country";
 
 export function StepServiceType({ data, updateData, nextStep, onService3Selected, onServiceTypeSelected }: StepProps) {
   const options = [
@@ -90,6 +91,7 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [userCoords, setUserCoords] = useState<{ lat: number, lon: number } | null>(null);
+  const [countryCode] = useState(() => getUserCountryClient());
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -97,6 +99,11 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
         setUserCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
       }, () => console.log("Geolocalización denegada"));
     }
+  }, []);
+
+  useEffect(() => {
+    // TODO: remove after testing
+    console.log("[getUserCountry] país detectado:", getUserCountryClient());
   }, []);
 
   useEffect(() => {
@@ -111,7 +118,7 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        let url = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?SingleLine=${encodeURIComponent(query)}&f=json&maxLocations=5&outFields=City,Region`;
+        let url = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?SingleLine=${encodeURIComponent(query)}&f=json&maxLocations=5&outFields=City,Region&countryCode=${countryCode}`;
         if (userCoords) {
           url += `&location=${userCoords.lon},${userCoords.lat}&distance=50000`;
         }
