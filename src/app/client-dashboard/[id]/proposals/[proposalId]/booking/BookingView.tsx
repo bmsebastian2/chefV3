@@ -17,20 +17,21 @@ type Props = {
     pricePerPerson: number
     dateStr:        string
   }
+  maxGuests: number
 }
 
 function fmt(n: number) {
   return n.toLocaleString("es-UY")
 }
 
-const GUEST_OPTIONS = [2, 3, 4]
-
 function GuestDropdown({
   value,
   onChange,
+  maxGuests,
 }: {
   value: number | ""
   onChange: (v: number | "") => void
+  maxGuests: number
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -43,6 +44,7 @@ function GuestDropdown({
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
+  const options = Array.from({ length: Math.max(1, maxGuests - 1) }, (_, i) => i + 2)
   const label = value ? `${value} personas` : "Seleccionar"
 
   return (
@@ -69,7 +71,7 @@ function GuestDropdown({
             Seleccionar
           </button>
 
-          {GUEST_OPTIONS.map((n) => {
+          {options.map((n) => {
             const selected = value === n
             return (
               <button
@@ -92,7 +94,7 @@ function GuestDropdown({
   )
 }
 
-export function BookingView({ requestId, proposalId, chef, menu }: Props) {
+export function BookingView({ requestId, proposalId, chef, menu, maxGuests }: Props) {
   const router = useRouter()
   const [guests, setGuests] = useState<number | "">(2)
 
@@ -166,7 +168,7 @@ export function BookingView({ requestId, proposalId, chef, menu }: Props) {
                 <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-2">
                   Número de comensales
                 </p>
-                <GuestDropdown value={guests} onChange={setGuests} />
+                <GuestDropdown value={guests} onChange={setGuests} maxGuests={maxGuests} />
               </div>
             </div>
           </div>
