@@ -1,4 +1,4 @@
-const CACHE = "getchef-v1";
+const CACHE = "getchef-v2";
 const OFFLINE_URL = "/offline";
 const PRECACHE = [OFFLINE_URL, "/", "/manifest.webmanifest", "/icon-192x192.png"];
 
@@ -27,7 +27,7 @@ self.addEventListener("fetch", (event) => {
     url.pathname.startsWith("/api/") ||
     url.pathname.startsWith("/auth/") ||
     url.searchParams.has("_rsc") ||
-    (url.pathname.startsWith("/_next/") && !url.pathname.startsWith("/_next/static/"))
+    url.pathname.startsWith("/_next/")
   ) return;
 
   if (event.request.mode === "navigate") {
