@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2 } from 'lucide-react'
 
 export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
   const [showPassword, setShowPassword] = useState(false)
@@ -80,12 +79,9 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
             <Button
               type="submit"
               disabled={isPending}
-              className="h-8 px-4 w-1/2 rounded-full h-12 bg-amber-500 hover:bg-amber-600 text-white font-medium disabled:opacity-70"
+              className="w-full h-12 rounded-2xl bg-accent hover:bg-accent/90 text-zinc-900 font-bold text-base disabled:opacity-50 shadow-[0_6px_18px_rgb(224,159,62,0.25)] transition-all"
             >
-              {isPending
-                ? <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                : 'Acceder'
-              }
+              {isPending ? <span className="animate-pulse">Accediendo...</span> : 'Acceder'}
             </Button>
           </div>
 
