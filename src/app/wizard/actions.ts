@@ -43,9 +43,9 @@ const MEAL_TIME_MAP: Record<string, string> = {
 }
 
 const BUDGET_MAP: Record<string, { min: number; max: number }> = {
-  'casual':    { min: 2772, max: 3119 },
-  'gourmet':   { min: 3119, max: 3465 },
-  'exclusive': { min: 3465, max: 4158 },
+  'casual':    { min: 210, max: 263 },
+  'gourmet':   { min: 263, max: 315 },
+  'exclusive': { min: 315, max: 420 },
 }
 
 const GUESTS_RANGE_MAP: Record<string, number> = {
@@ -351,7 +351,7 @@ export async function submitServiceRequest(
                     ? `${(eventDateStart as unknown as Date).getDate()} de ${MONTHS_ES[(eventDateStart as unknown as Date).getMonth()]} de ${(eventDateStart as unknown as Date).getFullYear()}`
                     : undefined,
     comensales:   data.guestsRange ? GUESTS_DISPLAY[data.guestsRange] : undefined,
-    precio:       budgetTier ? `desde ${budgetTier.min} UYU a ${budgetTier.max} UYU` : undefined,
+    precio:       budgetTier ? `desde $${budgetTier.min} a $${budgetTier.max} USD` : undefined,
     experiencia:  data.budgetTier ? BUDGET_DISPLAY[data.budgetTier] : undefined,
     gastronomia:  data.cuisine ? (CUISINE_DISPLAY[data.cuisine] ?? data.cuisine) : undefined,
     restricciones: restrictionLabels.length > 0 ? restrictionLabels.join(', ') : 'No',

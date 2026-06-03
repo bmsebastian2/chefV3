@@ -884,10 +884,10 @@ export function StepOccasion1({ data, updateData, nextStep }: StepProps) {
 
 // ── StepGuestsStatic: rangos fijos con precio desde ──────────────────────────
 const GUESTS_OPTIONS = [
-  { value: "2",    label: "2 personas",       price: "$2.772" },
-  { value: "3-6",  label: "3 a 6 personas",   price: "$1.733" },
-  { value: "7-12", label: "7 a 12 personas",  price: "$1.213" },
-  { value: "13+",  label: "13+ personas",     price: "$1.213" },
+  { value: "2",    label: "2 personas",       price: "$210" },
+  { value: "3-6",  label: "3 a 6 personas",   price: "$189" },
+  { value: "7-12", label: "7 a 12 personas",  price: "$147" },
+  { value: "13+",  label: "13+ personas",     price: "$147" },
 ] as const;
 
 export function StepGuestsStatic({ data, updateData, nextStep }: StepProps) {
@@ -989,19 +989,19 @@ const BUDGET_OPTIONS = [
     value:   "casual"    as const,
     label:   "Casual",
     desc:    "Crear vínculos en torno a la buena comida.",
-    range:   "$2.772 - $3.119",
+    range:   "$210 - $263",
   },
   {
     value:   "gourmet"   as const,
     label:   "Gourmet",
     desc:    "Menús brillantes para impresionar a tus invitados.",
-    range:   "$3.119 - $3.465",
+    range:   "$263 - $315",
   },
   {
     value:   "exclusive" as const,
     label:   "Selección exclusiva",
     desc:    "Lo mejor de lo mejor para tu evento.",
-    range:   "$3.465 - $4.158",
+    range:   "$315 - $420",
   },
 ] as const;
 
