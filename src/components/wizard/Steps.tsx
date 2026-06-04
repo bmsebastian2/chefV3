@@ -278,7 +278,7 @@ export function StepOccasion({ data, updateData, nextStep }: StepProps) {
 
 export function StepLocation({ data, updateData, nextStep }: StepProps) {
   const [query, setQuery] = useState(data.location?.name || "");
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<{ place_name: string; center: [number, number] }[]>([]);
   const [loading, setLoading] = useState(false);
   const [userCoords, setUserCoords] = useState<{ lat: number, lon: number } | null>(null);
 
