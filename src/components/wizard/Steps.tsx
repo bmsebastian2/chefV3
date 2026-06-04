@@ -23,11 +23,159 @@ const CARD_ACTIVE   = "border-accent bg-accent/5 shadow-[0_0_0_3px_rgba(224,159,
 const CARD_IDLE     = "border-zinc-200 hover:border-accent/40 hover:bg-zinc-50 hover:shadow-sm";
 const BTN_CONTINUE  = "w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200";
 
+// ── Service type SVG icons ────────────────────────────────────────────────────
+
+/** Cloche animada — hover: cúpula sube + vapor aparece */
+function IconCloche() {
+  return (
+    <svg viewBox="0 0 44 44" fill="none" className="w-10 h-10">
+      {/* Plate shadow */}
+      <ellipse cx="22" cy="38" rx="15" ry="2.2" fill="currentColor" fillOpacity="0.08" />
+      {/* Plate rim */}
+      <ellipse cx="22" cy="36.5" rx="13.5" ry="1.8" fill="none" stroke="currentColor" strokeWidth="1.3" strokeOpacity="0.22" />
+
+      {/* Cloche dome — sube en hover */}
+      <g
+        className="transition-transform duration-300 ease-out group-hover:-translate-y-2.5"
+        style={{ transformBox: "fill-box", transformOrigin: "center bottom" }}
+      >
+        <path
+          d="M9 36 C9 19 14 11 22 10 C30 11 35 19 35 36"
+          fill="currentColor" fillOpacity="0.07"
+          stroke="currentColor" strokeWidth="1.6"
+        />
+        <line x1="7" y1="36" x2="37" y2="36" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        {/* Handle stem */}
+        <rect x="20.5" y="8.5" width="3" height="3.5" rx="1.5" fill="currentColor" fillOpacity="0.35" />
+        {/* Gold knob */}
+        <circle cx="22" cy="7.5" r="3" fill="#E09F3E" />
+        <circle cx="21" cy="6.6" r="0.9" fill="white" fillOpacity="0.65" />
+      </g>
+
+      {/* Vapor 1 — izquierda */}
+      <path d="M14 31 Q12 25 15 21" stroke="#E09F3E" strokeWidth="1.6" strokeLinecap="round"
+        className="opacity-0 group-hover:opacity-90 transition-opacity duration-300" />
+      {/* Vapor 2 — centro */}
+      <path d="M22 33 Q24 27 21 23" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"
+        className="opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
+      {/* Vapor 3 — derecha */}
+      <path d="M30 31 Q32 25 29 21" stroke="#E09F3E" strokeWidth="1.6" strokeLinecap="round"
+        className="opacity-0 group-hover:opacity-90 transition-opacity duration-300 delay-150" />
+    </svg>
+  );
+}
+
+/** Tres tenedores — hover: se separan en abanico */
+function IconMultiple() {
+  return (
+    <svg viewBox="0 0 44 44" fill="none" className="w-10 h-10">
+      {/* Tenedor izquierdo — aparece y se desplaza a la izq en hover */}
+      <g className="opacity-30 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-x-3"
+         style={{ transformBox: "fill-box", transformOrigin: "center center" }}>
+        <line x1="11" y1="8" x2="11" y2="22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <line x1="9"  y1="8" x2="9"  y2="14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <line x1="11" y1="8" x2="11" y2="14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <line x1="13" y1="8" x2="13" y2="14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <line x1="11" y1="22" x2="11" y2="36" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        {/* Cuchillo izq */}
+        <line x1="15" y1="8" x2="15" y2="36" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M15 8 Q18 11 15 16" fill="currentColor" fillOpacity="0.25" />
+      </g>
+
+      {/* Tenedor central — siempre visible */}
+      <line x1="22" y1="6" x2="22" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <line x1="20" y1="6" x2="20" y2="13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="22" y1="6" x2="22" y2="13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="24" y1="6" x2="24" y2="13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="22" y1="20" x2="22" y2="38" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      {/* Cuchillo central */}
+      <line x1="27" y1="6" x2="27" y2="38" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M27 6 Q31 9 27 15" fill="currentColor" fillOpacity="0.2" />
+      {/* Punto dorado central */}
+      <circle cx="22" cy="32" r="2.5" fill="#E09F3E"
+        className="transition-all duration-300 group-hover:scale-110"
+        style={{ transformBox: "fill-box", transformOrigin: "center center" }} />
+
+      {/* Tenedor derecho — aparece y se desplaza a la der en hover */}
+      <g className="opacity-30 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-3"
+         style={{ transformBox: "fill-box", transformOrigin: "center center" }}>
+        <line x1="33" y1="8" x2="33" y2="22" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <line x1="31" y1="8" x2="31" y2="14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <line x1="33" y1="8" x2="33" y2="14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <line x1="35" y1="8" x2="35" y2="14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <line x1="33" y1="22" x2="33" y2="36" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
+
+/** Olla de cocina — hover: tapa sube + vapor + 7 puntos semanales se encienden */
+function IconWeekly() {
+  return (
+    <svg viewBox="0 0 44 44" fill="none" className="w-10 h-10">
+      {/* Olla cuerpo */}
+      <rect x="9" y="19" width="26" height="17" rx="4.5" fill="currentColor" fillOpacity="0.07" stroke="currentColor" strokeWidth="1.6" />
+      {/* Asa izquierda */}
+      <path d="M9 23 L5 23 L5 28 L9 28" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Asa derecha */}
+      <path d="M35 23 L39 23 L39 28 L35 28" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+
+      {/* Tapa — sube en hover */}
+      <g
+        className="transition-transform duration-250 ease-out group-hover:-translate-y-2"
+        style={{ transformBox: "fill-box", transformOrigin: "center bottom" }}
+      >
+        <rect x="8" y="14.5" width="28" height="5.5" rx="3" fill="currentColor" fillOpacity="0.09" stroke="currentColor" strokeWidth="1.5" />
+        {/* Pomo dorado */}
+        <circle cx="22" cy="12.5" r="3.2" fill="#E09F3E" />
+        <circle cx="21" cy="11.5" r="0.9" fill="white" fillOpacity="0.6" />
+      </g>
+
+      {/* Vapor — aparece en hover */}
+      <path d="M16 13 Q14 8 17 5" stroke="#E09F3E" strokeWidth="1.5" strokeLinecap="round"
+        className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <path d="M22 13 Q24 8 21 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+        className="opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
+      <path d="M28 13 Q30 8 27 5" stroke="#E09F3E" strokeWidth="1.5" strokeLinecap="round"
+        className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100" />
+
+      {/* 7 puntos semanales */}
+      {([0,1,2,3,4,5,6] as const).map((i) => (
+        <circle
+          key={i}
+          cx={7 + i * 5}
+          cy={41}
+          r={1.6}
+          fill="#E09F3E"
+          fillOpacity={i < 5 ? 0.25 : 0.1}
+          className={`transition-all duration-200 group-hover:fill-[#E09F3E] group-hover:opacity-100`}
+          style={{ transitionDelay: `${i * 40}ms` }}
+        />
+      ))}
+    </svg>
+  );
+}
+
 export function StepServiceType({ data, updateData, nextStep, onService3Selected, onServiceTypeSelected }: StepProps) {
   const options = [
-    { id: 1, title: "Experiencia Culinaria Única", desc: "Un chef exclusivo para una comida o cena especial de un día.", icon: "/unico.png" },
-    { id: 2, title: "Varios Servicios", desc: "Un chef disponible para múltiples comidas durante unas vacaciones o evento continuo.", icon: "/varios 4.png" },
-    { id: 3, title: "Comidas Semanales", desc: "Un chef que prepara tus comidas cada semana.", icon: "/date 1.png" }
+    {
+      id: 1,
+      title: "Experiencia Culinaria Única",
+      desc: "Un chef exclusivo para una comida o cena especial de un día.",
+      svgIcon: <IconCloche />,
+    },
+    {
+      id: 2,
+      title: "Varios Servicios",
+      desc: "Un chef disponible para múltiples comidas durante unas vacaciones o evento continuo.",
+      svgIcon: <IconMultiple />,
+    },
+    {
+      id: 3,
+      title: "Comidas Semanales",
+      desc: "Un chef que prepara tus comidas cada semana.",
+      svgIcon: <IconWeekly />,
+    },
   ];
 
   const handleSelectService = (id: number) => {
@@ -54,17 +202,15 @@ export function StepServiceType({ data, updateData, nextStep, onService3Selected
             key={opt.id}
             type="button"
             onClick={() => handleSelectService(opt.id)}
-            className={`flex items-center gap-5 p-5 rounded-2xl border text-left transition-all duration-200 ${
+            className={`group flex items-center gap-5 p-5 rounded-2xl border text-left transition-all duration-200 ${
               active ? CARD_ACTIVE : CARD_IDLE
             }`}
           >
-            {opt.icon && (
-              <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
-                active ? "bg-accent/10" : "bg-zinc-50"
-              }`}>
-                <Image src={opt.icon} alt="" width={40} height={40} className="shrink-0" />
-              </div>
-            )}
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200 overflow-hidden ${
+              active ? "bg-accent/10 text-accent" : "bg-zinc-50 text-zinc-500"
+            }`}>
+              {opt.svgIcon}
+            </div>
             <div className="flex flex-col flex-1 min-w-0">
               <span className={`font-semibold text-base mb-0.5 transition-colors duration-200 ${
                 active ? "text-accent" : "text-zinc-900"
@@ -89,31 +235,43 @@ export function StepServiceType({ data, updateData, nextStep, onService3Selected
   );
 }
 
+const OCCASION_OPTIONS_2 = [
+  { value: "Reunión familiar",   label: "Reunión familiar",   Icon: Home      },
+  { value: "Reunión con amigos", label: "Reunión con amigos", Icon: Smile     },
+  { value: "Cena romántica",     label: "Cena romántica",     Icon: Heart     },
+  { value: "Evento corporativo", label: "Evento corporativo", Icon: Briefcase },
+  { value: "Otra",               label: "Otra",               Icon: HelpCircle},
+] as const;
+
 export function StepOccasion({ data, updateData, nextStep }: StepProps) {
-  let options: string[] = [];
-
-  if (data.serviceType === "1") {
-    options = ["Cumpleaños", "Reunión familiar", "Despedida de soltero/a", "Reunión con amigos", "Cena romántica", "Evento corporativo", "Aventura gastronómica", "Otra"];
-  } else if (data.serviceType === "2") {
-    options = ["Reunión familiar", "Reunión con amigos", "Cena romántica", "Evento corporativo", "Otra"];
-  }
-
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto w-full">
-      {options.map(opt => {
-        const active = data.occasion === opt;
-        return (
-          <button
-            key={opt}
-            onClick={() => { updateData({ occasion: opt }); nextStep(); }}
-            className={`h-16 rounded-xl border text-sm font-medium transition-all duration-200 ${
-              active ? CARD_ACTIVE + " text-accent" : CARD_IDLE + " text-zinc-700"
-            }`}
-          >
-            {opt}
-          </button>
-        );
-      })}
+    <div className="flex flex-col gap-3 max-w-xl mx-auto w-full">
+      <p className="text-center text-zinc-500 text-sm mb-2">
+        Esto nos ayuda a transmitir a nuestros chefs el ambiente ideal del evento.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {OCCASION_OPTIONS_2.map(({ value, label, Icon }) => {
+          const active = data.occasion === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              onClick={() => { updateData({ occasion: value }); nextStep(); }}
+              className={`flex items-center gap-4 px-5 h-16 rounded-xl border text-left transition-all duration-200 ${
+                active ? CARD_ACTIVE : CARD_IDLE
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
+                active ? "bg-accent/15" : "bg-zinc-100"
+              }`}>
+                <Icon className={`w-4 h-4 ${active ? "text-accent" : "text-zinc-600"}`} />
+              </div>
+              <span className={`flex-1 text-sm font-medium ${active ? "text-accent" : "text-zinc-700"}`}>{label}</span>
+              <RadioCircle active={active} />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
