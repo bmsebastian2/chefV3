@@ -1197,35 +1197,45 @@ export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
 }
 
 // ── StepBudgetTier ────────────────────────────────────────────────────────────
-const BUDGET_OPTIONS = [
-  {
-    value:   "casual"    as const,
-    label:   "Casual",
-    desc:    "Crear vínculos en torno a la buena comida.",
-    range:   "$210 - $263",
-  },
-  {
-    value:   "gourmet"   as const,
-    label:   "Gourmet",
-    desc:    "Menús brillantes para impresionar a tus invitados.",
-    range:   "$263 - $315",
-  },
-  {
-    value:   "exclusive" as const,
-    label:   "Selección exclusiva",
-    desc:    "Lo mejor de lo mejor para tu evento.",
-    range:   "$315 - $420",
-  },
-] as const;
+function getBasePrice(guestsRange: string | undefined): number {
+  if (guestsRange === "2")   return 210;
+  if (guestsRange === "3-6") return 189;
+  return 147; // '7-12', '13+', or undefined
+}
+
+function getBudgetOptions(guestsRange: string | undefined) {
+  const base = getBasePrice(guestsRange);
+  return [
+    {
+      value: "casual"    as const,
+      label: "Casual",
+      desc:  "Crear vínculos en torno a la buena comida.",
+      range: `$${base} - $${base + 42}`,
+    },
+    {
+      value: "gourmet"   as const,
+      label: "Gourmet",
+      desc:  "Menús brillantes para impresionar a tus invitados.",
+      range: `$${base + 42} - $${base + 84}`,
+    },
+    {
+      value: "exclusive" as const,
+      label: "Selección exclusiva",
+      desc:  "Lo mejor de lo mejor para tu evento.",
+      range: `$${base + 84} - $${base + 147}`,
+    },
+  ];
+}
 
 export function StepBudgetTier({ data, updateData, nextStep }: StepProps) {
+  const budgetOptions = getBudgetOptions(data.guestsRange);
   return (
     <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
       <p className="text-center text-zinc-500 text-sm mb-2">
         Los precios varían según la experiencia del chef y la complejidad del menú. ¡Elige el que más te convenga!
       </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {BUDGET_OPTIONS.map(({ value, label, desc, range }) => {
+        {budgetOptions.map(({ value, label, desc, range }) => {
           const active = data.budgetTier === value;
           return (
             <button
