@@ -3,15 +3,33 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Star } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Star, ArrowRight } from "lucide-react";
 import Image from "next/image";
+
 gsap.registerPlugin(ScrollTrigger);
 
 const chefs = [
-  { name: "Chef Javier Aranda", rating: 4.9, reviews: 120, img: "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&q=80&w=600&grayscale=true" },
-  { name: "Chef Elena Arzak", rating: 5.0, reviews: 340, img: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&q=80&w=600&grayscale=true" },
-  { name: "Chef Diego Guerrero", rating: 4.8, reviews: 95, img: "https://images.unsplash.com/photo-1581349485608-9469926a8e5e?auto=format&fit=crop&q=80&w=600&grayscale=true" },
+  {
+    name: "Chef Javier Aranda",
+    rating: 4.9,
+    reviews: 120,
+    specialty: "Cocina de Autor",
+    img: "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&q=80&w=600&grayscale=true",
+  },
+  {
+    name: "Chef Elena Arzak",
+    rating: 5.0,
+    reviews: 340,
+    specialty: "Alta Cocina Vasca",
+    img: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&q=80&w=600&grayscale=true",
+  },
+  {
+    name: "Chef Diego Guerrero",
+    rating: 4.8,
+    reviews: 95,
+    specialty: "Cocina Creativa",
+    img: "https://images.unsplash.com/photo-1581349485608-9469926a8e5e?auto=format&fit=crop&q=80&w=600&grayscale=true",
+  },
 ];
 
 export function Chefs() {
@@ -20,18 +38,19 @@ export function Chefs() {
   useEffect(() => {
     if (!sectionRef.current) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(".chef-card", 
-        { opacity: 0, y: 40 },
-        { 
-          opacity: 1, 
-          y: 0, 
-          duration: 0.8, 
-          stagger: 0.15, 
+      gsap.fromTo(
+        ".chef-card",
+        { opacity: 0, y: 50 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.9,
+          stagger: 0.18,
           ease: "power2.out",
           scrollTrigger: {
             trigger: sectionRef.current,
             start: "top 75%",
-          }
+          },
         }
       );
     }, sectionRef);
@@ -39,44 +58,96 @@ export function Chefs() {
   }, []);
 
   return (
-    <section id="chefs" ref={sectionRef} className="py-24 bg-zinc-50 relative">
-      <div className="container mx-auto px-6 max-w-[1280px]">
+    <section id="chefs" ref={sectionRef} className="py-28 bg-zinc-950 relative overflow-hidden">
+      {/* Subtle background texture */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, #E09F3E 1px, transparent 0)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+
+      <div className="container mx-auto px-6 max-w-[1280px] relative z-10">
+        {/* Section header */}
         <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-          <div className="max-w-2xl">
-            <h2 className="font-serif text-4xl font-semibold mb-4 text-zinc-900">Los mejores chefs. En tu cocina.</h2>
-            <p className="font-sans text-muted-foreground text-lg">
-              De restaurantes con estrellas Michelin a la comodidad de tu hogar. 
-              Accede a la élite culinaria y conoce la mente maestra detrás de cada menú.
+          <div className="max-w-xl">
+            <span className="inline-block px-4 py-1 text-[10px] font-black tracking-[0.25em] uppercase text-accent border border-accent/25 rounded-full bg-accent/10 mb-5">
+              Nuestros Chefs
+            </span>
+            <h2 className="font-serif text-4xl md:text-5xl font-semibold text-white mb-4 leading-tight">
+              Los mejores chefs.{" "}
+              <span className="text-accent">En tu cocina.</span>
+            </h2>
+            <p className="font-sans text-zinc-400 text-lg leading-relaxed">
+              De restaurantes con estrellas Michelin a la comodidad de tu hogar.
             </p>
           </div>
-          <button className="text-accent font-medium hover:underline font-sans cursor-pointer whitespace-nowrap bg-transparent border-none p-0">Ver todos los chefs →</button>
+          <button className="text-sm font-medium text-zinc-400 hover:text-accent transition-colors duration-200 flex items-center gap-2 group whitespace-nowrap bg-transparent border-none p-0 cursor-pointer">
+            Ver todos los chefs
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Cards grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {chefs.map((chef, idx) => (
-            <Card key={idx} className="chef-card opacity-0 overflow-hidden border-none shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] bg-white hover:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] transition-shadow duration-300 rounded-md">
-              <div className="h-80 w-full overflow-hidden">
-                <Image 
-                  src={chef.img} 
-                  alt={chef.name} 
-                  width={600} 
-  height={400} 
-                  className="w-full h-full object-cover filter grayscale hover:grayscale-0 transition-all duration-700 hover:scale-105"
-                />
-  
+            <div
+              key={idx}
+              className="chef-card opacity-0 group relative rounded-2xl overflow-hidden h-[480px] cursor-pointer"
+            >
+              {/* Image */}
+              <Image
+                src={chef.img}
+                alt={chef.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
+                className="object-cover filter grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out"
+              />
+
+              {/* Specialty badge — top left */}
+              <div className="absolute top-4 left-4 z-10">
+                <span className="px-3 py-1 text-[10px] font-bold tracking-widest uppercase bg-accent text-zinc-900 rounded-full">
+                  {chef.specialty}
+                </span>
               </div>
-              <CardContent className="p-6">
-                <h3 className="font-serif text-2xl font-medium text-zinc-900 mb-2">{chef.name}</h3>
-                <div className="flex items-center gap-2 mb-4">
-                  <Star className="w-4 h-4 fill-accent text-accent" />
-                  <span className="font-sans font-medium text-zinc-900">{chef.rating}</span>
-                  <span className="font-sans text-muted-foreground text-sm">({chef.reviews} reseñas)</span>
+
+              {/* Gradient overlay — always visible from bottom */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+
+              {/* Bottom content */}
+              <div className="absolute bottom-0 left-0 right-0 p-7 z-10">
+                {/* Rating */}
+                <div className="flex items-center gap-1.5 mb-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-3.5 h-3.5 ${
+                        i < Math.round(chef.rating)
+                          ? "fill-accent text-accent"
+                          : "text-zinc-600"
+                      }`}
+                    />
+                  ))}
+                  <span className="text-zinc-300 text-xs font-medium ml-1">
+                    {chef.rating} · {chef.reviews} reseñas
+                  </span>
                 </div>
-                <p className="font-sans text-sm text-zinc-600 line-clamp-2 leading-relaxed">
-                  Especializado en cocina de autor y técnicas de vanguardia utilizando el producto de temporada como bandera.
-                </p>
-              </CardContent>
-            </Card>
+
+                <h3 className="font-serif text-2xl font-medium text-white mb-4 leading-tight">
+                  {chef.name}
+                </h3>
+
+                {/* CTA — slides up on hover */}
+                <div className="overflow-hidden h-10">
+                  <button className="flex items-center gap-2 text-sm font-medium text-white bg-accent/20 hover:bg-accent border border-accent/40 hover:border-accent px-4 py-2 rounded-full transition-all duration-300 translate-y-10 group-hover:translate-y-0 cursor-pointer">
+                    Ver perfil
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </div>
