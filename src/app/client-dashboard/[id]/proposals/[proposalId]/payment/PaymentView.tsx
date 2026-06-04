@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Loader2, Plus, Minus } from "lucide-react"
-import { acceptProposal } from "../actions"
 
 type PaymentMethod = "card" | "paypal" | "googlepay"
 
@@ -92,13 +91,28 @@ export function PaymentView({ requestId, proposalId, total }: Props) {
     : "Pagar con Google Pay"
 
   const handlePay = () => {
+    if (method !== "card") {
+      setError("Método de pago no disponible aún")
+      return
+    }
     startTransition(async () => {
-      const result = await acceptProposal(proposalId, requestId)
-      if (result.error) {
-        setError(result.error)
+      setError(null)
+      const res = await fetch("/api/dlocalgo/create-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: total, currency: "UYU", proposalId, requestId }),
+      })
+      let data: { redirect_url?: string; error?: string } = {}
+      try {
+        data = await res.json()
+      } catch {
+        setError("Error al conectar con el servidor de pagos")
+        return
+      }
+      if (data.redirect_url) {
+        window.location.href = data.redirect_url
       } else {
-        router.push(`/client-dashboard/${requestId}/proposals/${proposalId}`)
-        router.refresh()
+        setError(data.error ?? "Error al iniciar el pago")
       }
     })
   }
