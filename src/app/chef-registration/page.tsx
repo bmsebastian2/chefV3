@@ -282,7 +282,7 @@ export default function ChefRegistrationPage() {
             {/* Bottom quote */}
             <div className="border-l-2 border-[#E09F3E]/28 pl-5">
               <p className="font-serif text-zinc-600 text-sm italic leading-relaxed">
-                "La cocina es el único<br />lenguaje universal."
+                &ldquo;La cocina es el único<br />lenguaje universal.&rdquo;
               </p>
             </div>
           </div>

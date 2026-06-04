@@ -158,24 +158,24 @@ export function Hero() {
         {/* Franja azul superior — 1/3 del alto */}
         <div
           className="absolute left-0 right-0 top-0"
-          style={{ height: "33.33%", backgroundColor: "#3E6EB4", opacity: 0.072 }}
+          style={{ height: "33.33%", backgroundColor: "#3E6EB4", opacity: 0.10 }}
         />
         {/* Franja azul inferior — 1/3 del alto */}
         <div
           className="absolute left-0 right-0 bottom-0"
-          style={{ height: "33.33%", backgroundColor: "#3E6EB4", opacity: 0.072 }}
+          style={{ height: "33.33%", backgroundColor: "#3E6EB4", opacity: 0.10 }}
         />
         {/* Borde entre franja azul y blanca */}
         <div
           className="absolute left-0 right-0"
-          style={{ top: "33.33%", height: "1px", backgroundColor: "#3E6EB4", opacity: 0.18 }}
+          style={{ top: "33.33%", height: "1px", backgroundColor: "#3E6EB4", opacity: 0.25 }}
         />
         <div
           className="absolute left-0 right-0"
-          style={{ top: "66.66%", height: "1px", backgroundColor: "#3E6EB4", opacity: 0.18 }}
+          style={{ top: "66.66%", height: "1px", backgroundColor: "#3E6EB4", opacity: 0.25 }}
         />
 
-        {/* Escudo Nacional en líneas finas — centrado en la franja blanca */}
+        {/* Escudo Nacional — centrado en la franja blanca */}
         <svg
           viewBox="0 0 600 560"
           xmlns="http://www.w3.org/2000/svg"
@@ -186,81 +186,81 @@ export function Hero() {
             top: "50%",
             left: "35%",
             transform: "translate(-50%, -50%)",
-            width: "46vw",
-            maxWidth: "520px",
+            width: "54vw",
+            maxWidth: "620px",
             height: "auto",
-            opacity: 0.14,
+            opacity: 0.28,
           }}
         >
           {/* Anillos exteriores decorativos */}
-          <circle cx="300" cy="285" r="265" fill="none" stroke="#64748b" strokeWidth="0.55" />
-          <circle cx="300" cy="285" r="250" fill="none" stroke="#64748b" strokeWidth="0.3" strokeDasharray="2 4" />
-          <circle cx="300" cy="285" r="240" fill="none" stroke="#94a3b8" strokeWidth="0.22" strokeDasharray="1 3" strokeOpacity="0.6" />
+          <circle cx="300" cy="285" r="265" fill="none" stroke="#475569" strokeWidth="1.0" />
+          <circle cx="300" cy="285" r="250" fill="none" stroke="#475569" strokeWidth="0.55" strokeDasharray="2 4" />
+          <circle cx="300" cy="285" r="240" fill="none" stroke="#64748b" strokeWidth="0.4" strokeDasharray="1 3" strokeOpacity="0.6" />
 
           {/* Triángulo equilátero — símbolo de igualdad */}
           <path
             d="M 300,67 L 111,394 L 489,394 Z"
             fill="none"
-            stroke="#64748b"
-            strokeWidth="0.6"
+            stroke="#475569"
+            strokeWidth="1.1"
             strokeLinejoin="round"
           />
 
           {/* Líneas de agua — dos mares */}
           <path d="M 128,370 C 162,362 200,378 240,370 C 280,362 320,378 360,370 C 400,362 438,374 472,368"
-            fill="none" stroke="#64748b" strokeWidth="0.42" strokeLinecap="round" />
+            fill="none" stroke="#475569" strokeWidth="0.75" strokeLinecap="round" />
           <path d="M 126,380 C 160,372 198,388 238,380 C 278,372 318,388 358,380 C 398,372 436,384 470,378"
-            fill="none" stroke="#64748b" strokeWidth="0.38" strokeLinecap="round" />
+            fill="none" stroke="#475569" strokeWidth="0.68" strokeLinecap="round" />
           <path d="M 124,390 C 158,382 196,398 236,390 C 276,382 316,398 356,390 C 396,382 434,394 468,388"
-            fill="none" stroke="#94a3b8" strokeWidth="0.3" strokeLinecap="round" strokeOpacity="0.65" />
+            fill="none" stroke="#64748b" strokeWidth="0.55" strokeLinecap="round" strokeOpacity="0.65" />
 
           {/* Cinco volcanes — el central más alto */}
           <path d="M 132,364 Q 146,340 160,314 Q 174,340 188,364"
-            fill="none" stroke="#64748b" strokeWidth="0.52" strokeLinecap="round" strokeLinejoin="round" />
+            fill="none" stroke="#475569" strokeWidth="0.95" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M 194,364 Q 207,330 220,300 Q 233,330 247,364"
-            fill="none" stroke="#64748b" strokeWidth="0.52" strokeLinecap="round" strokeLinejoin="round" />
+            fill="none" stroke="#475569" strokeWidth="0.95" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M 272,364 Q 286,322 300,278 Q 314,322 328,364"
-            fill="none" stroke="#64748b" strokeWidth="0.58" strokeLinecap="round" strokeLinejoin="round" />
+            fill="none" stroke="#475569" strokeWidth="1.05" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M 353,364 Q 367,330 380,300 Q 393,330 406,364"
-            fill="none" stroke="#64748b" strokeWidth="0.52" strokeLinecap="round" strokeLinejoin="round" />
+            fill="none" stroke="#475569" strokeWidth="0.95" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M 412,364 Q 426,340 440,314 Q 454,340 468,364"
-            fill="none" stroke="#64748b" strokeWidth="0.52" strokeLinecap="round" strokeLinejoin="round" />
+            fill="none" stroke="#475569" strokeWidth="0.95" strokeLinecap="round" strokeLinejoin="round" />
 
           {/* Arco iris — 7 arcos elípticos */}
-          <path d="M 148,364 A 152,100 0 0,1 452,364" fill="none" stroke="#94a3b8" strokeWidth="0.38" strokeLinecap="round" />
-          <path d="M 162,364 A 138,90  0 0,1 438,364" fill="none" stroke="#94a3b8" strokeWidth="0.36" strokeLinecap="round" />
-          <path d="M 176,364 A 124,80  0 0,1 424,364" fill="none" stroke="#94a3b8" strokeWidth="0.34" strokeLinecap="round" />
-          <path d="M 192,364 A 108,70  0 0,1 408,364" fill="none" stroke="#94a3b8" strokeWidth="0.32" strokeLinecap="round" />
-          <path d="M 208,364 A 92,58   0 0,1 392,364" fill="none" stroke="#94a3b8" strokeWidth="0.3"  strokeLinecap="round" />
-          <path d="M 224,364 A 76,46   0 0,1 376,364" fill="none" stroke="#94a3b8" strokeWidth="0.28" strokeLinecap="round" />
-          <path d="M 240,364 A 60,34   0 0,1 360,364" fill="none" stroke="#94a3b8" strokeWidth="0.25" strokeLinecap="round" />
+          <path d="M 148,364 A 152,100 0 0,1 452,364" fill="none" stroke="#64748b" strokeWidth="0.70" strokeLinecap="round" />
+          <path d="M 162,364 A 138,90  0 0,1 438,364" fill="none" stroke="#64748b" strokeWidth="0.65" strokeLinecap="round" />
+          <path d="M 176,364 A 124,80  0 0,1 424,364" fill="none" stroke="#64748b" strokeWidth="0.61" strokeLinecap="round" />
+          <path d="M 192,364 A 108,70  0 0,1 408,364" fill="none" stroke="#64748b" strokeWidth="0.58" strokeLinecap="round" />
+          <path d="M 208,364 A 92,58   0 0,1 392,364" fill="none" stroke="#64748b" strokeWidth="0.54" strokeLinecap="round" />
+          <path d="M 224,364 A 76,46   0 0,1 376,364" fill="none" stroke="#64748b" strokeWidth="0.50" strokeLinecap="round" />
+          <path d="M 240,364 A 60,34   0 0,1 360,364" fill="none" stroke="#64748b" strokeWidth="0.45" strokeLinecap="round" />
 
           {/* Sol — círculo con 12 rayos */}
-          <circle cx="300" cy="215" r="22" fill="none" stroke="#64748b" strokeWidth="0.48" />
-          <line x1="326" y1="215" x2="342" y2="215" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
-          <line x1="323" y1="228" x2="336" y2="236" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
-          <line x1="313" y1="238" x2="321" y2="251" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
-          <line x1="300" y1="241" x2="300" y2="257" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
-          <line x1="287" y1="238" x2="279" y2="251" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
-          <line x1="278" y1="228" x2="264" y2="236" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
-          <line x1="274" y1="215" x2="258" y2="215" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
-          <line x1="278" y1="202" x2="264" y2="194" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
-          <line x1="287" y1="193" x2="279" y2="179" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
-          <line x1="300" y1="189" x2="300" y2="173" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
-          <line x1="313" y1="193" x2="321" y2="179" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
-          <line x1="323" y1="202" x2="336" y2="194" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
+          <circle cx="300" cy="215" r="22" fill="none" stroke="#475569" strokeWidth="0.88" />
+          <line x1="326" y1="215" x2="342" y2="215" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
+          <line x1="323" y1="228" x2="336" y2="236" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
+          <line x1="313" y1="238" x2="321" y2="251" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
+          <line x1="300" y1="241" x2="300" y2="257" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
+          <line x1="287" y1="238" x2="279" y2="251" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
+          <line x1="278" y1="228" x2="264" y2="236" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
+          <line x1="274" y1="215" x2="258" y2="215" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
+          <line x1="278" y1="202" x2="264" y2="194" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
+          <line x1="287" y1="193" x2="279" y2="179" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
+          <line x1="300" y1="189" x2="300" y2="173" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
+          <line x1="313" y1="193" x2="321" y2="179" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
+          <line x1="323" y1="202" x2="336" y2="194" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
 
           {/* Gorro frigio */}
           <path d="M 282,208 C 285,186 290,160 294,136 C 297,118 299,106 300,96"
-            fill="none" stroke="#64748b" strokeWidth="0.5" strokeLinecap="round" />
+            fill="none" stroke="#475569" strokeWidth="0.9" strokeLinecap="round" />
           <path d="M 318,208 C 315,186 310,160 306,136 C 303,118 301,106 300,96"
-            fill="none" stroke="#64748b" strokeWidth="0.5" strokeLinecap="round" />
+            fill="none" stroke="#475569" strokeWidth="0.9" strokeLinecap="round" />
           <path d="M 278,214 Q 300,207 322,214"
-            fill="none" stroke="#64748b" strokeWidth="0.46" strokeLinecap="round" />
+            fill="none" stroke="#475569" strokeWidth="0.84" strokeLinecap="round" />
           <path d="M 300,96 C 302,88 306,84 307,92"
-            fill="none" stroke="#64748b" strokeWidth="0.4" strokeLinecap="round" />
+            fill="none" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
           <path d="M 287,148 Q 300,144 313,148"
-            fill="none" stroke="#94a3b8" strokeWidth="0.3" strokeLinecap="round" strokeOpacity="0.7" />
+            fill="none" stroke="#64748b" strokeWidth="0.55" strokeLinecap="round" strokeOpacity="0.7" />
         </svg>
       </div>
 
