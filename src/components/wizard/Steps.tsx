@@ -18,6 +18,11 @@ import "react-date-range/dist/theme/default.css";
 import "./daterange.css";
 import { Country as LibCountry } from "country-state-city";
 
+// ── Shared active/idle card classes ──────────────────────────────────────────
+const CARD_ACTIVE   = "border-accent bg-accent/5 shadow-[0_0_0_3px_rgba(224,159,62,0.12)]";
+const CARD_IDLE     = "border-zinc-200 hover:border-accent/40 hover:bg-zinc-50 hover:shadow-sm";
+const BTN_CONTINUE  = "w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200";
+
 export function StepServiceType({ data, updateData, nextStep, onService3Selected, onServiceTypeSelected }: StepProps) {
   const options = [
     { id: 1, title: "Experiencia Culinaria Única", desc: "Un chef exclusivo para una comida o cena especial de un día.", icon: "/unico.png" },
@@ -27,7 +32,6 @@ export function StepServiceType({ data, updateData, nextStep, onService3Selected
 
   const handleSelectService = (id: number) => {
     updateData({ serviceType: id.toString() });
-
     if (id === 3 && onService3Selected) {
       onService3Selected();
     } else if (onServiceTypeSelected) {
@@ -38,29 +42,53 @@ export function StepServiceType({ data, updateData, nextStep, onService3Selected
   };
 
   return (
-    <div className="flex flex-col gap-4 max-w-md mx-auto w-full">
-      <p className="text-zinc-500 mb-2 text-center font-sans">
-        Define tu evento para ver chefs, menús y precios. ¡Te llevará <strong className="text-accent">menos de 2 minutos</strong>!
+    <div className="flex flex-col gap-3 max-w-md mx-auto w-full">
+      <p className="text-zinc-500 mb-3 text-center font-sans text-sm">
+        Define tu evento para ver chefs, menús y precios. ¡Te llevará{" "}
+        <strong className="text-accent">menos de 2 minutos</strong>!
       </p>
-      {options.map((opt) => (
-        <button
-          key={opt.id}
-          type="button"
-          onClick={() => handleSelectService(opt.id)}
-          className={`flex items-center gap-4 p-6 rounded-md border text-left transition-all ${data.serviceType === opt.id.toString() ? 'border-accent bg-accent/5' : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50'}`}
-        >
-          {opt.icon && (
-            <Image src={opt.icon} alt="" width={48} height={48} className="shrink-0" />
-          )}
-          <div className="flex flex-col">
-            <span className={`font-semibold text-lg mb-1 ${data.serviceType === opt.id.toString() ? 'text-accent' : 'text-zinc-900'}`}>{opt.title}</span>
-            <span className="text-sm text-zinc-500 font-sans">{opt.desc}</span>
-          </div>
-        </button>
-      ))}
+      {options.map((opt) => {
+        const active = data.serviceType === opt.id.toString();
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => handleSelectService(opt.id)}
+            className={`flex items-center gap-5 p-5 rounded-2xl border text-left transition-all duration-200 ${
+              active ? CARD_ACTIVE : CARD_IDLE
+            }`}
+          >
+            {opt.icon && (
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
+                active ? "bg-accent/10" : "bg-zinc-50"
+              }`}>
+                <Image src={opt.icon} alt="" width={40} height={40} className="shrink-0" />
+              </div>
+            )}
+            <div className="flex flex-col flex-1 min-w-0">
+              <span className={`font-semibold text-base mb-0.5 transition-colors duration-200 ${
+                active ? "text-accent" : "text-zinc-900"
+              }`}>
+                {opt.title}
+              </span>
+              <span className="text-sm text-zinc-500 font-sans leading-snug">{opt.desc}</span>
+            </div>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+              active ? "border-accent bg-accent" : "border-zinc-200 bg-white"
+            }`}>
+              {active && (
+                <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none">
+                  <path d="M1.5 5.5L3.5 7.5L8.5 2.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
+
 export function StepOccasion({ data, updateData, nextStep }: StepProps) {
   let options: string[] = [];
 
@@ -71,16 +99,21 @@ export function StepOccasion({ data, updateData, nextStep }: StepProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl mx-auto w-full">
-      {options.map(opt => (
-        <button
-          key={opt}
-          onClick={() => { updateData({ occasion: opt }); nextStep(); }}
-          className={`h-16 rounded-md border text-base font-medium transition-all ${data.occasion === opt ? 'border-accent bg-accent/5 text-accent scale-[0.98]' : 'border-zinc-200 text-zinc-700 hover:border-zinc-300'}`}
-        >
-          {opt}
-        </button>
-      ))}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto w-full">
+      {options.map(opt => {
+        const active = data.occasion === opt;
+        return (
+          <button
+            key={opt}
+            onClick={() => { updateData({ occasion: opt }); nextStep(); }}
+            className={`h-16 rounded-xl border text-sm font-medium transition-all duration-200 ${
+              active ? CARD_ACTIVE + " text-accent" : CARD_IDLE + " text-zinc-700"
+            }`}
+          >
+            {opt}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -121,7 +154,6 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
         setResults(json.features || []);
       } catch (e: unknown) {
         if (e instanceof Error && e.name !== 'AbortError') {
-          // El API devolvió un timeout o límite. Vaciamos en modo silencioso.
           setResults([]);
         }
       } finally {
@@ -137,9 +169,7 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
 
   const selectLocation = (name: string, city: string, lat: number, lng: number) => {
     setQuery(name);
-    updateData({
-      location: { name, city, lat, lng }
-    });
+    updateData({ location: { name, city, lat, lng } });
     setResults([]);
   };
 
@@ -154,7 +184,10 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
     <div className="flex flex-col gap-6 items-center w-full max-w-md mx-auto">
       <div className="relative w-full flex items-center">
         <div className="absolute left-4 text-zinc-400">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+            <circle cx="12" cy="10" r="3" />
+          </svg>
         </div>
         <Input
           autoFocus
@@ -165,18 +198,20 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
             updateData({ location: undefined });
           }}
           onKeyDown={handleKeyDown}
-          className="h-14 text-lg w-full shadow-sm pl-12 pr-12"
+          className="h-14 text-lg w-full shadow-sm pl-12 pr-12 rounded-xl border-zinc-200 focus:border-accent/60 transition-colors"
         />
-        {loading && <div className="absolute right-4 w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>}
+        {loading && (
+          <div className="absolute right-4 w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+        )}
 
         {results.length > 0 && (
-          <div className="absolute top-16 left-0 w-full bg-white border border-zinc-200 shadow-xl rounded-md z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="absolute top-16 left-0 w-full bg-white border border-zinc-200 shadow-xl rounded-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {results.map((r, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => selectLocation(r.place_name, r.place_name.split(",")[1]?.trim() || r.place_name.split(",")[0], r.center[1], r.center[0])}
-                className="w-full text-left px-4 py-3 hover:bg-zinc-50 border-b border-zinc-100 last:border-none focus:outline-none focus:bg-zinc-50 transition-colors"
+                className="w-full text-left px-4 py-3 hover:bg-accent/5 border-b border-zinc-100 last:border-none focus:outline-none transition-colors"
               >
                 <div className="font-medium text-zinc-900">{r.place_name.split(",")[0]}</div>
                 <div className="text-xs text-zinc-500">
@@ -191,7 +226,7 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
         onClick={nextStep}
         disabled={!data.location?.name}
         size="lg"
-        className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-md shadow-sm transition-all"
+        className={BTN_CONTINUE}
       >
         Continuar
       </Button>
@@ -199,30 +234,30 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
   );
 }
 
-
+// ── CounterRow ────────────────────────────────────────────────────────────────
 interface CounterRowProps {
   label: string; subtitle: string; value: number; min?: number;
   onDecrement: () => void; onIncrement: () => void;
 }
 function CounterRow({ label, subtitle, value, min = 0, onDecrement, onIncrement }: CounterRowProps) {
   return (
-    <div className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-xl">
+    <div className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-2xl transition-colors hover:border-zinc-300">
       <div>
-        <p className="font-semibold text-zinc-900 text-lg">{label}</p>
-        <p className="text-sm text-accent">{subtitle}</p>
+        <p className="font-semibold text-zinc-900 text-base">{label}</p>
+        <p className="text-sm text-accent mt-0.5">{subtitle}</p>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-1 bg-zinc-50 rounded-full p-1 border border-zinc-200">
         <button
           type="button"
           onClick={onDecrement}
           disabled={value <= min}
-          className="w-9 h-9 flex items-center justify-center rounded-full border border-zinc-300 text-zinc-700 text-xl font-light hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-600 text-lg font-light hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
         >−</button>
-        <span className="w-6 text-center text-lg font-semibold text-zinc-900">{value}</span>
+        <span className="w-8 text-center text-base font-semibold text-zinc-900 select-none">{value}</span>
         <button
           type="button"
           onClick={onIncrement}
-          className="w-9 h-9 flex items-center justify-center rounded-full border border-zinc-300 text-zinc-700 text-xl font-light hover:bg-zinc-100 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-600 text-lg font-light hover:bg-white hover:shadow-sm transition-all duration-150"
         >+</button>
       </div>
     </div>
@@ -240,7 +275,7 @@ export function StepGuests({ data, updateData, nextStep }: StepProps) {
   };
 
   return (
-    <div className="flex flex-col gap-4 max-w-md mx-auto w-full">
+    <div className="flex flex-col gap-3 max-w-md mx-auto w-full">
       <CounterRow
         label="Adultos" subtitle="Mayores de 16 años"
         value={adults} min={1}
@@ -259,11 +294,7 @@ export function StepGuests({ data, updateData, nextStep }: StepProps) {
         onDecrement={() => setKids(v => Math.max(0, v - 1))}
         onIncrement={() => setKids(v => v + 1)}
       />
-      <Button
-        onClick={handleContinue}
-        size="lg"
-        className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-md mt-2 shadow-sm transition-all"
-      >
+      <Button onClick={handleContinue} size="lg" className={BTN_CONTINUE + " mt-2"}>
         Continuar
       </Button>
     </div>
@@ -287,19 +318,20 @@ export function StepDate({ data, updateData, nextStep }: StepProps) {
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const minTime = getMinTime();
-    // Lexicographic comparison works correctly for HH:MM strings
     if (minTime && value < minTime) return;
     updateData({ time: value });
   };
 
   return (
-    <div className="flex flex-col gap-6 items-center max-w-md mx-auto w-full">
+    <div className="flex flex-col gap-4 items-center max-w-md mx-auto w-full">
       <Popover>
-        <PopoverTrigger className={`inline-flex items-center w-full h-14 justify-start rounded-md border text-left font-normal border-zinc-200 px-4 text-sm hover:bg-zinc-50 transition-colors ${!data.date && "text-muted-foreground"}`}>
+        <PopoverTrigger className={`inline-flex items-center w-full h-14 justify-start rounded-xl border text-left font-normal px-4 text-sm hover:bg-zinc-50 transition-colors ${
+          !data.date ? "text-muted-foreground border-zinc-200" : "border-zinc-300 text-zinc-900"
+        }`}>
           <CalendarIcon className="mr-3 h-5 w-5 text-zinc-400" />
-          {data.date ? format(data.date, "PPP", { locale: es }) : <span className="text-base">Elige una fecha</span>}
+          {data.date ? format(data.date, "PPP", { locale: es }) : <span className="text-base text-zinc-400">Elige una fecha</span>}
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="center">
+        <PopoverContent className="w-auto p-0 rounded-xl shadow-xl border-zinc-200" align="center">
           <Calendar
             mode="single"
             selected={data.date}
@@ -314,10 +346,15 @@ export function StepDate({ data, updateData, nextStep }: StepProps) {
         value={data.time || ""}
         onChange={handleTimeChange}
         min={getMinTime()}
-        className="h-14 text-base w-full border-zinc-200 font-medium"
+        className="h-14 text-base w-full border-zinc-200 rounded-xl font-medium focus:border-accent/60 transition-colors"
       />
 
-      <Button disabled={!data.date || !data.time} onClick={nextStep} size="lg" className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-md mt-4 shadow-md transition-all">
+      <Button
+        disabled={!data.date || !data.time}
+        onClick={nextStep}
+        size="lg"
+        className={BTN_CONTINUE + " mt-2"}
+      >
         Continuar
       </Button>
     </div>
@@ -325,14 +362,14 @@ export function StepDate({ data, updateData, nextStep }: StepProps) {
 }
 
 const CUISINE_OPTIONS = [
-  { value: "local",        label: "Local",             Icon: Store      },
-  { value: "italian",      label: "Italiana",          Icon: Pizza      },
-  { value: "mediterranean",label: "Mediterránea",      Icon: Leaf       },
-  { value: "seafood",      label: "Mariscos/Pescados", Icon: Fish       },
-  { value: "french",       label: "Francesa",          Icon: Croissant  },
-  { value: "japanese",     label: "Japonesa",          Icon: Soup       },
-  { value: "fusion",       label: "Fusión",            Icon: Layers     },
-  { value: "chefs_special",label: "Especial del chef", Icon: ChefHat   },
+  { value: "local",         label: "Local",              Icon: Store      },
+  { value: "italian",       label: "Italiana",           Icon: Pizza      },
+  { value: "mediterranean", label: "Mediterránea",       Icon: Leaf       },
+  { value: "seafood",       label: "Mariscos/Pescados",  Icon: Fish       },
+  { value: "french",        label: "Francesa",           Icon: Croissant  },
+  { value: "japanese",      label: "Japonesa",           Icon: Soup       },
+  { value: "fusion",        label: "Fusión",             Icon: Layers     },
+  { value: "chefs_special", label: "Especial del chef",  Icon: ChefHat    },
 ] as const;
 
 export function StepCuisine({ data, updateData, nextStep }: StepProps) {
@@ -349,14 +386,23 @@ export function StepCuisine({ data, updateData, nextStep }: StepProps) {
               key={value}
               type="button"
               onClick={() => { updateData({ cuisine: value }); nextStep(); }}
-              className={`flex items-center gap-4 px-5 h-16 rounded-xl border text-left transition-all ${
-                active
-                  ? "border-accent bg-accent/5 text-accent"
-                  : "border-zinc-200 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+              className={`flex items-center gap-4 px-5 h-16 rounded-xl border text-left transition-all duration-200 ${
+                active ? CARD_ACTIVE : CARD_IDLE
               }`}
             >
-              <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-900"}`} />
-              <span className="text-sm font-medium">{label}</span>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
+                active ? "bg-accent/15" : "bg-zinc-100"
+              }`}>
+                <Icon className={`w-4 h-4 ${active ? "text-accent" : "text-zinc-600"}`} />
+              </div>
+              <span className={`text-sm font-medium flex-1 ${active ? "text-accent" : "text-zinc-700"}`}>{label}</span>
+              {active && (
+                <div className="w-5 h-5 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+                  <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none">
+                    <path d="M1.5 5.5L3.5 7.5L8.5 2.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              )}
             </button>
           );
         })}
@@ -381,18 +427,30 @@ export function StepDietary({ data, updateData, nextStep }: StepProps) {
 
   return (
     <div className="flex flex-col gap-8 max-w-xl mx-auto w-full">
-      <div className="grid grid-cols-2 gap-4">
-        {options.map(opt => (
-          <button
-            key={opt}
-            onClick={() => toggleRestriction(opt)}
-            className={`min-h-[56px] px-3 py-2 rounded-md border text-sm transition-all ${(data.dietaryRestrictions || []).includes(opt) ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 text-zinc-700 hover:border-zinc-300'}`}
-          >
-            {opt}
-          </button>
-        ))}
+      <div className="grid grid-cols-2 gap-3">
+        {options.map(opt => {
+          const active = (data.dietaryRestrictions || []).includes(opt);
+          return (
+            <button
+              key={opt}
+              onClick={() => toggleRestriction(opt)}
+              className={`min-h-[56px] px-3 py-2 rounded-xl border text-sm font-medium transition-all duration-200 ${
+                active
+                  ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
+                  : "border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50"
+              }`}
+            >
+              {opt}
+            </button>
+          );
+        })}
       </div>
-      <Button disabled={!(data.dietaryRestrictions || []).length} onClick={nextStep} size="lg" className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-md shadow-sm">
+      <Button
+        disabled={!(data.dietaryRestrictions || []).length}
+        onClick={nextStep}
+        size="lg"
+        className={BTN_CONTINUE}
+      >
         Confirmar
       </Button>
     </div>
@@ -404,11 +462,11 @@ export function StepDetails({ data, updateData, nextStep }: StepProps) {
     <div className="flex flex-col gap-6 items-center max-w-md mx-auto w-full">
       <textarea
         placeholder="Opcional: Comparte detalles sobre la ocasión, especificaciones de tu cocina o evento que el Chef deba saber..."
-        className="w-full min-h-[160px] p-4 text-base border border-zinc-200 rounded-md outline-none focus:ring-1 focus:ring-zinc-900 resize-none font-sans shadow-sm"
+        className="w-full min-h-[160px] p-4 text-base border border-zinc-200 rounded-xl outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 resize-none font-sans shadow-sm transition-all"
         value={data.details || ""}
         onChange={(e) => updateData({ details: e.target.value })}
       />
-      <Button onClick={nextStep} size="lg" className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-md mt-2 shadow-sm">
+      <Button onClick={nextStep} size="lg" className={BTN_CONTINUE}>
         Revisar mi Solicitud
       </Button>
     </div>
@@ -475,19 +533,21 @@ function PhoneInput({
   };
 
   return (
-    <div className={`flex items-center h-14 border rounded-lg overflow-hidden bg-white transition-colors ${hasError ? 'border-red-400' : 'border-zinc-200 focus-within:border-zinc-400'}`}>
+    <div className={`flex items-center h-14 border rounded-xl overflow-hidden bg-white transition-all duration-200 ${
+      hasError ? 'border-red-400' : 'border-zinc-200 focus-within:border-accent/50 focus-within:shadow-[0_0_0_3px_rgba(224,159,62,0.10)]'
+    }`}>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger className="flex items-center gap-1.5 px-3 h-full border-r border-zinc-200 bg-zinc-50 hover:bg-zinc-100 transition-colors shrink-0 rounded-none">
+        <PopoverTrigger className="flex items-center gap-1.5 px-3 h-full border-r border-zinc-100 bg-zinc-50 hover:bg-zinc-100 transition-colors shrink-0 rounded-none">
           <span className="text-lg leading-none">{country.flag}</span>
           <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
           <span className="text-sm font-medium text-zinc-700">{country.code}</span>
         </PopoverTrigger>
-        <PopoverContent className="w-72 p-2" align="start">
+        <PopoverContent className="w-72 p-2 rounded-xl shadow-xl border-zinc-200" align="start">
           <Input
             placeholder="Buscar país..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 text-sm mb-2"
+            className="h-9 text-sm mb-2 rounded-lg"
             autoFocus
           />
           <div className="max-h-56 overflow-y-auto">
@@ -496,7 +556,9 @@ function PhoneInput({
                 key={c.isoCode}
                 type="button"
                 onClick={() => handleCountrySelect(c)}
-                className={`w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm transition-colors text-left ${c.isoCode === country.isoCode ? 'bg-accent/10 text-accent' : 'text-zinc-700 hover:bg-zinc-50'}`}
+                className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors text-left ${
+                  c.isoCode === country.isoCode ? 'bg-accent/10 text-accent' : 'text-zinc-700 hover:bg-zinc-50'
+                }`}
               >
                 <span>{c.flag}</span>
                 <span className="flex-1 truncate">{c.name}</span>
@@ -563,7 +625,7 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
 
   return (
     <div className="flex flex-col gap-5 max-w-md mx-auto w-full">
-      <p className="text-zinc-500 text-sm text-center mb-1">
+      <p className="text-zinc-500 text-sm text-center mb-1 leading-relaxed">
         Ahora, sólo tienes que añadir tus datos de contacto y te enviaremos propuestas de menú
         personalizadas y gratuitas en menos de 20 minutos.
       </p>
@@ -574,7 +636,7 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
         </label>
         <Input
           placeholder="John Doe"
-          className="h-14 text-base border-zinc-200"
+          className="h-14 text-base border-zinc-200 rounded-xl focus:border-accent/50 transition-colors"
           value={data.contact?.name ?? ""}
           onChange={(e) => updateData({ contact: { ...data.contact, name: e.target.value } })}
         />
@@ -587,7 +649,11 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
         <Input
           placeholder="example@mail.com"
           type="email"
-          className={`h-14 text-base ${touched.email && !emailValid ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
+          className={`h-14 text-base rounded-xl transition-colors ${
+            touched.email && !emailValid
+              ? "border-red-400 focus:ring-red-400"
+              : "border-zinc-200 focus:border-accent/50"
+          }`}
           value={email}
           onChange={(e) => updateData({ contact: { ...data.contact, email: e.target.value } })}
           onBlur={() => blur("email")}
@@ -618,7 +684,7 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
         disabled={!isValid || loading}
         onClick={handleSubmit}
         size="lg"
-        className="w-auto mx-auto px-10 h-14 bg-accent text-zinc-900 font-bold text-base rounded-2xl mt-2 hover:bg-accent/90 shadow-[0_8px_20px_rgb(224,159,62,0.2)] transition-all disabled:opacity-50"
+        className="w-auto mx-auto px-10 h-14 bg-accent text-zinc-900 font-bold text-base rounded-2xl mt-2 hover:bg-accent/90 hover:scale-[1.02] shadow-[0_8px_20px_rgba(224,159,62,0.2)] hover:shadow-[0_12px_28px_rgba(224,159,62,0.3)] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
       >
         {loading ? (
           <span className="flex items-center gap-2">
@@ -633,9 +699,9 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
 
       <p className="text-xs text-zinc-400 text-center">
         Al enviar este formulario, aceptas nuestros{" "}
-        <a href="/terms" className="underline">Términos</a>{" "}
+        <a href="/terms" className="underline hover:text-zinc-600 transition-colors">Términos</a>{" "}
         y reconoces la{" "}
-        <a href="/privacy" className="underline">Declaración de privacidad global</a>.
+        <a href="/privacy" className="underline hover:text-zinc-600 transition-colors">Declaración de privacidad global</a>.
       </p>
     </div>
   );
@@ -666,7 +732,7 @@ export function StepDateRange({ data, updateData, nextStep }: StepProps) {
         Selecciona el período durante el cual necesitarás el servicio del chef
       </p>
 
-      <div className="w-full border border-zinc-200 rounded-lg overflow-hidden bg-white">
+      <div className="w-full border border-zinc-200 rounded-2xl overflow-hidden bg-white shadow-sm">
         <DateRange
           ranges={[state]}
           onChange={handleSelect}
@@ -682,16 +748,16 @@ export function StepDateRange({ data, updateData, nextStep }: StepProps) {
       </div>
 
       {isValid && (
-        <div className="w-full bg-zinc-50 p-4 rounded-lg">
+        <div className="w-full bg-accent/5 border border-accent/20 p-4 rounded-2xl">
           <div className="grid grid-cols-2 gap-4 text-center">
             <div>
-              <p className="text-xs text-zinc-500 uppercase font-semibold">Inicio</p>
+              <p className="text-xs text-zinc-400 uppercase font-bold tracking-wider">Inicio</p>
               <p className="text-lg font-semibold text-zinc-900 mt-1">
                 {format(state.startDate, "dd MMM yyyy", { locale: es })}
               </p>
             </div>
             <div>
-              <p className="text-xs text-zinc-500 uppercase font-semibold">Fin</p>
+              <p className="text-xs text-zinc-400 uppercase font-bold tracking-wider">Fin</p>
               <p className="text-lg font-semibold text-zinc-900 mt-1">
                 {format(state.endDate, "dd MMM yyyy", { locale: es })}
               </p>
@@ -700,7 +766,7 @@ export function StepDateRange({ data, updateData, nextStep }: StepProps) {
         </div>
       )}
 
-      <Button disabled={!isValid} onClick={nextStep} size="lg" className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-md shadow-md transition-all">
+      <Button disabled={!isValid} onClick={nextStep} size="lg" className={BTN_CONTINUE}>
         Continuar
       </Button>
     </div>
@@ -753,8 +819,9 @@ export function StepMealSlots({ data, updateData, nextStep }: StepProps) {
   const Cell = ({ active, onClick }: { active: boolean; onClick: () => void }) => (
     <td
       onClick={onClick}
-      className={`w-24 text-center py-4 cursor-pointer transition-colors select-none
-        ${active ? "bg-green-50" : "bg-red-50 hover:bg-red-100"}`}
+      className={`w-24 text-center py-4 cursor-pointer transition-colors select-none ${
+        active ? "bg-green-50 hover:bg-green-100" : "bg-red-50 hover:bg-red-100"
+      }`}
     >
       {active
         ? <Check className="w-5 h-5 text-green-500 mx-auto" strokeWidth={2.5} />
@@ -765,23 +832,15 @@ export function StepMealSlots({ data, updateData, nextStep }: StepProps) {
 
   return (
     <div className="flex flex-col gap-6 items-center max-w-2xl mx-auto w-full">
-      <div className="w-full border border-zinc-200 rounded-lg overflow-hidden">
+      <div className="w-full border border-zinc-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="max-h-[380px] overflow-y-auto">
           <table className="w-full border-collapse">
             <thead className="sticky top-0 bg-white z-10">
               <tr className="border-b border-zinc-200">
-                <th className="py-3 px-4 text-left text-xs font-bold text-zinc-500 tracking-widest uppercase w-24">
-                  Fecha
-                </th>
-                <th className="py-3 text-center text-xs font-bold text-zinc-500 tracking-widest uppercase w-24">
-                  Desayuno
-                </th>
-                <th className="py-3 text-center text-xs font-bold text-zinc-500 tracking-widest uppercase w-24">
-                  Comida
-                </th>
-                <th className="py-3 text-center text-xs font-bold text-zinc-500 tracking-widest uppercase w-24">
-                  Cena
-                </th>
+                <th className="py-3 px-4 text-left text-xs font-bold text-zinc-400 tracking-widest uppercase w-24">Fecha</th>
+                <th className="py-3 text-center text-xs font-bold text-zinc-400 tracking-widest uppercase w-24">Desayuno</th>
+                <th className="py-3 text-center text-xs font-bold text-zinc-400 tracking-widest uppercase w-24">Comida</th>
+                <th className="py-3 text-center text-xs font-bold text-zinc-400 tracking-widest uppercase w-24">Cena</th>
               </tr>
             </thead>
             <tbody>
@@ -800,41 +859,36 @@ export function StepMealSlots({ data, updateData, nextStep }: StepProps) {
         </div>
       </div>
 
-      <div className="w-full bg-accent/5 border border-accent/20 rounded-lg px-4 py-3">
-        <p className="text-sm text-zinc-600">
-          Desactiva las casillas para los días en los que no necesites un servicio.
-          Desliza hacia abajo la tabla para ver todas las fechas.
-        </p>
-      </div>
+      <HintBox text="Desactiva las casillas para los días en los que no necesites un servicio. Desliza hacia abajo para ver todas las fechas." />
 
-      <Button
-        disabled={!isValid}
-        onClick={nextStep}
-        size="lg"
-        className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-md shadow-md transition-all"
-      >
+      <Button disabled={!isValid} onClick={nextStep} size="lg" className={BTN_CONTINUE}>
         Continuar
       </Button>
     </div>
   );
 }
 
-// ── Hint box reutilizable ─────────────────────────────────────────────────────
-function HintBox({ text = "¿No estás seguro? Puedes cambiarlo más adelante! 😊" }: { text?: string }) {
+// ── HintBox reutilizable ──────────────────────────────────────────────────────
+function HintBox({ text = "¿No estás seguro? ¡Puedes cambiarlo más adelante!" }: { text?: string }) {
   return (
-    <div className="w-full bg-amber-50 border border-amber-100 rounded-xl px-5 py-3 text-sm font-medium text-zinc-700 text-center">
-      {text}
+    <div className="w-full flex items-start gap-3 bg-accent/5 border border-accent/15 rounded-xl px-5 py-3.5">
+      <span className="text-accent text-base leading-none mt-0.5 flex-shrink-0 select-none">✦</span>
+      <p className="text-sm text-zinc-600 leading-relaxed">{text}</p>
     </div>
   );
 }
 
-// ── Radio circle reutilizable ─────────────────────────────────────────────────
+// ── RadioCircle reutilizable ──────────────────────────────────────────────────
 function RadioCircle({ active }: { active: boolean }) {
   return (
-    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-      active ? "border-accent bg-accent" : "border-zinc-300 bg-white"
+    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+      active ? "border-accent bg-accent" : "border-zinc-200 bg-white"
     }`}>
-      {active && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+      {active && (
+        <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none">
+          <path d="M1.5 5.5L3.5 7.5L8.5 2.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
     </div>
   );
 }
@@ -865,13 +919,15 @@ export function StepOccasion1({ data, updateData, nextStep }: StepProps) {
               key={value}
               type="button"
               onClick={() => { updateData({ occasion: value }); nextStep(); }}
-              className={`flex items-center gap-4 px-5 h-16 rounded-xl border text-left transition-all ${
-                active
-                  ? "border-accent bg-accent/5"
-                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+              className={`flex items-center gap-4 px-5 h-16 rounded-xl border text-left transition-all duration-200 ${
+                active ? CARD_ACTIVE : CARD_IDLE
               }`}
             >
-              <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-900"}`} />
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${
+                active ? "bg-accent/15" : "bg-zinc-100"
+              }`}>
+                <Icon className={`w-4 h-4 ${active ? "text-accent" : "text-zinc-600"}`} />
+              </div>
               <span className={`flex-1 text-sm font-medium ${active ? "text-accent" : "text-zinc-700"}`}>{label}</span>
               <RadioCircle active={active} />
             </button>
@@ -903,16 +959,14 @@ export function StepGuestsStatic({ data, updateData, nextStep }: StepProps) {
             key={value}
             type="button"
             onClick={() => { updateData({ guestsRange: value }); nextStep(); }}
-            className={`flex items-center gap-4 px-5 h-16 rounded-xl border transition-all ${
-              active
-                ? "border-accent bg-accent/5"
-                : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+            className={`flex items-center gap-4 px-5 h-16 rounded-xl border transition-all duration-200 ${
+              active ? CARD_ACTIVE : CARD_IDLE
             }`}
           >
-            <span className={`flex-1 text-sm font-semibold text-left ${active ? "text-zinc-900" : "text-zinc-800"}`}>
-              <span className="font-bold">{label}</span>
-              <span className="font-normal text-zinc-500"> desde {price}</span>
-            </span>
+            <div className="flex-1 text-left">
+              <span className={`text-sm font-bold block ${active ? "text-zinc-900" : "text-zinc-800"}`}>{label}</span>
+              <span className="text-xs text-zinc-400 font-normal">desde {price} por persona</span>
+            </div>
             <RadioCircle active={active} />
           </button>
         );
@@ -930,7 +984,7 @@ export function StepMealTime({ data, updateData, nextStep }: StepProps) {
   ];
 
   return (
-    <div className="flex flex-col gap-3 max-w-xs mx-auto w-full">
+    <div className="grid grid-cols-2 gap-4 max-w-xs mx-auto w-full">
       {options.map(({ value, label, Icon }) => {
         const active = data.mealTime === value;
         return (
@@ -938,15 +992,16 @@ export function StepMealTime({ data, updateData, nextStep }: StepProps) {
             key={value}
             type="button"
             onClick={() => { updateData({ mealTime: value }); nextStep(); }}
-            className={`flex items-center gap-4 px-5 h-16 rounded-xl border transition-all ${
+            className={`flex flex-col items-center justify-center gap-3 h-32 rounded-2xl border-2 transition-all duration-200 ${
               active
-                ? "border-accent bg-accent/5"
-                : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                ? "border-accent bg-accent/5 shadow-[0_0_0_3px_rgba(224,159,62,0.12)]"
+                : "border-zinc-200 hover:border-accent/40 hover:bg-zinc-50 hover:shadow-sm"
             }`}
           >
-            <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-accent" : "text-zinc-900"}`} />
-            <span className={`flex-1 text-sm font-medium text-left ${active ? "text-accent" : "text-zinc-700"}`}>{label}</span>
-            <RadioCircle active={active} />
+            <Icon className={`w-10 h-10 transition-colors duration-200 ${active ? "text-accent" : "text-zinc-300"}`} strokeWidth={1.5} />
+            <span className={`text-sm font-semibold transition-colors duration-200 ${active ? "text-accent" : "text-zinc-600"}`}>
+              {label}
+            </span>
           </button>
         );
       })}
@@ -958,7 +1013,7 @@ export function StepMealTime({ data, updateData, nextStep }: StepProps) {
 export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
   return (
     <div className="flex flex-col gap-4 items-center max-w-4xl mx-auto w-full">
-      <div className="w-full border border-zinc-200 rounded-xl overflow-x-auto bg-white p-4">
+      <div className="w-full border border-zinc-200 rounded-2xl overflow-x-auto bg-white p-4 shadow-sm">
         <Calendar
           mode="single"
           selected={data.date}
@@ -968,9 +1023,9 @@ export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
             nextStep();
           }}
           disabled={(date) => {
-            const today = new Date()
+            const today = new Date();
             return new Date(date.getFullYear(), date.getMonth(), date.getDate()) <=
-              new Date(today.getFullYear(), today.getMonth(), today.getDate())
+              new Date(today.getFullYear(), today.getMonth(), today.getDate());
           }}
           numberOfMonths={3}
           locale={esRDP}
@@ -983,7 +1038,7 @@ export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
   );
 }
 
-// ── StepBudgetTier: Casual / Gourmet / Selección exclusiva ───────────────────
+// ── StepBudgetTier ────────────────────────────────────────────────────────────
 const BUDGET_OPTIONS = [
   {
     value:   "casual"    as const,
@@ -1019,18 +1074,20 @@ export function StepBudgetTier({ data, updateData, nextStep }: StepProps) {
               key={value}
               type="button"
               onClick={() => { updateData({ budgetTier: value }); nextStep(); }}
-              className={`flex flex-col items-start p-5 rounded-xl border text-left transition-all h-full ${
-                active
-                  ? "border-accent bg-accent/5"
-                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+              className={`flex flex-col items-start p-5 rounded-2xl border text-left transition-all duration-200 h-full ${
+                active ? CARD_ACTIVE : CARD_IDLE
               }`}
             >
               <div className="flex w-full justify-between items-start mb-2">
                 <span className={`font-semibold text-base ${active ? "text-accent" : "text-zinc-900"}`}>{label}</span>
                 <RadioCircle active={active} />
               </div>
-              <p className="text-xs text-zinc-500 mb-4 flex-1">{desc}</p>
-              <span className="text-xs font-semibold bg-zinc-100 text-zinc-700 px-3 py-1.5 rounded-md">
+              <p className="text-xs text-zinc-500 mb-4 flex-1 leading-relaxed">{desc}</p>
+              <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors duration-200 ${
+                active
+                  ? "bg-accent/15 text-accent border-accent/30"
+                  : "bg-zinc-50 text-zinc-600 border-zinc-200"
+              }`}>
                 {range} por persona
               </span>
             </button>
@@ -1041,7 +1098,7 @@ export function StepBudgetTier({ data, updateData, nextStep }: StepProps) {
   );
 }
 
-// ── StepBudgetMultiple: presupuesto para Varios Servicios ────────────────────
+// ── StepBudgetMultiple ────────────────────────────────────────────────────────
 const BUDGET_MULTIPLE_OPTIONS = [
   {
     value:   "casual"    as const,
@@ -1074,18 +1131,20 @@ export function StepBudgetMultiple({ data, updateData, nextStep }: StepProps) {
               key={value}
               type="button"
               onClick={() => { updateData({ budgetTier: value }); nextStep(); }}
-              className={`flex flex-col items-start p-5 rounded-xl border text-left transition-all h-full ${
-                active
-                  ? "border-accent bg-accent/5"
-                  : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+              className={`flex flex-col items-start p-5 rounded-2xl border text-left transition-all duration-200 h-full ${
+                active ? CARD_ACTIVE : CARD_IDLE
               }`}
             >
               <div className="flex w-full justify-between items-start mb-2">
                 <span className={`font-semibold text-base ${active ? "text-accent" : "text-zinc-900"}`}>{label}</span>
                 <RadioCircle active={active} />
               </div>
-              <p className="text-xs text-zinc-500 mb-4 flex-1">{desc}</p>
-              <span className="text-xs font-semibold bg-zinc-100 text-zinc-700 px-3 py-1.5 rounded-md w-full text-center">
+              <p className="text-xs text-zinc-500 mb-4 flex-1 leading-relaxed">{desc}</p>
+              <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border w-full text-center transition-colors duration-200 ${
+                active
+                  ? "bg-accent/15 text-accent border-accent/30"
+                  : "bg-zinc-50 text-zinc-600 border-zinc-200"
+              }`}>
                 {range} servicio de Chef
               </span>
             </button>
@@ -1100,7 +1159,7 @@ export function StepBudgetMultiple({ data, updateData, nextStep }: StepProps) {
   );
 }
 
-// ── StepDietarySimple: Ninguna / Sí → si Sí, muestra picker ─────────────────
+// ── StepDietarySimple ─────────────────────────────────────────────────────────
 const RESTRICTION_OPTIONS = [
   { value: "Vegetariano",  label: "Vegetariano"  },
   { value: "Vegano",       label: "Vegano"        },
@@ -1126,7 +1185,7 @@ export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
   if (!hasRestrictions) {
     return (
       <div className="flex flex-col gap-3 max-w-md mx-auto w-full">
-        <p className="text-center text-zinc-500 text-sm mb-2">
+        <p className="text-center text-zinc-500 text-sm mb-2 leading-relaxed">
           Si necesitas comprobarlo con sus invitados, no hay problema. Puedes informar a tu chef más tarde.
         </p>
         <div className="grid grid-cols-2 gap-3">
@@ -1138,7 +1197,7 @@ export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
                 updateData({ dietaryRestrictions: [value] });
                 if (value === "Ninguna") nextStep();
               }}
-              className="flex items-center justify-between px-5 h-16 rounded-xl border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 transition-all"
+              className={`flex items-center justify-between px-5 h-16 rounded-xl border transition-all duration-200 ${CARD_IDLE}`}
             >
               <span className="text-sm font-medium text-zinc-700">{label}</span>
               <RadioCircle active={false} />
@@ -1152,7 +1211,7 @@ export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
 
   return (
     <div className="flex flex-col gap-4 max-w-xl mx-auto w-full">
-      <p className="text-center text-zinc-500 text-sm mb-1">
+      <p className="text-center text-zinc-500 text-sm mb-1 leading-relaxed">
         Con esta información, nuestros chefs elaborarán menús personalizados adaptados a tus necesidades.
       </p>
 
@@ -1164,10 +1223,10 @@ export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
               key={value}
               type="button"
               onClick={() => toggleRestriction(value)}
-              className={`h-16 rounded-xl border text-sm font-medium transition-all ${
+              className={`h-16 rounded-xl border text-sm font-medium transition-all duration-200 ${
                 active
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+                  ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
+                  : "border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50"
               }`}
             >
               {label}
@@ -1180,14 +1239,10 @@ export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
         placeholder="Otras restricciones..."
         value={data.dietaryOtras ?? ""}
         onChange={(e) => updateData({ dietaryOtras: e.target.value })}
-        className="w-full min-h-[120px] p-4 text-sm border border-zinc-200 rounded-xl outline-none focus:ring-2 focus:ring-zinc-900 resize-y font-sans"
+        className="w-full min-h-[120px] p-4 text-sm border border-zinc-200 rounded-xl outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 resize-y font-sans transition-all"
       />
 
-      <Button
-        onClick={nextStep}
-        size="lg"
-        className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-md shadow-sm"
-      >
+      <Button onClick={nextStep} size="lg" className={BTN_CONTINUE}>
         Continuar
       </Button>
     </div>
@@ -1241,7 +1296,7 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
 
   return (
     <div className="flex flex-col gap-5 max-w-md mx-auto w-full">
-      <p className="text-zinc-500 text-sm text-center mb-1">
+      <p className="text-zinc-500 text-sm text-center mb-1 leading-relaxed">
         Ahora, sólo tienes que añadir tus datos de contacto y te enviaremos propuestas de menú
         personalizadas y gratuitas en menos de 20 minutos.
       </p>
@@ -1252,7 +1307,7 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         </label>
         <Input
           placeholder="John Doe"
-          className="h-14 text-base border-zinc-200"
+          className="h-14 text-base border-zinc-200 rounded-xl focus:border-accent/50 transition-colors"
           value={data.contact?.name ?? ""}
           onChange={(e) => updateData({ contact: { ...data.contact, name: e.target.value } })}
         />
@@ -1265,7 +1320,11 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         <Input
           placeholder="example@mail.com"
           type="email"
-          className={`h-14 text-base ${touched.email && !emailValid ? "border-red-400 focus:ring-red-400" : "border-zinc-200"}`}
+          className={`h-14 text-base rounded-xl transition-colors ${
+            touched.email && !emailValid
+              ? "border-red-400 focus:ring-red-400"
+              : "border-zinc-200 focus:border-accent/50"
+          }`}
           value={email}
           onChange={(e) => updateData({ contact: { ...data.contact, email: e.target.value } })}
           onBlur={() => blur("email")}
@@ -1296,7 +1355,7 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
         disabled={!isValid || loading}
         onClick={handleSubmit}
         size="lg"
-        className="w-auto mx-auto px-10 h-14 bg-accent text-zinc-900 font-bold text-base rounded-2xl mt-2 hover:bg-accent/90 shadow-[0_8px_20px_rgb(224,159,62,0.2)] transition-all disabled:opacity-50"
+        className="w-auto mx-auto px-10 h-14 bg-accent text-zinc-900 font-bold text-base rounded-2xl mt-2 hover:bg-accent/90 hover:scale-[1.02] shadow-[0_8px_20px_rgba(224,159,62,0.2)] hover:shadow-[0_12px_28px_rgba(224,159,62,0.3)] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
       >
         {loading ? (
           <span className="flex items-center gap-2">
@@ -1311,9 +1370,9 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
 
       <p className="text-xs text-zinc-400 text-center">
         Al enviar este formulario, aceptas nuestros{" "}
-        <a href="/terms" className="underline">Términos</a>{" "}
+        <a href="/terms" className="underline hover:text-zinc-600 transition-colors">Términos</a>{" "}
         y reconoces la{" "}
-        <a href="/privacy" className="underline">Declaración de privacidad global</a>.
+        <a href="/privacy" className="underline hover:text-zinc-600 transition-colors">Declaración de privacidad global</a>.
       </p>
     </div>
   );
