@@ -153,8 +153,18 @@ export function Hero() {
           {/* Left: Text */}
           <div className="w-full lg:w-5/12 flex flex-col justify-center text-left z-10">
             <div className="hero-badge opacity-0 inline-flex mb-7">
-              <span className="px-4 py-1.5 text-[10px] font-black tracking-[0.25em] uppercase text-accent border border-accent/25 rounded-full bg-accent/5">
-                Alta Cocina Privada
+              <span className="flex items-center gap-2.5 px-4 py-1.5 text-[10px] font-black tracking-[0.25em] uppercase text-accent border border-accent/25 rounded-full bg-accent/5">
+                {/* Nicaragua flag — blue/white/blue tricolor */}
+                <svg
+                  viewBox="0 0 21 14"
+                  className="w-[18px] h-3 rounded-[2px] flex-shrink-0"
+                  aria-label="Bandera de Nicaragua"
+                >
+                  <rect width="21" height="4.67" y="0" fill="#3E6EB4" />
+                  <rect width="21" height="4.66" y="4.67" fill="#FFFFFF" />
+                  <rect width="21" height="4.67" y="9.33" fill="#3E6EB4" />
+                </svg>
+                Nicaragua · Alta Cocina Privada
               </span>
             </div>
 
