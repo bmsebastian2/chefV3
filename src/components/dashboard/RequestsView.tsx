@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   CalendarDays, Users, MapPin, ChefHat, UtensilsCrossed,
-  Lock, SendHorizonal, Clock, CheckCircle2, XCircle, MessageCircle, Loader2,
+  Lock, SendHorizonal, Clock, CheckCircle2, XCircle,
+  MessageCircle, Loader2, ArrowRight, AlertCircle,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -77,6 +78,30 @@ const STATUS_COLORS: Record<string, string> = {
   paid:       "bg-emerald-50 text-emerald-700 border-emerald-200",
   completed:  "bg-zinc-100 text-zinc-600 border-zinc-200",
   cancelled:  "bg-red-50 text-red-700 border-red-200",
+};
+
+const STATUS_TEXT_COLORS: Record<string, string> = {
+  new:        "text-sky-600",
+  in_process: "text-amber-600",
+  paid:       "text-emerald-600",
+  completed:  "text-zinc-500",
+  cancelled:  "text-red-500",
+};
+
+const STATUS_DOT: Record<string, string> = {
+  new:        "bg-sky-500",
+  in_process: "bg-amber-500",
+  paid:       "bg-emerald-500",
+  completed:  "bg-zinc-400",
+  cancelled:  "bg-red-400",
+};
+
+const STATUS_LEFT_BORDER: Record<string, string> = {
+  new:        "border-l-sky-500",
+  in_process: "border-l-amber-500",
+  paid:       "border-l-emerald-500",
+  completed:  "border-l-zinc-300",
+  cancelled:  "border-l-red-300",
 };
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
@@ -176,29 +201,39 @@ function formatBudget(min: number | null, max: number | null) {
   return `desde $${fmt(min!)}`;
 }
 
+function DetailRow({ icon, value }: { icon: React.ReactNode; value: string }) {
+  return (
+    <div className="flex items-center gap-2 py-1.5 border-b border-zinc-50 last:border-0">
+      <span className="text-zinc-300 shrink-0">{icon}</span>
+      <span className="text-xs text-zinc-500 truncate">{value}</span>
+    </div>
+  );
+}
+
 // ── Gate de requisitos ─────────────────────────────────────────────────────────
 
 function RequirementItem({ item }: { item: MissingRequirement }) {
   const pct = Math.min(100, Math.round((item.current / item.required) * 100));
   return (
     <div>
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-sm font-medium text-zinc-800">{item.label}</span>
-        <span className="text-xs tabular-nums text-zinc-400">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-semibold text-zinc-800">{item.label}</span>
+        <span className="text-xs font-mono tabular-nums text-zinc-400">
           {item.current} / {item.required}
         </span>
       </div>
-      <div className="h-1.5 bg-zinc-200 rounded-full mb-2">
+      <div className="h-1.5 bg-zinc-100 rounded-full mb-2.5 overflow-hidden">
         <div
-          className="h-full bg-accent rounded-full transition-all"
+          className="h-full bg-gradient-to-r from-accent to-accent/80 rounded-full transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
       <Link
         href={item.href}
-        className="text-xs font-medium text-accent hover:underline underline-offset-2"
+        className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
       >
-        Completar →
+        Completar
+        <ArrowRight className="w-3 h-3" />
       </Link>
     </div>
   );
@@ -207,24 +242,30 @@ function RequirementItem({ item }: { item: MissingRequirement }) {
 function RequestsGate({ missing }: { missing: MissingRequirement[] }) {
   return (
     <div className="p-6 md:p-10">
-      <div className="mb-6">
-        <h1 className="font-serif text-2xl font-semibold text-zinc-900">Solicitudes</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+      <div className="mb-10">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="h-px w-8 bg-accent rounded-full" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            Chef dashboard
+          </span>
+        </div>
+        <h1 className="font-serif text-3xl font-semibold text-zinc-900 mb-2">Solicitudes</h1>
+        <p className="text-sm text-zinc-500">
           Solicitudes de servicio que coinciden con tus preferencias.
         </p>
       </div>
 
-      <div className="max-w-sm mx-auto text-center py-10">
-        <div className="w-14 h-14 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-5">
+      <div className="max-w-sm">
+        <div className="flex items-center justify-center w-16 h-16 bg-zinc-100 rounded-2xl mb-6">
           <Lock className="w-7 h-7 text-zinc-400" />
         </div>
-        <h2 className="font-semibold text-zinc-900 text-lg mb-2">
+        <h2 className="font-serif text-xl font-semibold text-zinc-900 mb-2">
           Completá tu perfil para recibir solicitudes
         </h2>
-        <p className="text-sm text-zinc-500 mb-8">
+        <p className="text-sm text-zinc-500 mb-7 leading-relaxed">
           Los clientes podrán encontrarte una vez que cumplas con los siguientes requisitos.
         </p>
-        <div className="text-left space-y-6 bg-zinc-50 rounded-xl p-6 border border-zinc-200">
+        <div className="bg-white border border-zinc-100 rounded-2xl shadow-sm p-6 space-y-6">
           {missing.map((item) => (
             <RequirementItem key={item.key} item={item} />
           ))}
@@ -288,23 +329,26 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess,
       </DialogHeader>
 
       <div className="space-y-4">
-       
-
         <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-            Descripción del menú
+          <label className="block text-xs font-bold uppercase tracking-[0.12em] text-zinc-500 mb-2">
+            Descripción del menú <span className="text-red-400 normal-case tracking-normal font-normal">*</span>
           </label>
           {chefMenus.length > 0 && (
-            <select
-              value={selectedMenuId}
-              onChange={(e) => handleMenuSelect(e.target.value)}
-              className="mb-2 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm text-zinc-700 focus-visible:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 transition-colors"
-            >
-              <option value="">Elegir un menú para cargar...</option>
-              {chefMenus.map((m) => (
-                <option key={m.id} value={m.id}>{m.title}</option>
-              ))}
-            </select>
+            <div className="relative mb-2">
+              <select
+                value={selectedMenuId}
+                onChange={(e) => handleMenuSelect(e.target.value)}
+                className="w-full h-10 appearance-none px-4 pr-10 border border-zinc-200 rounded-xl text-sm text-zinc-700 bg-white focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all duration-150 cursor-pointer"
+              >
+                <option value="">Elegir un menú para cargar…</option>
+                {chefMenus.map((m) => (
+                  <option key={m.id} value={m.id}>{m.title}</option>
+                ))}
+              </select>
+              <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           )}
           <textarea
             value={menuDescription}
@@ -312,37 +356,40 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess,
             placeholder="Describí los platos o la propuesta gastronómica..."
             rows={5}
             required
-            className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none transition-colors"
+            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent resize-none transition-all duration-150"
           />
         </div>
-      <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-            Mensaje al cliente <span className="text-zinc-400 font-normal">(opcional)</span>
+
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-[0.12em] text-zinc-500 mb-2">
+            Mensaje al cliente{" "}
+            <span className="text-zinc-400 normal-case tracking-normal font-normal">(opcional)</span>
           </label>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Contale por qué sos la persona ideal para este evento..."
             rows={3}
-            className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none transition-colors"
+            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent resize-none transition-all duration-150"
           />
         </div>
+
         {selectedMenu && (selectedMenu.price_2 || selectedMenu.price_3_6 || selectedMenu.price_7_20) && (() => {
           const activePrice = priceForGuests(selectedMenu, guestCount);
           const row = (label: string, price: number | null, isActive: boolean) =>
             price != null ? (
-              <div className={`flex items-center justify-between text-sm rounded-md px-2 py-1 -mx-2 ${isActive ? "bg-accent/10 ring-1 ring-accent/30" : ""}`}>
-                <span className={isActive ? "text-accent font-medium" : "text-zinc-600"}>
+              <div className={`flex items-center justify-between text-sm rounded-lg px-3 py-2 -mx-1 ${isActive ? "bg-accent/10 ring-1 ring-accent/20" : ""}`}>
+                <span className={isActive ? "text-accent font-medium text-xs" : "text-zinc-600 text-xs"}>
                   {label}{isActive && guestCount !== null ? ` (${guestCount})` : ""}
                 </span>
-                <span className={`font-semibold ${isActive ? "text-accent" : "text-zinc-900"}`}>
+                <span className={`font-semibold text-xs ${isActive ? "text-accent" : "text-zinc-900"}`}>
                   ${fmt(price)}
                 </span>
               </div>
             ) : null;
           return (
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
-              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">
+            <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-2.5">
                 Precios del menú (por persona)
               </p>
               <div className="space-y-0.5">
@@ -356,28 +403,29 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess,
       </div>
 
       {serverError && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-          {serverError}
-        </p>
+        <div className="flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+          <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+          <p className="text-sm text-red-700">{serverError}</p>
+        </div>
       )}
 
       <DialogFooter>
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors"
+          className="px-4 py-2 text-sm font-medium text-zinc-500 hover:text-zinc-800 transition-colors"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent/90 hover:shadow-md hover:shadow-accent/20 disabled:opacity-50 disabled:pointer-events-none transition-all duration-150"
         >
           {isPending ? (
             <>
-              <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              Enviando...
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Enviando…
             </>
           ) : (
             <>
@@ -416,54 +464,59 @@ function RequestCardItem({ req, chefMenus }: { req: RequestCard; chefMenus: Chef
   const canApply = req.status === 'new' && !proposalStatus;
 
   return (
-    <div className="border border-zinc-200 rounded-xl p-5 bg-white hover:border-zinc-300 hover:shadow-sm transition-all">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${STATUS_COLORS[req.status] ?? "bg-zinc-100 text-zinc-600 border-zinc-200"}`}>
-          {STATUS_LABELS[req.status] ?? req.status}
-        </span>
-        <span className="text-xs text-zinc-400 flex items-center gap-1">
-          <CalendarDays className="w-3.5 h-3.5" />
-          {dateStr}
-        </span>
+    <div
+      className={[
+        "relative bg-white border border-zinc-100 border-l-4 rounded-xl overflow-hidden",
+        STATUS_LEFT_BORDER[req.status] ?? "border-l-zinc-200",
+        "hover:shadow-md hover:-translate-y-0.5 transition-all duration-200",
+        req.status === "cancelled" ? "opacity-60" : "",
+      ].join(" ")}
+    >
+      {/* Top */}
+      <div className="px-4 pt-4 pb-3">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <span className={`inline-flex items-center gap-1.5 ${STATUS_TEXT_COLORS[req.status] ?? "text-zinc-500"}`}>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[req.status] ?? "bg-zinc-400"}`} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">
+              {STATUS_LABELS[req.status] ?? req.status}
+            </span>
+          </span>
+          <span className="text-[11px] text-zinc-400 flex items-center gap-1 shrink-0">
+            <CalendarDays className="w-3 h-3" />
+            {dateStr}
+          </span>
+        </div>
+
+        <p className="font-serif text-[15px] font-semibold text-zinc-900 leading-snug">
+          {req.client_name}
+        </p>
+        <p className="text-xs text-zinc-500 mt-0.5">
+          {SERVICE_TYPE_LABELS[req.service_type] ?? req.service_type}
+          {req.event_time && <> · {req.event_time}</>}
+          {budget && <> · <span className="font-medium text-zinc-700">{budget}</span></>}
+        </p>
       </div>
 
-      <p className="font-semibold text-zinc-900 text-sm">{req.client_name}</p>
-      <p className="text-xs text-zinc-500 mt-0.5 mb-3">
-        {SERVICE_TYPE_LABELS[req.service_type] ?? req.service_type}
-        {req.event_time && <> · {req.event_time}</>}
-        {budget && <> · <span className="font-medium text-zinc-700">{budget}</span></>}
-      </p>
-
-      <div className="space-y-1.5 mb-4">
+      {/* Detail rows */}
+      <div className="border-t border-zinc-50 px-4 py-2">
         {guestStr && (
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <Users className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{guestStr}</span>
-          </div>
+          <DetailRow icon={<Users className="w-3 h-3" />} value={guestStr} />
         )}
         {req.cuisine_type && (
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <UtensilsCrossed className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="capitalize">{req.cuisine_type.replace(/_/g, ' ')}</span>
-          </div>
+          <DetailRow icon={<UtensilsCrossed className="w-3 h-3" />} value={req.cuisine_type.replace(/_/g, ' ')} />
         )}
         {req.occasion && (
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <ChefHat className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{OCCASION_LABELS[req.occasion] ?? req.occasion}</span>
-          </div>
+          <DetailRow icon={<ChefHat className="w-3 h-3" />} value={OCCASION_LABELS[req.occasion] ?? req.occasion} />
         )}
         {req.location && (
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="truncate">{req.location}</span>
-          </div>
+          <DetailRow icon={<MapPin className="w-3 h-3" />} value={req.location} />
         )}
       </div>
 
-      <div className="pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
+      {/* Action footer */}
+      <div className="border-t border-zinc-50 px-4 py-3 flex items-center justify-between gap-2">
         {proposalCfg ? (
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${proposalCfg.color}`}>
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${proposalCfg.color}`}>
             {proposalCfg.icon}
             {proposalCfg.label}
           </span>
@@ -474,7 +527,7 @@ function RequestCardItem({ req, chefMenus }: { req: RequestCard; chefMenus: Chef
             type="button"
             onClick={() => { setNavigating(true); router.push(`/dashboard/requests/${req.id}`); }}
             disabled={navigating}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 text-white text-xs font-semibold hover:bg-zinc-700 transition-colors disabled:opacity-70"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 text-white text-xs font-semibold hover:bg-zinc-700 transition-colors disabled:opacity-60"
           >
             {navigating
               ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -486,7 +539,7 @@ function RequestCardItem({ req, chefMenus }: { req: RequestCard; chefMenus: Chef
             <button
               type="button"
               onClick={() => setShowProposal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent/90 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent/90 hover:shadow-sm hover:shadow-accent/20 transition-all duration-150"
             >
               <SendHorizonal className="w-3.5 h-3.5" />
               Postularse
@@ -561,14 +614,23 @@ export function RequestsView({
 
   return (
     <div className="p-6 md:p-10">
-      <div className="mb-6">
-        <h1 className="font-serif text-2xl font-semibold text-zinc-900">Solicitudes</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+
+      {/* ── Header ── */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="h-px w-8 bg-accent rounded-full" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            Chef dashboard
+          </span>
+        </div>
+        <h1 className="font-serif text-3xl font-semibold text-zinc-900 mb-2">Solicitudes</h1>
+        <p className="text-sm text-zinc-500">
           Solicitudes de servicio que coinciden con tus preferencias.
         </p>
       </div>
 
-      <div className="flex gap-1 border-b border-zinc-200 mb-6 overflow-x-auto">
+      {/* ── Tabs ── */}
+      <div className="flex gap-0 border-b border-zinc-100 mb-6 overflow-x-auto">
         {STATUS_TABS.map((tab) => {
           const count = tab.key === "all"
             ? requests.length
@@ -579,16 +641,18 @@ export function RequestsView({
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors -mb-px ${
+              className={[
+                "flex items-center gap-1.5 px-4 py-2.5 whitespace-nowrap border-b-2 -mb-px",
+                "text-xs font-bold uppercase tracking-[0.1em] transition-all duration-150",
                 active
                   ? "border-accent text-accent"
-                  : "border-transparent text-zinc-500 hover:text-zinc-900"
-              }`}
+                  : "border-transparent text-zinc-400 hover:text-zinc-700",
+              ].join(" ")}
             >
               {tab.label}
               {count > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                  active ? "bg-accent/10 text-accent" : "bg-zinc-100 text-zinc-500"
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                  active ? "bg-accent/10 text-accent" : "bg-zinc-100 text-zinc-400"
                 }`}>
                   {count}
                 </span>
@@ -598,14 +662,22 @@ export function RequestsView({
         })}
       </div>
 
+      {/* ── Empty state ── */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-zinc-400">
-          <ChefHat className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No hay solicitudes en esta categoría.</p>
+        <div className="text-center py-20">
+          <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <ChefHat className="w-7 h-7 text-zinc-300" />
+          </div>
+          <p className="text-sm font-medium text-zinc-500 mb-1">
+            No hay solicitudes en esta categoría.
+          </p>
           {activeTab === "all" && (
-            <p className="text-xs mt-1">
+            <p className="text-xs text-zinc-400">
               Ajustá tu{" "}
-              <Link href="/dashboard/request-settings" className="text-accent underline underline-offset-2">
+              <Link
+                href="/dashboard/request-settings"
+                className="text-accent font-medium hover:text-accent/80 underline underline-offset-2 transition-colors"
+              >
                 configuración de solicitudes
               </Link>{" "}
               para ver más resultados.

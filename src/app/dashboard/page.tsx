@@ -22,14 +22,14 @@ const ITEMS: {
   href: string | null
   desc: string
 }[] = [
-  { key: 'account_done',        label: 'Mi Cuenta',                   href: null,                       desc: 'Registro completado.' },
-  { key: 'bio_done',            label: 'Bio Profesional',              href: '/dashboard/perfil',        desc: 'Escribe tu presentación y bio.' },
-  { key: 'location_done',       label: 'Ubicación',                   href: '/dashboard/ubicacion',     desc: 'Añade tu ciudad y país.' },
-  { key: 'profile_picture_done',label: 'Foto de Perfil',              href: '/dashboard/fotos',         desc: 'Sube tu foto de perfil.' },
-  { key: 'gallery_done',        label: 'Fotos de Galería',            href: '/dashboard/fotos',         desc: 'Añade fotos de tus platos.' },
-  { key: 'menus_done',          label: 'Menús',                       href: '/dashboard/menus',         desc: 'Crea al menos 1 menú.' },
+  { key: 'account_done',        label: 'Mi Cuenta',                   href: null,                          desc: 'Registro completado.' },
+  { key: 'bio_done',            label: 'Bio Profesional',              href: '/dashboard/perfil',           desc: 'Escribe tu presentación y bio.' },
+  { key: 'location_done',       label: 'Ubicación',                   href: '/dashboard/ubicacion',        desc: 'Añade tu ciudad y país.' },
+  { key: 'profile_picture_done',label: 'Foto de Perfil',              href: '/dashboard/fotos',            desc: 'Sube tu foto de perfil.' },
+  { key: 'gallery_done',        label: 'Fotos de Galería',            href: '/dashboard/fotos',            desc: 'Añade fotos de tus platos.' },
+  { key: 'menus_done',          label: 'Menús',                       href: '/dashboard/menus',            desc: 'Crea al menos 1 menú.' },
   { key: 'request_prefs_done',  label: 'Preferencias de Solicitudes', href: '/dashboard/request-settings', desc: 'Elige los tipos de servicio que aceptas.' },
-  { key: 'payments_done',       label: 'Pagos',                       href: null,                       desc: 'Próximamente disponible.' },
+  { key: 'payments_done',       label: 'Pagos',                       href: null,                          desc: 'Próximamente disponible.' },
 ]
 
 export default async function DashboardPage() {
@@ -102,87 +102,162 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-6 md:p-10 max-w-3xl">
-      {/* Welcome + progress */}
-      <div className="bg-white border border-zinc-200 rounded-xl p-6 mb-8 shadow-sm">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-14 h-14 rounded-full overflow-hidden bg-zinc-100 border border-zinc-200 flex-shrink-0">
-            {profilePhotoUrl ? (
-              <Image src={profilePhotoUrl} alt={firstName} width={56} height={56} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-zinc-400 font-serif text-xl font-semibold">
-                {firstName.charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
-          <div>
-            <h1 className="font-serif text-2xl font-semibold text-zinc-900">
-              Bienvenido/a, {firstName}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Completa tu perfil para empezar a recibir solicitudes
-            </p>
-          </div>
+
+      {/* ── Profile hero card ── */}
+      <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-zinc-100 mb-8">
+        {/* Decorative concentric circles */}
+        <div className="absolute top-0 right-0 w-56 h-56 pointer-events-none opacity-[0.035] -translate-y-1/4 translate-x-1/4">
+          <div className="absolute inset-0 rounded-full border-[1.5px] border-zinc-800" />
+          <div className="absolute inset-8 rounded-full border-[1.5px] border-zinc-800" />
+          <div className="absolute inset-16 rounded-full border-[1.5px] border-zinc-800" />
+          <div className="absolute inset-24 rounded-full border-[1.5px] border-zinc-800" />
         </div>
 
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-zinc-700">
-            Tu perfil está <span className="text-accent">{pct}% completo</span>
-          </span>
-          <span className="text-sm text-muted-foreground">{doneCount} / {ITEMS.length}</span>
-        </div>
-        <div className="w-full bg-zinc-100 rounded-full h-2.5">
-          <div
-            className="bg-accent h-2.5 rounded-full transition-all duration-500"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
+        <div className="relative z-10 p-6 md:p-8">
 
-        {chefProfile && (
-          <ActiveToggle
-            chefId={chefProfile.id}
-            initialActive={chefProfile.is_active ?? false}
-            meetsRequirements={meetsRequirements}
-          />
-        )}
-      </div>
-
-      {/* Checklist grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {ITEMS.map((item) => {
-          const done = completion?.[item.key] ?? false
-          return (
-            <div
-              key={item.key}
-              className="bg-white border border-zinc-200 rounded-xl p-4 flex items-start gap-3 shadow-sm"
-            >
-              <div className={`mt-0.5 flex-shrink-0 ${done ? 'text-emerald-500' : 'text-zinc-300'}`}>
-                {done
-                  ? <CheckCircle2 className="w-5 h-5" />
-                  : <Circle className="w-5 h-5" />
-                }
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
-                  {item.label}
-                </p>
-                {done ? (
-                  <span className="inline-block mt-1 text-xs font-medium text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
-                    Completado
-                  </span>
-                ) : item.href ? (
-                  <Link
-                    href={item.href}
-                    className="inline-flex items-center gap-1 mt-1 text-xs text-accent hover:underline font-medium"
-                  >
-                    {item.desc} <ArrowRight className="w-3 h-3" />
-                  </Link>
+          {/* Avatar + name + large % */}
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-[72px] h-[72px] rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 flex-shrink-0 shadow-sm">
+                {profilePhotoUrl ? (
+                  <Image
+                    src={profilePhotoUrl}
+                    alt={firstName}
+                    width={72}
+                    height={72}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
+                  <div className="w-full h-full flex items-center justify-center text-zinc-400 font-serif text-2xl font-semibold">
+                    {firstName.charAt(0).toUpperCase()}
+                  </div>
                 )}
               </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="h-px w-5 bg-accent rounded-full" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                    Chef
+                  </span>
+                </div>
+                <h1 className="font-serif text-2xl md:text-3xl font-semibold text-zinc-900 leading-tight">
+                  {firstName}
+                </h1>
+              </div>
             </div>
-          )
-        })}
+
+            {/* Large percentage display */}
+            <div className="text-right shrink-0">
+              <div className="leading-none mb-1">
+                <span className="font-serif text-5xl font-bold text-zinc-900">{pct}</span>
+                <span className="font-serif text-xl font-light text-zinc-400">%</span>
+              </div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400">
+                completado
+              </p>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-zinc-400">
+                {doneCount} de {ITEMS.length} secciones
+              </span>
+              {doneCount < ITEMS.length && (
+                <span className="text-xs font-medium text-zinc-400">
+                  {ITEMS.length - doneCount} por completar
+                </span>
+              )}
+            </div>
+            <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-accent to-accent/80 rounded-full transition-all duration-700"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Active toggle */}
+          {chefProfile && (
+            <ActiveToggle
+              chefId={chefProfile.id}
+              initialActive={chefProfile.is_active ?? false}
+              meetsRequirements={meetsRequirements}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* ── Checklist ── */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            Configurar perfil
+          </h2>
+          {doneCount < ITEMS.length && (
+            <span className="text-[10px] font-semibold text-zinc-400 bg-zinc-100 px-2.5 py-1 rounded-full">
+              {ITEMS.length - doneCount} pendientes
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {ITEMS.map((item) => {
+            const done   = completion?.[item.key] ?? false
+            const locked = item.href === null && !done
+
+            return (
+              <div
+                key={item.key}
+                className={[
+                  'relative rounded-xl border transition-all duration-150 overflow-hidden',
+                  done
+                    ? 'bg-emerald-50/40 border-emerald-100'
+                    : locked
+                    ? 'bg-zinc-50 border-zinc-100 opacity-55'
+                    : 'bg-white border-zinc-100 shadow-sm hover:shadow-md hover:-translate-y-0.5',
+                ].join(' ')}
+              >
+                {/* Left accent bar for pending items */}
+                {!done && !locked && (
+                  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-accent rounded-l-xl" />
+                )}
+
+                <div className={`flex items-start gap-3 p-4 ${!done && !locked ? 'pl-5' : ''}`}>
+                  <div className={`mt-0.5 flex-shrink-0 ${done ? 'text-emerald-500' : 'text-zinc-300'}`}>
+                    {done
+                      ? <CheckCircle2 className="w-5 h-5" />
+                      : <Circle className="w-5 h-5" />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-bold uppercase tracking-wider ${done ? 'text-emerald-700/60' : 'text-zinc-600'}`}>
+                      {item.label}
+                    </p>
+
+                    {done ? (
+                      <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-semibold text-emerald-600">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Completado
+                      </span>
+                    ) : item.href ? (
+                      <Link
+                        href={item.href}
+                        className="group/link inline-flex items-center gap-1 mt-1.5 text-xs text-accent hover:text-accent/80 font-semibold"
+                      >
+                        {item.desc}
+                        <ArrowRight className="w-3 h-3 group-hover/link:translate-x-0.5 transition-transform" />
+                      </Link>
+                    ) : (
+                      <p className="text-xs text-zinc-400 mt-1">{item.desc}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
