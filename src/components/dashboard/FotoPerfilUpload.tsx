@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, MoreHorizontal } from "lucide-react";
+import { Camera, Loader2, MoreHorizontal, AlertCircle } from "lucide-react";
 import { createClient } from "@/utils/supabase/clients";
 import { saveProfilePhotoUrl } from "@/app/dashboard/fotos/actions";
 import { compressImage } from "@/utils/images";
@@ -69,9 +69,11 @@ export function FotoPerfilUpload({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="relative inline-block">
-        <div className="w-52 h-52 rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200">
+
+        {/* Photo container */}
+        <div className="w-52 h-52 rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 shadow-sm">
           {currentUrl ? (
             <img
               src={currentUrl}
@@ -82,15 +84,16 @@ export function FotoPerfilUpload({
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="w-full h-full flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200 transition-colors"
+              className="w-full h-full flex flex-col items-center justify-center gap-3 border-2 border-dashed border-zinc-200 rounded-2xl text-zinc-400 hover:text-accent hover:border-accent hover:bg-accent/5 transition-all duration-150"
             >
               <Camera className="w-8 h-8" />
-              <span className="text-xs font-medium">Subir foto</span>
+              <span className="text-xs font-semibold uppercase tracking-[0.1em]">Subir foto</span>
             </button>
           )}
 
+          {/* Loading overlay */}
           {uploading && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl">
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-2xl">
               <Loader2 className="w-7 h-7 text-white animate-spin" />
             </div>
           )}
@@ -102,18 +105,18 @@ export function FotoPerfilUpload({
             type="button"
             disabled={uploading}
             onClick={() => setMenuOpen((v) => !v)}
-            className="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-zinc-50 transition-colors disabled:opacity-50"
+            className="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-zinc-50 transition-colors disabled:opacity-40"
           >
-            <MoreHorizontal className="w-4 h-4 text-zinc-600" />
+            <MoreHorizontal className="w-4 h-4 text-zinc-500" />
           </button>
 
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-10 z-20 bg-white border border-zinc-200 rounded-lg shadow-lg py-1 min-w-44">
+              <div className="absolute right-0 top-10 z-20 bg-white border border-zinc-100 rounded-xl shadow-xl py-1 min-w-44">
                 <button
                   type="button"
-                  className="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+                  className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
                   onClick={() => {
                     setMenuOpen(false);
                     fileRef.current?.click();
@@ -127,10 +130,17 @@ export function FotoPerfilUpload({
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-2 text-sm text-red-600">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          {error}
+        </div>
+      )}
 
-      <p className="text-xs text-muted-foreground max-w-xs">
-        JPG, PNG o WEBP · Máx. {MAX_FILE_MB} MB · Se comprime automáticamente a {MAX_SIDE}px
+      {/* Hint */}
+      <p className="text-xs text-zinc-400">
+        JPG, PNG o WEBP · Máx. {MAX_FILE_MB} MB · Compresión automática a {MAX_SIDE}px
       </p>
 
       <input

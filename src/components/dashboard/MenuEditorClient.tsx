@@ -3,9 +3,7 @@
 import { useState, useTransition, useMemo, useRef } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Plus, X, ChevronDown, AlertTriangle, Loader2, Info, ChevronRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Plus, X, ChevronDown, AlertTriangle, Loader2, Info, ChevronRight, AlertCircle, Camera } from "lucide-react"
 import { createClient } from "@/utils/supabase/clients"
 import { compressImage } from "@/utils/images"
 import { saveMenu, type SelectionMode, type MenuEditData } from "@/app/dashboard/menus/actions"
@@ -14,14 +12,14 @@ import type { Course } from "@/app/dashboard/platos/actions"
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const CUISINE_OPTIONS = [
-  { value: "local",        label: "Local" },
-  { value: "french",       label: "Francés" },
-  { value: "italian",      label: "italiano" },
-  { value: "japanese",     label: "japonés" },
-  { value: "mediterranean",label: "mediterráneo" },
-  { value: "seafood",      label: "Mariscos/Pescado" },
-  { value: "fusion",       label: "Fusión" },
-  { value: "chefs_special",label: "Especialidad del chef" },
+  { value: "local",         label: "Local" },
+  { value: "french",        label: "Francés" },
+  { value: "italian",       label: "italiano" },
+  { value: "japanese",      label: "japonés" },
+  { value: "mediterranean", label: "mediterráneo" },
+  { value: "seafood",       label: "Mariscos/Pescado" },
+  { value: "fusion",        label: "Fusión" },
+  { value: "chefs_special", label: "Especialidad del chef" },
 ]
 
 const COURSES_CONFIG: { value: Course; label: string; addLabel: string }[] = [
@@ -39,9 +37,9 @@ const SELECTION_MODES: { value: SelectionMode; label: string }[] = [
 ]
 
 const PRICE_RANGES = {
-  price2:   { label: "Precio para 2 personas",     min: 210, max: 420 },
-  price36:  { label: "Precio para 3-6 personas",   min: 189, max: 336 },
-  price720: { label: "Precio para 7-20 personas",  min: 147, max: 294 },
+  price2:   { label: "Precio para 2 personas",    min: 210, max: 420 },
+  price36:  { label: "Precio para 3–6 personas",  min: 189, max: 336 },
+  price720: { label: "Precio para 7–20 personas", min: 147, max: 294 },
 }
 
 const STORAGE_BUCKET = "menu-images"
@@ -50,63 +48,70 @@ const MAX_SIDE = 1200
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type CourseSetting = { selectionMode: SelectionMode; dishIds: string[] }
-type CourseMap = Record<Course, CourseSetting>
-
-type AvailableDish = { id: string; name: string; course: Course }
+type CourseSetting  = { selectionMode: SelectionMode; dishIds: string[] }
+type CourseMap      = Record<Course, CourseSetting>
+type AvailableDish  = { id: string; name: string; course: Course }
 
 type Props = {
-  menuId: string | null
+  menuId:          string | null
   availableDishes: AvailableDish[]
-  initialData?: MenuEditData
-  userId: string
+  initialData?:    MenuEditData
+  userId:          string
 }
 
-// ── Sub-components ───────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-4">
+    <div className="flex items-center gap-2.5 mb-4">
+      <div className="h-px w-5 bg-accent/60 rounded-full" />
+      <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+        {children}
+      </h2>
+    </div>
+  )
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-xs font-bold uppercase tracking-[0.12em] text-zinc-500 mb-2">
       {children}
-    </h2>
+    </label>
   )
 }
 
 function PriceInput({
   label, value, onChange, range,
 }: {
-  label: string
-  value: string
+  label:    string
+  value:    string
   onChange: (v: string) => void
-  range: { min: number; max: number }
+  range:    { min: number; max: number }
 }) {
-  const num = parseFloat(value) || 0
+  const num        = parseFloat(value) || 0
   const outOfRange = num > 0 && (num < range.min || num > range.max)
 
   return (
     <div>
-      <label className="block text-sm mb-1.5">{label}</label>
-      <Input
+      <FieldLabel>{label}</FieldLabel>
+      <input
         type="number"
         min={0}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full"
         placeholder="0"
+        className="w-full h-11 px-4 border border-zinc-200 rounded-xl text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all duration-150"
       />
-      {outOfRange && (
-        <div className="mt-1.5 flex items-start gap-1.5">
-          <AlertTriangle size={13} className="text-amber-500 mt-0.5 shrink-0" />
-          <div className="text-xs text-muted-foreground">
-            <span className="text-amber-600">Este precio está fuera del rango recomendado. Es posible que reciba menos solicitudes.</span>
-            <br />
-            Rango recomendado: {range.min} - {range.max} USD
-          </div>
+      {outOfRange ? (
+        <div className="mt-2 flex items-start gap-1.5">
+          <AlertTriangle size={12} className="text-amber-500 mt-0.5 shrink-0" />
+          <p className="text-xs text-amber-600">
+            Precio fuera del rango recomendado. Rango: {range.min}–{range.max} USD
+          </p>
         </div>
-      )}
-      {!outOfRange && num === 0 && (
-        <p className="mt-1 text-xs text-muted-foreground">
-          Rango recomendado: {range.min} - {range.max} USD
+      ) : (
+        <p className="mt-1.5 text-xs text-zinc-400">
+          Rango recomendado: {range.min}–{range.max} USD
         </p>
       )}
     </div>
@@ -120,25 +125,25 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
   const [isPending, startTransition] = useTransition()
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const [title, setTitle]               = useState(initialData?.title ?? "")
-  const [description, setDescription]   = useState(initialData?.description ?? "")
-  const [cuisineTypes, setCuisineTypes]  = useState<string[]>(initialData?.cuisine_types ?? [])
-  const [imageUrl, setImageUrl]          = useState<string | null>(initialData?.image_url ?? null)
+  const [title, setTitle]                   = useState(initialData?.title ?? "")
+  const [description, setDescription]       = useState(initialData?.description ?? "")
+  const [cuisineTypes, setCuisineTypes]      = useState<string[]>(initialData?.cuisine_types ?? [])
+  const [imageUrl, setImageUrl]             = useState<string | null>(initialData?.image_url ?? null)
   const [imageUploading, setImageUploading] = useState(false)
-  const [imageError, setImageError]      = useState<string | null>(null)
-  const [minGuests, setMinGuests]        = useState(initialData?.min_guests ?? 2)
-  const [maxGuests, setMaxGuests]        = useState(initialData?.max_guests ?? 20)
-  const [price2, setPrice2]              = useState(initialData?.price_2 ? String(initialData.price_2) : "")
-  const [price36, setPrice36]            = useState(initialData?.price_3_6 ? String(initialData.price_3_6) : "")
-  const [price720, setPrice720]          = useState(initialData?.price_7_20 ? String(initialData.price_7_20) : "")
-  const [courseMap, setCourseMap]        = useState<CourseMap>({
+  const [imageError, setImageError]         = useState<string | null>(null)
+  const [minGuests, setMinGuests]           = useState(initialData?.min_guests ?? 2)
+  const [maxGuests, setMaxGuests]           = useState(initialData?.max_guests ?? 20)
+  const [price2, setPrice2]                 = useState(initialData?.price_2    ? String(initialData.price_2)    : "")
+  const [price36, setPrice36]               = useState(initialData?.price_3_6  ? String(initialData.price_3_6)  : "")
+  const [price720, setPrice720]             = useState(initialData?.price_7_20 ? String(initialData.price_7_20) : "")
+  const [courseMap, setCourseMap]           = useState<CourseMap>({
     starter:      { selectionMode: initialData?.courseSettings?.starter?.selectionMode      ?? "all_inclusive", dishIds: initialData?.courseSettings?.starter?.dishIds      ?? [] },
     first_course: { selectionMode: initialData?.courseSettings?.first_course?.selectionMode ?? "all_inclusive", dishIds: initialData?.courseSettings?.first_course?.dishIds ?? [] },
     main:         { selectionMode: initialData?.courseSettings?.main?.selectionMode         ?? "all_inclusive", dishIds: initialData?.courseSettings?.main?.dishIds         ?? [] },
     dessert:      { selectionMode: initialData?.courseSettings?.dessert?.selectionMode      ?? "all_inclusive", dishIds: initialData?.courseSettings?.dessert?.dishIds      ?? [] },
   })
-  const [openPicker, setOpenPicker]      = useState<Course | null>(null)
-  const [saveError, setSaveError]        = useState<string | null>(null)
+  const [openPicker, setOpenPicker] = useState<Course | null>(null)
+  const [saveError, setSaveError]   = useState<string | null>(null)
 
   // ── Price table ──────────────────────────────────────────────────────────
 
@@ -147,10 +152,10 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
     const p36  = parseFloat(price36)  || 0
     const p720 = parseFloat(price720) || 0
     return Array.from({ length: maxGuests - minGuests + 1 }, (_, i) => {
-      const n = minGuests + i
+      const n         = minGuests + i
       const perPerson = n === 2 ? p2 : n <= 6 ? p36 : p720
-      const total = Math.round(perPerson * n * 100) / 100
-      const chef  = Math.round(total * 0.80 * 100) / 100
+      const total     = Math.round(perPerson * n * 100) / 100
+      const chef      = Math.round(total * 0.80 * 100) / 100
       return { n, chef, total }
     })
   }, [minGuests, maxGuests, price2, price36, price720])
@@ -229,13 +234,13 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
         imageUrl,
         minGuests,
         maxGuests,
-        price2: parseFloat(price2) || 0,
-        price36: parseFloat(price36) || 0,
+        price2:   parseFloat(price2)   || 0,
+        price36:  parseFloat(price36)  || 0,
         price720: parseFloat(price720) || 0,
         courseData: COURSES_CONFIG.map(c => ({
-          course: c.value,
+          course:        c.value,
           selectionMode: courseMap[c.value].selectionMode,
-          dishIds: courseMap[c.value].dishIds,
+          dishIds:       courseMap[c.value].dishIds,
         })),
       })
       if (result.error) {
@@ -249,28 +254,42 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 max-w-2xl">
-      {/* Banner */}
-      <div className="flex items-center justify-between mb-6 rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-sm">
+    <div className="p-6 md:p-10 max-w-2xl">
+
+      {/* ── Info banner ── */}
+      <div className="flex items-center justify-between mb-8 bg-amber-50/70 border border-amber-100 rounded-xl px-4 py-3">
         <div className="flex items-center gap-2 text-amber-700">
-          <Info size={15} className="shrink-0" />
-          Completa tu perfil para conseguir reservas.
+          <Info size={14} className="shrink-0" />
+          <span className="text-xs font-medium">Completá tu perfil para conseguir reservas.</span>
         </div>
-        <a href="/dashboard" className="flex items-center gap-1 text-accent hover:underline font-medium">
-          Finalizar <ChevronRight size={14} />
+        <a
+          href="/dashboard"
+          className="inline-flex items-center gap-1 text-accent hover:text-accent/80 font-semibold text-xs transition-colors"
+        >
+          Finalizar <ChevronRight size={13} />
         </a>
       </div>
 
-      <h1 className="text-2xl font-semibold mb-8">Edición de menús</h1>
+      {/* ── Header ── */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="h-px w-8 bg-accent rounded-full" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            Menús
+          </span>
+        </div>
+        <h1 className="font-serif text-3xl font-semibold text-zinc-900">
+          {menuId ? "Editar menú" : "Nuevo menú"}
+        </h1>
+      </div>
 
       {/* ── DESCRIPCIÓN ──────────────────────────────────────────────── */}
-      <section className="mb-8">
+      <section className="mb-10">
         <SectionTitle>Descripción</SectionTitle>
 
-        <div className="mb-5">
-          <label className="block text-sm font-medium mb-3">
-            Tipo de alimento <span className="font-normal text-muted-foreground">(Puede seleccionar hasta 3)</span>
-          </label>
+        {/* Cuisine types */}
+        <div className="mb-6">
+          <FieldLabel>Tipo de cocina <span className="text-zinc-400 normal-case tracking-normal font-normal">(hasta 3)</span></FieldLabel>
           <div className="grid grid-cols-2 gap-2">
             {CUISINE_OPTIONS.map(opt => {
               const selected = cuisineTypes.includes(opt.value)
@@ -279,11 +298,12 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
                   key={opt.value}
                   type="button"
                   onClick={() => toggleCuisine(opt.value)}
-                  className={`rounded-xl border px-4 py-3 text-sm text-left transition-colors ${
+                  className={[
+                    "rounded-xl border px-4 py-2.5 text-sm font-medium text-left transition-all duration-150",
                     selected
-                      ? "border-accent bg-accent/5 text-accent"
-                      : "border-border bg-background hover:bg-accent"
-                  }`}
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50",
+                  ].join(" ")}
                 >
                   {opt.label}
                 </button>
@@ -292,69 +312,84 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
           </div>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1.5">Nombre del menú</label>
-          <Input
+        {/* Title */}
+        <div className="mb-5">
+          <FieldLabel>Nombre del menú</FieldLabel>
+          <input
+            type="text"
             value={title}
             onChange={e => setTitle(e.target.value.slice(0, 100))}
-            placeholder="Por ejemplo, esencias mediterráneas"
-            className="w-full"
+            placeholder="Ej: Esencias mediterráneas"
+            className="w-full h-11 px-4 border border-zinc-200 rounded-xl text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all duration-150"
           />
-          <p className="mt-1 text-right text-xs text-muted-foreground">{title.length} / 100</p>
+          <p className="mt-1.5 text-[11px] text-right text-zinc-400 tabular-nums">{title.length} / 100</p>
         </div>
 
+        {/* Description */}
         <div>
-          <label className="block text-sm font-medium mb-1.5">
-            Descripción del menú <span className="font-normal text-muted-foreground">(opcional)</span>
-          </label>
+          <FieldLabel>
+            Descripción{" "}
+            <span className="text-zinc-400 normal-case tracking-normal font-normal">(opcional)</span>
+          </FieldLabel>
           <textarea
             value={description}
             onChange={e => setDescription(e.target.value.slice(0, 500))}
-            placeholder="Por ejemplo, el sabor del mar en su máxima expresión, donde la frescura de los ingredientes se fusiona con sutiles toques gourmet."
+            placeholder="Describí la propuesta gastronómica de este menú…"
             rows={4}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 resize-y"
+            className="w-full px-4 py-3 border border-zinc-200 rounded-xl text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent resize-y transition-all duration-150"
           />
-          <p className="mt-1 text-right text-xs text-muted-foreground">{description.length} / 500</p>
-          <p className="text-xs text-muted-foreground">
-            Puedes escribir el tuyo propio, o podemos generarlo automáticamente usando IA una vez que hayas guardado y añadido tus platos
-          </p>
+          <div className="flex items-start justify-between mt-1.5 gap-4">
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Podés escribirlo vos, o generarlo con IA una vez que hayas guardado y agregado tus platos.
+            </p>
+            <p className="text-[11px] text-zinc-400 tabular-nums shrink-0">{description.length} / 500</p>
+          </div>
         </div>
       </section>
 
       {/* ── IMAGEN ───────────────────────────────────────────────────── */}
-      <section className="mb-8">
-        <label className="block text-sm font-medium mb-1">Imagen del menú</label>
-        <p className="text-sm text-muted-foreground mb-3">
-          ¿Necesitas ayuda para que tus fotos luzcan increíbles?{" "}
-          <span className="text-accent cursor-pointer hover:underline">Consulta nuestro Centro de Ayuda</span>{" "}
-          para obtener las mejores prácticas.
+      <section className="mb-10">
+        <SectionTitle>Imagen del menú</SectionTitle>
+        <p className="text-sm text-zinc-500 mb-5 leading-relaxed">
+          Una buena foto del plato principal ayuda a atraer más clientes.
         </p>
 
         <div
-          className="w-36 h-36 rounded-xl border-2 border-dashed border-accent/40 bg-accent/5 flex items-center justify-center cursor-pointer overflow-hidden hover:bg-accent/10 transition-colors relative"
+          className={[
+            "w-40 h-40 rounded-2xl border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden transition-all duration-150 relative",
+            imageUrl
+              ? "border-zinc-200 bg-zinc-50"
+              : "border-zinc-200 bg-zinc-50 hover:border-accent hover:bg-accent/5",
+          ].join(" ")}
           onClick={() => !imageUploading && fileRef.current?.click()}
         >
           {imageUrl ? (
             <>
-              <Image src={imageUrl} alt="Imagen del menú" fill sizes="144px" className="object-cover" />
+              <Image src={imageUrl} alt="Imagen del menú" fill sizes="160px" className="object-cover" />
               <button
                 type="button"
                 onClick={e => { e.stopPropagation(); setImageUrl(null) }}
-                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"
+                className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
               >
-                <X size={12} />
+                <X size={13} />
               </button>
             </>
           ) : imageUploading ? (
-            <Loader2 size={24} className="text-accent/60 animate-spin" />
+            <Loader2 size={22} className="text-accent/50 animate-spin" />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">
-              <Plus size={20} className="text-white" />
+            <div className="flex flex-col items-center gap-2 text-zinc-400">
+              <Camera size={24} />
+              <span className="text-xs font-semibold uppercase tracking-[0.1em]">Subir foto</span>
             </div>
           )}
         </div>
 
-        {imageError && <p className="mt-1 text-xs text-destructive">{imageError}</p>}
+        {imageError && (
+          <div className="flex items-center gap-2 mt-3 text-sm text-red-600">
+            <AlertCircle size={13} className="shrink-0" />
+            {imageError}
+          </div>
+        )}
 
         <input
           ref={fileRef}
@@ -370,52 +405,60 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
       </section>
 
       {/* ── LÁMINA ───────────────────────────────────────────────────── */}
-      <section className="mb-8">
+      <section className="mb-10">
         <SectionTitle>Lámina</SectionTitle>
-        <p className="text-sm text-muted-foreground mb-4">Añade al menos un plato a tu menú.</p>
+        <p className="text-sm text-zinc-500 mb-5 leading-relaxed">
+          Añadí al menos un plato a tu menú.
+        </p>
 
         <div className="space-y-3">
           {COURSES_CONFIG.map(courseConf => {
-            const setting = courseMap[courseConf.value]
+            const setting     = courseMap[courseConf.value]
             const courseDishes = availableDishes.filter(d => d.course === courseConf.value)
             const addedDishes = courseDishes.filter(d => setting.dishIds.includes(d.id))
-            const notAdded = courseDishes.filter(d => !setting.dishIds.includes(d.id))
+            const notAdded    = courseDishes.filter(d => !setting.dishIds.includes(d.id))
 
             return (
-              <div key={courseConf.value} className="rounded-2xl border border-border p-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1">
-                  {courseConf.label}
-                </p>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Decida si se trata de una propuesta fija o si el cliente podrá elegir entre los platos propuestos.
+              <div key={courseConf.value} className="rounded-2xl border border-zinc-100 bg-white shadow-sm p-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="h-px w-4 bg-accent/40 rounded-full" />
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                    {courseConf.label}
+                  </p>
+                </div>
+                <p className="text-xs text-zinc-500 mb-4 leading-relaxed">
+                  Decidí si es una propuesta fija o si el cliente puede elegir entre los platos propuestos.
                 </p>
 
                 {/* Selection mode */}
-                <div className="relative inline-block mb-4">
+                <div className="relative inline-block mb-5">
                   <select
                     value={setting.selectionMode}
                     onChange={e => setSelectionMode(courseConf.value, e.target.value as SelectionMode)}
-                    className="appearance-none rounded-xl border border-input bg-background pl-3 pr-8 py-2 text-sm outline-none focus:border-ring cursor-pointer"
+                    className="appearance-none h-9 px-4 pr-9 border border-zinc-200 rounded-xl text-sm text-zinc-700 bg-white focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all duration-150 cursor-pointer"
                   >
                     {SELECTION_MODES.map(m => (
                       <option key={m.value} value={m.value}>{m.label}</option>
                     ))}
                   </select>
-                  <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                 </div>
 
                 {/* Dishes sub-section */}
-                <p className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Platos</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-2.5">Platos</p>
 
                 {addedDishes.length > 0 && (
-                  <div className="mb-2 space-y-1">
+                  <div className="mb-3 space-y-1.5">
                     {addedDishes.map(d => (
-                      <div key={d.id} className="flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2">
-                        <span className="text-sm">{d.name}</span>
+                      <div
+                        key={d.id}
+                        className="flex items-center justify-between rounded-xl bg-zinc-50 border border-zinc-100 px-4 py-2.5"
+                      >
+                        <span className="text-sm text-zinc-700">{d.name}</span>
                         <button
                           type="button"
                           onClick={() => removeDishFromCourse(courseConf.value, d.id)}
-                          className="ml-3 text-muted-foreground hover:text-destructive transition-colors"
+                          className="text-zinc-300 hover:text-red-500 transition-colors ml-3 shrink-0"
                         >
                           <X size={14} />
                         </button>
@@ -429,19 +472,20 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
                   <button
                     type="button"
                     onClick={() => setOpenPicker(openPicker === courseConf.value ? null : courseConf.value)}
-                    className="text-sm text-accent hover:underline"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
                   >
-                    + {courseConf.addLabel}
+                    <Plus size={13} />
+                    {courseConf.addLabel}
                   </button>
 
                   {openPicker === courseConf.value && (
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setOpenPicker(null)} />
-                      <div className="absolute left-0 top-6 z-20 min-w-56 rounded-xl border border-border bg-background shadow-lg py-1">
+                      <div className="absolute left-0 top-7 z-20 min-w-56 rounded-xl border border-zinc-100 bg-white shadow-xl py-1">
                         {notAdded.length === 0 ? (
-                          <p className="px-3 py-2 text-sm text-muted-foreground">
+                          <p className="px-4 py-3 text-sm text-zinc-400">
                             {courseDishes.length === 0
-                              ? "No tienes platos de este tipo. Agrégalos en la sección Platos."
+                              ? "No tenés platos de este tipo. Agregálos en la sección Platos."
                               : "Ya agregaste todos los platos disponibles."}
                           </p>
                         ) : (
@@ -450,7 +494,7 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
                               key={d.id}
                               type="button"
                               onClick={() => addDishToCourse(courseConf.value, d.id)}
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
+                              className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
                             >
                               {d.name}
                             </button>
@@ -467,18 +511,19 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
       </section>
 
       {/* ── PRECIOS ──────────────────────────────────────────────────── */}
-      <section className="mb-8">
+      <section className="mb-10">
         <SectionTitle>Precios</SectionTitle>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left: inputs */}
-          <div className="space-y-5">
+          <div className="space-y-6">
+
             <div>
               <SectionTitle>Número de personas</SectionTitle>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm mb-1.5">Número mínimo de huéspedes</label>
-                  <div className="relative inline-block w-32">
+                  <FieldLabel>Mínimo</FieldLabel>
+                  <div className="relative inline-block w-28">
                     <select
                       value={minGuests}
                       onChange={e => {
@@ -486,22 +531,22 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
                         setMinGuests(v)
                         if (v > maxGuests) setMaxGuests(v)
                       }}
-                      className="w-full appearance-none rounded-xl border border-input bg-background pl-3 pr-8 py-2 text-sm outline-none focus:border-ring cursor-pointer"
+                      className="w-full appearance-none h-11 px-4 pr-9 border border-zinc-200 rounded-xl text-sm text-zinc-700 bg-white focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all duration-150 cursor-pointer"
                     >
                       {Array.from({ length: 19 }, (_, i) => i + 2).map(n => (
                         <option key={n} value={n}>{n}</option>
                       ))}
                     </select>
-                    <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm mb-1.5">Número máximo de huéspedes</label>
-                  <div className="relative inline-block w-32">
+                  <FieldLabel>Máximo</FieldLabel>
+                  <div className="relative inline-block w-28">
                     <select
                       value={maxGuests}
                       onChange={e => setMaxGuests(Number(e.target.value))}
-                      className="w-full appearance-none rounded-xl border border-input bg-background pl-3 pr-8 py-2 text-sm outline-none focus:border-ring cursor-pointer"
+                      className="w-full appearance-none h-11 px-4 pr-9 border border-zinc-200 rounded-xl text-sm text-zinc-700 bg-white focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all duration-150 cursor-pointer"
                     >
                       {Array.from({ length: 19 }, (_, i) => i + 2)
                         .filter(n => n >= minGuests)
@@ -509,7 +554,7 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
                           <option key={n} value={n}>{n}</option>
                         ))}
                     </select>
-                    <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <ChevronDown size={13} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                   </div>
                 </div>
               </div>
@@ -526,55 +571,62 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
           </div>
 
           {/* Right: price table */}
-          <div className="rounded-xl border border-border overflow-hidden">
+          <div className="rounded-2xl border border-zinc-100 overflow-hidden shadow-sm">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border bg-zinc-50">
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Gente</th>
-                  <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">Cocinero</th>
-                  <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">Total</th>
+                <tr className="border-b border-zinc-100 bg-zinc-50">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">Personas</th>
+                  <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">Chef</th>
+                  <th className="px-4 py-2.5 text-right text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {priceRows.map(row => (
-                  <tr key={row.n} className="border-b border-border/40 last:border-0">
-                    <td className="px-3 py-1.5 text-xs">{row.n}</td>
-                    <td className="px-3 py-1.5 text-xs text-right">{row.chef}</td>
-                    <td className="px-3 py-1.5 text-xs text-right">{row.total}</td>
+                  <tr key={row.n} className="border-b border-zinc-50 last:border-0">
+                    <td className="px-4 py-2 text-xs text-zinc-600 tabular-nums">{row.n}</td>
+                    <td className="px-4 py-2 text-xs text-right text-zinc-600 tabular-nums">${row.chef}</td>
+                    <td className="px-4 py-2 text-xs text-right font-semibold text-zinc-900 tabular-nums">${row.total}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="px-3 py-2 text-xs text-muted-foreground border-t border-border/40">
-              * Recuerda que Take a Chef cobra una comisión del 20% sobre el importe total del servicio.
+            <p className="px-4 py-2.5 text-xs text-zinc-400 border-t border-zinc-50 leading-relaxed">
+              * GetChef cobra una comisión del 20% sobre el importe total del servicio.
             </p>
           </div>
         </div>
       </section>
 
-      {/* ── Footer ───────────────────────────────────────────────────── */}
-      <div className="rounded-xl bg-zinc-50 border border-border px-4 py-3 mb-6 text-sm text-center text-muted-foreground">
-        <span className="font-medium text-foreground">Su menú debe incluir: </span>
-        diseño del menú, compra de las materias primas, preparación en el domicilio del cliente, servicio de mesa y limpieza y orden de la cocina.
+      {/* ── Footer info ──────────────────────────────────────────────── */}
+      <div className="rounded-2xl bg-zinc-50 border border-zinc-100 px-5 py-4 mb-8">
+        <p className="text-xs text-zinc-500 leading-relaxed">
+          <span className="font-semibold text-zinc-700">Tu menú debe incluir: </span>
+          diseño del menú, compra de materias primas, preparación en el domicilio del cliente, servicio de mesa y limpieza de la cocina.
+        </p>
       </div>
 
+      {/* ── Save error ── */}
       {saveError && (
-        <p className="mb-4 text-sm text-destructive text-center">{saveError}</p>
+        <div className="flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl px-4 py-3.5 mb-6">
+          <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
+          <p className="text-sm text-red-700">{saveError}</p>
+        </div>
       )}
 
-      <div className="flex justify-center">
-        <Button
+      {/* ── Save button ── */}
+      <div className="flex justify-center pb-10">
+        <button
           type="button"
           onClick={handleSave}
           disabled={isPending || imageUploading || !title.trim()}
-          className="rounded-full bg-accent hover:bg-accent/90 text-white px-10"
+          className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-white font-semibold text-sm h-11 px-10 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-accent/20 hover:-translate-y-0.5 disabled:opacity-40 disabled:pointer-events-none"
         >
           {isPending ? (
-            <><Loader2 size={15} className="mr-2 animate-spin" /> Guardando...</>
+            <><Loader2 size={15} className="animate-spin" /> Guardando…</>
           ) : (
             "Guardar menú"
           )}
-        </Button>
+        </button>
       </div>
     </div>
   )

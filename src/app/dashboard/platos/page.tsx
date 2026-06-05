@@ -24,14 +24,25 @@ export default async function PlatosPage() {
     .order('created_at', { ascending: true })
 
   const dishes: Dish[] = (dishRows ?? []).map(d => ({
-    id: d.id as string,
-    name: d.name as string,
+    id:     d.id as string,
+    name:   d.name as string,
     course: d.course as Course,
   }))
 
   return (
-    <div className="p-6 max-w-2xl">
-      <h1 className="text-2xl font-semibold mb-6">Platos</h1>
+    <div className="p-6 md:p-10 max-w-2xl">
+      <div className="mb-8">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="h-px w-8 bg-accent rounded-full" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            Mi perfil
+          </span>
+        </div>
+        <h1 className="font-serif text-3xl font-semibold text-zinc-900 mb-2">Platos</h1>
+        <p className="text-sm text-zinc-500 leading-relaxed">
+          Los platos que aparecen en tus menús. Organizalos por categoría.
+        </p>
+      </div>
       <PlatosClient initialDishes={dishes} />
     </div>
   )

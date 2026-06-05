@@ -25,58 +25,86 @@ export default async function MenusPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div className="p-6 max-w-2xl">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-semibold">Menús</h1>
+    <div className="p-6 md:p-10 max-w-2xl">
+
+      {/* ── Header ── */}
+      <div className="flex items-start justify-between gap-4 mb-10">
+        <div>
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="h-px w-8 bg-accent rounded-full" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+              Mi perfil
+            </span>
+          </div>
+          <h1 className="font-serif text-3xl font-semibold text-zinc-900">Menús</h1>
+        </div>
         <Link
           href="/dashboard/menus/nuevo"
-          className="flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 transition-colors"
+          className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-white font-semibold text-sm h-10 px-5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-accent/20 hover:-translate-y-0.5 shrink-0 mt-8"
         >
-          <Plus size={16} />
+          <Plus size={15} />
           Crear menú
         </Link>
       </div>
 
+      {/* ── Empty state ── */}
       {(!menus || menus.length === 0) ? (
-        <div className="rounded-2xl border border-border p-10 text-center">
-          <UtensilsCrossed className="mx-auto mb-3 text-muted-foreground" size={32} />
-          <p className="text-sm font-medium mb-1">Todavía no tienes menús</p>
-          <p className="text-sm text-muted-foreground mb-4">
-            Crea tu primer menú para que los clientes puedan contratarte.
+        <div className="bg-white border border-zinc-100 rounded-2xl shadow-sm py-16 text-center">
+          <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <UtensilsCrossed className="text-zinc-300" size={28} />
+          </div>
+          <h3 className="font-serif text-lg font-semibold text-zinc-800 mb-2">
+            Todavía no tenés menús
+          </h3>
+          <p className="text-sm text-zinc-400 mb-7 max-w-xs mx-auto leading-relaxed">
+            Creá tu primer menú para que los clientes puedan contratarte.
           </p>
           <Link
             href="/dashboard/menus/nuevo"
-            className="inline-flex items-center gap-1.5 text-sm text-accent hover:underline"
+            className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-accent/20"
           >
-            <Plus size={14} /> Crear primer menú
+            <Plus size={15} />
+            Crear primer menú
           </Link>
         </div>
       ) : (
-        <div className="rounded-2xl border border-border overflow-hidden">
-          {menus.map((menu, i) => (
+        /* ── Menu list ── */
+        <div className="space-y-3">
+          {menus.map((menu) => (
             <Link
               key={menu.id}
               href={`/dashboard/menus/${menu.id}`}
-              className={`flex items-center gap-4 px-4 py-3 hover:bg-accent transition-colors ${i < menus.length - 1 ? 'border-b border-border/50' : ''}`}
+              className="group flex items-center gap-4 bg-white border border-zinc-100 rounded-xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
             >
-              <div className="w-12 h-12 rounded-lg overflow-hidden bg-zinc-100 shrink-0">
+              <div className="w-14 h-14 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-100">
                 {menu.image_url ? (
-                  <Image src={menu.image_url} alt={menu.title} width={48} height={48} className="w-full h-full object-cover" />
+                  <Image
+                    src={menu.image_url}
+                    alt={menu.title}
+                    width={56}
+                    height={56}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <UtensilsCrossed size={18} className="text-zinc-400" />
+                    <UtensilsCrossed size={18} className="text-zinc-300" />
                   </div>
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{menu.title}</p>
+                <p className="font-serif text-[15px] font-semibold text-zinc-900 leading-snug truncate">
+                  {menu.title}
+                </p>
                 {menu.cuisine_types?.length > 0 && (
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-xs text-zinc-400 truncate mt-0.5">
                     {(menu.cuisine_types as string[]).join(' · ')}
                   </p>
                 )}
               </div>
-              <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+              <ChevronRight
+                size={16}
+                className="text-zinc-300 group-hover:text-zinc-500 transition-colors shrink-0"
+              />
             </Link>
           ))}
         </div>

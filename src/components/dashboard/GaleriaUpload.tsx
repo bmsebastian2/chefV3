@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, AlertCircle } from "lucide-react";
 import { createClient } from "@/utils/supabase/clients";
 import { addGalleryPhoto, deleteGalleryPhoto } from "@/app/dashboard/fotos/actions";
 import { compressImage } from "@/utils/images";
@@ -95,10 +95,12 @@ export function GaleriaUpload({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+
+        {/* Existing photos */}
         {photos.map((photo) => (
           <div
             key={photo.id}
-            className="relative group aspect-square rounded-xl overflow-hidden bg-zinc-100"
+            className="relative group aspect-square rounded-2xl overflow-hidden bg-zinc-100 shadow-sm"
           >
             <img
               src={photo.url}
@@ -106,14 +108,14 @@ export function GaleriaUpload({
               className="w-full h-full object-cover"
             />
             {/* Hover overlay */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors rounded-xl" />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-150 rounded-2xl" />
 
             {/* Delete button */}
             <button
               type="button"
               disabled={deletingId === photo.id}
               onClick={() => handleDelete(photo)}
-              className="absolute top-2 right-2 w-7 h-7 bg-white rounded-full shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 disabled:cursor-not-allowed"
+              className="absolute top-2 right-2 w-7 h-7 bg-white rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 disabled:cursor-not-allowed"
               aria-label="Eliminar foto"
             >
               {deletingId === photo.id ? (
@@ -127,8 +129,8 @@ export function GaleriaUpload({
 
         {/* Upload loading placeholder */}
         {uploading && (
-          <div className="aspect-square rounded-xl bg-zinc-100 border border-zinc-200 flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
+          <div className="aspect-square rounded-2xl bg-zinc-100 border border-zinc-200 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-zinc-300" />
           </div>
         )}
 
@@ -137,19 +139,30 @@ export function GaleriaUpload({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="aspect-square rounded-xl border-2 border-dashed border-zinc-200 hover:border-accent hover:bg-accent/5 transition-colors flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-accent"
+            className="aspect-square rounded-2xl border-2 border-dashed border-zinc-200 hover:border-accent hover:bg-accent/5 transition-all duration-150 flex flex-col items-center justify-center gap-2 text-zinc-400 hover:text-accent"
           >
             <Plus className="w-6 h-6" />
-            <span className="text-xs font-medium">Añadir</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.1em]">Añadir</span>
           </button>
         )}
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-2 text-sm text-red-600">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          {error}
+        </div>
+      )}
 
-      <p className="text-xs text-muted-foreground">
-        {photos.length} / {MAX_GALLERY} fotos · JPG, PNG o WEBP · Máx. {MAX_FILE_MB} MB por foto
-      </p>
+      {/* Count + hint */}
+      <div className="flex items-center gap-2">
+        <span className={`text-xs font-semibold tabular-nums ${photos.length >= MAX_GALLERY ? "text-amber-500" : "text-zinc-400"}`}>
+          {photos.length} / {MAX_GALLERY}
+        </span>
+        <span className="text-xs text-zinc-300">·</span>
+        <span className="text-xs text-zinc-400">JPG, PNG o WEBP · Máx. {MAX_FILE_MB} MB por foto</span>
+      </div>
 
       <input
         ref={fileRef}

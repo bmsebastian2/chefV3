@@ -22,41 +22,53 @@ export default async function FotosPage() {
     .eq('chef_id', chef.id)
     .order('sort_order', { ascending: true })
 
-  const profilePhoto = photos?.find((p) => p.type === 'profile') ?? null
+  const profilePhoto  = photos?.find((p) => p.type === 'profile') ?? null
   const galleryPhotos = photos?.filter((p) => p.type === 'gallery') ?? []
 
   return (
     <div className="p-6 md:p-10 max-w-2xl">
+
+      {/* ── Header ── */}
       <div className="mb-10">
-        <h1 className="font-serif text-2xl font-semibold text-zinc-900">Fotos</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Tu foto de perfil y galería de trabajo
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="h-px w-8 bg-accent rounded-full" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            Configuración
+          </span>
+        </div>
+        <h1 className="font-serif text-3xl font-semibold text-zinc-900 mb-2">Fotos</h1>
+        <p className="text-sm text-zinc-500 leading-relaxed">
+          Tu foto de perfil y galería de trabajo.
         </p>
       </div>
 
-      {/* Foto de perfil */}
+      {/* ── Foto de perfil ── */}
       <section className="mb-12">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-5">
-          Foto de Perfil
-        </h2>
+        <div className="flex items-center gap-2.5 mb-6">
+          <div className="h-px w-5 bg-accent/60 rounded-full" />
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            Foto de Perfil
+          </h2>
+        </div>
         <FotoPerfilUpload
           userId={user.id}
           initialUrl={profilePhoto?.url ?? null}
         />
       </section>
 
-      <hr className="border-zinc-100 mb-12" />
+      <div className="border-t border-zinc-100 mb-12" />
 
-      {/* Galería */}
+      {/* ── Galería ── */}
       <section>
-        <div className="mb-5">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="h-px w-5 bg-accent/60 rounded-full" />
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
             Fotos de Trabajo
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Muestra tus platos y eventos. Máximo 12 fotos.
-          </p>
         </div>
+        <p className="text-sm text-zinc-500 mb-6 leading-relaxed">
+          Mostrá tus platos y eventos. Máximo 12 fotos.
+        </p>
         <GaleriaUpload
           userId={user.id}
           initialPhotos={galleryPhotos.map((p) => ({ id: p.id, url: p.url }))}
