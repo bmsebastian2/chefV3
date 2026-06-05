@@ -34,9 +34,17 @@ export default async function RequestSettingsPage() {
 
   return (
     <div className="p-6 md:p-10 max-w-2xl">
-      <div className="mb-8">
-        <h1 className="font-serif text-2xl font-semibold text-zinc-900">Configuración de Solicitudes</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+      <div className="mb-10">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="h-px w-8 bg-accent rounded-full" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            Configuración
+          </span>
+        </div>
+        <h1 className="font-serif text-3xl font-semibold text-zinc-900 mb-2">
+          Preferencias de Solicitudes
+        </h1>
+        <p className="text-sm text-zinc-500 leading-relaxed">
           Filtrá qué solicitudes querés ver según tus preferencias de trabajo.
         </p>
       </div>

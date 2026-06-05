@@ -266,7 +266,11 @@ export function Sidebar({
         <Link href="/" className="font-serif text-xl font-bold text-foreground">
           GetChef.com
         </Link>
-        <p className="text-xs text-muted-foreground mt-0.5">Panel del Chef</p>
+        <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="https://flagcdn.com/w20/ni.png" alt="Nicaragua" width={16} height={12} className="inline-block rounded-sm" />
+          Panel del Chef
+        </p>
       </div>
 
       <NavItems {...sharedProps} />
