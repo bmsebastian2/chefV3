@@ -278,7 +278,7 @@ export function StepOccasion({ data, updateData, nextStep }: StepProps) {
 
 export function StepLocation({ data, updateData, nextStep }: StepProps) {
   const [query, setQuery] = useState(data.location?.name || "");
-  const [results, setResults] = useState<{ place_name: string; center: [number, number] }[]>([]);
+  const [results, setResults] = useState<{ place_name: string; center: [number, number]; context?: { id: string; short_code?: string }[] }[]>([]);
   const [loading, setLoading] = useState(false);
   const [userCoords, setUserCoords] = useState<{ lat: number, lon: number } | null>(null);
 
@@ -325,9 +325,9 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
     };
   }, [query, userCoords, data.location?.name]);
 
-  const selectLocation = (name: string, city: string, lat: number, lng: number) => {
+  const selectLocation = (name: string, city: string, lat: number, lng: number, countryCode?: string) => {
     setQuery(name);
-    updateData({ location: { name, city, lat, lng } });
+    updateData({ location: { name, city, lat, lng, countryCode } });
     setResults([]);
   };
 
@@ -368,7 +368,13 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
               <button
                 key={idx}
                 type="button"
-                onClick={() => selectLocation(r.place_name, r.place_name.split(",")[1]?.trim() || r.place_name.split(",")[0], r.center[1], r.center[0])}
+                onClick={() => selectLocation(
+                  r.place_name,
+                  r.place_name.split(",")[1]?.trim() || r.place_name.split(",")[0],
+                  r.center[1],
+                  r.center[0],
+                  r.context?.find(c => c.id.startsWith("country."))?.short_code?.toUpperCase()
+                )}
                 className="w-full text-left px-4 py-3 hover:bg-accent/5 border-b border-zinc-100 last:border-none focus:outline-none transition-colors"
               >
                 <div className="font-medium text-zinc-900">{r.place_name.split(",")[0]}</div>
@@ -659,14 +665,19 @@ function PhoneInput({
   onChange,
   onBlur,
   hasError,
+  defaultCountryCode,
 }: {
   value: string;
   onChange: (val: string) => void;
   onBlur?: () => void;
   hasError?: boolean;
+  defaultCountryCode?: string;
 }) {
   const { country: initCountry, local: initLocal } = parsePhone(value);
-  const [country, setCountry] = useState<PhoneCountry>(initCountry);
+  const resolvedCountry = !value && defaultCountryCode
+    ? (PHONE_COUNTRIES.find(c => c.isoCode === defaultCountryCode) ?? initCountry)
+    : initCountry;
+  const [country, setCountry] = useState<PhoneCountry>(resolvedCountry);
   const [local, setLocal] = useState(initLocal);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -830,6 +841,7 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
           onChange={(val) => updateData({ contact: { ...data.contact, phone: val } })}
           onBlur={() => blur("phone")}
           hasError={touched.phone && !phoneValid}
+          defaultCountryCode={data.location?.countryCode}
         />
         {touched.phone && !phoneValid && (
           <p className="text-xs text-red-500 mt-1">Ingresá un número de teléfono válido.</p>
@@ -1514,6 +1526,7 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
           onChange={(val) => updateData({ contact: { ...data.contact, phone: val } })}
           onBlur={() => blur("phone")}
           hasError={touched.phone && !phoneValid}
+          defaultCountryCode={data.location?.countryCode}
         />
         {touched.phone && !phoneValid && (
           <p className="text-xs text-red-500 mt-1">Ingresá un número de teléfono válido.</p>

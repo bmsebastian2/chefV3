@@ -13,6 +13,7 @@ export interface WizardData {
     city: string;
     lat: number;
     lng: number;
+    countryCode?: string;
   };
   occasion?: string;
   // Service 1 — static guest range
