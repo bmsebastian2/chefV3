@@ -25,6 +25,7 @@ export function Header() {
   }, []);
 
   return (
+    <>
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
@@ -82,14 +83,16 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile drawer */}
+    </header>
+
+      {/* Mobile drawer — fuera del <header> para evitar stacking context incorrecto */}
       {open && (
         <>
           <div
             className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           />
-          <div className="fixed top-0 right-0 z-50 h-full w-72 bg-white shadow-2xl flex flex-col p-8 gap-6 animate-in slide-in-from-right duration-300">
+          <div className="fixed top-0 right-0 z-50 h-full w-72 bg-white shadow-2xl flex flex-col p-8 gap-6">
             <button
               type="button"
               className="self-end w-10 h-10 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors"
@@ -124,6 +127,6 @@ export function Header() {
           </div>
         </>
       )}
-    </header>
+    </>
   );
 }
