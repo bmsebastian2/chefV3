@@ -188,6 +188,7 @@ export async function registerOrVerifyClient(
   }
 
   // 5. Generar magic link — confirma el email E inicia sesión en un solo click
+  console.log('[DEBUG] SITE_URL al generar magic link:', SITE_URL)
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type:    'magiclink',
     email,
@@ -198,7 +199,17 @@ export async function registerOrVerifyClient(
     console.error('Error generating confirmation link:', linkError)
   }
 
-  const confirmationLink = linkData?.properties?.action_link
+  const rawLink = linkData?.properties?.action_link
+  let confirmationLink: string | undefined
+  if (rawLink) {
+    try {
+      const url = new URL(rawLink)
+      url.searchParams.set('redirect_to', `${SITE_URL}/auth/callback`)
+      confirmationLink = url.toString()
+    } catch {
+      confirmationLink = rawLink
+    }
+  }
 
   return {
     userId:           adminData.user.id,
