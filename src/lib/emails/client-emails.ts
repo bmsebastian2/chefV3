@@ -2,7 +2,7 @@
 
 import { resend } from '@/lib/resend'
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+const SITE_URL = process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 const HAS_DOMAIN = !!process.env.RESEND_FROM_EMAIL
 const FROM = HAS_DOMAIN
   ? `GetChef <${process.env.RESEND_FROM_EMAIL}>`
