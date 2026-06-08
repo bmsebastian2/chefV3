@@ -6,10 +6,11 @@ import Link from "next/link";
 import {
   ArrowLeft, Send, CalendarDays, Users, MapPin,
   ChefHat, UtensilsCrossed, Clock, CheckCircle2, XCircle, ChevronDown,
+  MessageCircle,
 } from "lucide-react";
 import { sendMessage, getMessages } from "@/app/dashboard/requests/[id]/actions";
 
-// ── Tipos ──────────────────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────────
 
 type RequestInfo = {
   status:           string
@@ -46,7 +47,7 @@ export type ChatMessage = {
   sent_at:     string
 }
 
-// ── Labels ─────────────────────────────────────────────────────────────────────
+// ── Dictionaries ───────────────────────────────────────────────────────────────
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   "Servicio único",
@@ -65,94 +66,127 @@ const OCCASION_LABELS: Record<string, string> = {
   other:             "Otro",
 };
 
-const PROPOSAL_STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  pending:   { label: "Enviada",   color: "bg-amber-50 text-amber-700 border-amber-200",       icon: <Clock className="w-3 h-3" /> },
-  accepted:  { label: "Aceptada",  color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: <CheckCircle2 className="w-3 h-3" /> },
-  rejected:  { label: "Rechazada", color: "bg-red-50 text-red-700 border-red-200",             icon: <XCircle className="w-3 h-3" /> },
-  withdrawn: { label: "Retirada",  color: "bg-zinc-100 text-zinc-600 border-zinc-200",         icon: null },
+const STATUS_CFG: Record<string, { label: string; bg: string; fg: string; bd: string; Icon: React.ElementType }> = {
+  pending:   { label: "Enviada",   bg: "#FFFBEB", fg: "#B45309", bd: "#FDE68A", Icon: Clock },
+  accepted:  { label: "Aceptada",  bg: "#ECFDF5", fg: "#047857", bd: "#A7F3D0", Icon: CheckCircle2 },
+  rejected:  { label: "Rechazada", bg: "#FEF2F2", fg: "#DC2626", bd: "#FECACA", Icon: XCircle },
+  withdrawn: { label: "Retirada",  bg: "#F4F4F5", fg: "#71717A", bd: "#D4D4D8", Icon: Clock },
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("es-AR", {
+function formatDate(d: string) {
+  return new Date(d + "T00:00:00").toLocaleDateString("es-AR", {
     day: "numeric", month: "short", year: "numeric",
   });
 }
-
-function formatTime(isoStr: string) {
-  return new Date(isoStr).toLocaleTimeString("es-AR", {
-    hour: "2-digit", minute: "2-digit",
-  });
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
 }
-
 function fmt(n: number) {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
+function initials(name: string) {
+  return name.split(" ").filter(Boolean).map(w => w[0]).join("").toUpperCase().slice(0, 2) || "?";
+}
 
-// ── Info panel (sidebar + mobile dropdown) ─────────────────────────────────────
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
-function InfoPanel({
-  request, proposal, dateStr, guestStr,
-}: {
-  request:  RequestInfo
-  proposal: Proposal
-  dateStr:  string
-  guestStr: string | null
+function Avatar({ name, sm }: { name: string; sm?: boolean }) {
+  const sz = sm ? 30 : 38;
+  const fs = sm ? 11 : 14;
+  return (
+    <div style={{
+      width: sz, height: sz, borderRadius: "50%", flexShrink: 0,
+      background: "linear-gradient(135deg, #D97706 0%, #92400E 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      color: "#fff", fontSize: fs, fontWeight: 600,
+      boxShadow: "0 2px 8px rgba(146,64,14,.22)", letterSpacing: ".03em",
+    }}>
+      {initials(name)}
+    </div>
+  );
+}
+
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+      <span style={{ flex: 1, height: 1, background: "linear-gradient(to right, transparent, #D4C0A0)" }} />
+      <span style={{ fontSize: 9, letterSpacing: ".14em", textTransform: "uppercase", color: "#A08060", fontWeight: 600, whiteSpace: "nowrap" }}>
+        {label}
+      </span>
+      <span style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, #D4C0A0)" }} />
+    </div>
+  );
+}
+
+function InfoPanel({ request, proposal, dateStr, guestStr }: {
+  request: RequestInfo; proposal: Proposal; dateStr: string; guestStr: string | null;
 }) {
   return (
-    <div className="p-4 space-y-4">
-      <div>
-        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-2.5">Evento</p>
-        <ul className="space-y-2">
-          <li className="flex items-start gap-2 text-sm text-zinc-700">
-            <CalendarDays className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
-            <span>{dateStr}{request.event_time && <span className="text-zinc-400"> · {request.event_time}</span>}</span>
+    <div style={{ padding: "20px 16px", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+      <SectionDivider label="Evento" />
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 9 }}>
+        <li style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13, color: "#44403C", lineHeight: "1.45" }}>
+          <CalendarDays style={{ width: 14, height: 14, color: "#A0896B", flexShrink: 0, marginTop: 1 }} />
+          <span>{dateStr}{request.event_time && <span style={{ color: "#A0896B" }}> · {request.event_time}</span>}</span>
+        </li>
+        {guestStr && (
+          <li style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: "#44403C" }}>
+            <Users style={{ width: 14, height: 14, color: "#A0896B", flexShrink: 0 }} />
+            {guestStr}
           </li>
-          {guestStr && (
-            <li className="flex items-center gap-2 text-sm text-zinc-700">
-              <Users className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-              {guestStr}
-            </li>
-          )}
-          {request.occasion && (
-            <li className="flex items-center gap-2 text-sm text-zinc-700">
-              <ChefHat className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-              {OCCASION_LABELS[request.occasion] ?? request.occasion}
-            </li>
-          )}
-          {request.cuisine_type && (
-            <li className="flex items-center gap-2 text-sm text-zinc-700">
-              <UtensilsCrossed className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-              <span className="capitalize">{request.cuisine_type.replace(/_/g, " ")}</span>
-            </li>
-          )}
-          {request.location && (
-            <li className="flex items-start gap-2 text-sm text-zinc-700">
-              <MapPin className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
-              {request.location}
-            </li>
-          )}
-        </ul>
-      </div>
+        )}
+        {request.occasion && (
+          <li style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: "#44403C" }}>
+            <ChefHat style={{ width: 14, height: 14, color: "#A0896B", flexShrink: 0 }} />
+            {OCCASION_LABELS[request.occasion] ?? request.occasion}
+          </li>
+        )}
+        {request.cuisine_type && (
+          <li style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: "#44403C" }}>
+            <UtensilsCrossed style={{ width: 14, height: 14, color: "#A0896B", flexShrink: 0 }} />
+            <span style={{ textTransform: "capitalize" }}>{request.cuisine_type.replace(/_/g, " ")}</span>
+          </li>
+        )}
+        {request.location && (
+          <li style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13, color: "#44403C", lineHeight: "1.45" }}>
+            <MapPin style={{ width: 14, height: 14, color: "#A0896B", flexShrink: 0, marginTop: 1 }} />
+            {request.location}
+          </li>
+        )}
+      </ul>
 
-      {(proposal.menu_description || proposal.message || proposal.price_per_person) && (
-        <div className="border-t border-zinc-100 pt-4">
-          <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest mb-2.5">Tu propuesta</p>
-          <div className="space-y-2">
+      {(proposal.price_per_person || proposal.menu_description || proposal.message) && (
+        <div style={{ marginTop: 22 }}>
+          <SectionDivider label="Tu propuesta" />
+          <div style={{
+            background: "rgba(255,255,255,.75)", borderRadius: 12,
+            border: "1px solid rgba(212,196,160,.55)", padding: 14,
+            backdropFilter: "blur(4px)",
+          }}>
             {proposal.price_per_person && (
-              <p className="text-xl font-bold text-zinc-900">
-                ${fmt(proposal.price_per_person)}
-                <span className="text-sm font-normal text-zinc-400"> /persona</span>
-              </p>
+              <div style={{ marginBottom: 10 }}>
+                <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 700, color: "#1C1917" }}>
+                  ${fmt(proposal.price_per_person)}
+                </span>
+                <span style={{ fontSize: 12, color: "#A0896B", marginLeft: 4 }}>/persona</span>
+              </div>
             )}
             {proposal.menu_description && (
-              <pre className="text-xs text-zinc-600 whitespace-pre-wrap font-sans leading-relaxed bg-zinc-100 rounded-lg p-2.5">
+              <pre style={{
+                fontSize: 11.5, color: "#57534E", whiteSpace: "pre-wrap",
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+                lineHeight: "1.6", margin: 0, padding: 10,
+                background: "#FAF7F2", borderRadius: 8, border: "1px solid #EDE8DC",
+              }}>
                 {proposal.menu_description}
               </pre>
             )}
             {proposal.message && (
-              <p className="text-xs text-zinc-400 italic leading-relaxed">{proposal.message}</p>
+              <p style={{ fontSize: 11.5, color: "#78716C", fontStyle: "italic", lineHeight: "1.5", marginTop: 8, marginBottom: 0 }}>
+                &ldquo;{proposal.message}&rdquo;
+              </p>
             )}
           </div>
         </div>
@@ -161,15 +195,10 @@ function InfoPanel({
   );
 }
 
-// ── Componente principal ───────────────────────────────────────────────────────
+// ── Main component ─────────────────────────────────────────────────────────────
 
 export function RequestChatView({
-  proposalId,
-  currentUserId,
-  request,
-  clientName,
-  proposal,
-  initialMessages,
+  proposalId, currentUserId, request, clientName, proposal, initialMessages,
 }: {
   proposalId:      string
   currentUserId:   string
@@ -178,12 +207,12 @@ export function RequestChatView({
   proposal:        Proposal
   initialMessages: ChatMessage[]
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [input, setInput] = useState("");
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages]       = useState<ChatMessage[]>(initialMessages);
+  const [input, setInput]             = useState("");
+  const [isPending, startTransition]  = useTransition();
+  const [error, setError]             = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const bottomRef  = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
 
@@ -196,8 +225,8 @@ export function RequestChatView({
       const data = await getMessages(proposalId);
       if (data.length > 0) setMessages(data as ChatMessage[]);
     };
-    const interval = setInterval(poll, 3000);
-    return () => clearInterval(interval);
+    const iv = setInterval(poll, 3000);
+    return () => clearInterval(iv);
   }, [proposalId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -214,159 +243,301 @@ export function RequestChatView({
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     const optimistic: ChatMessage = {
-      id:          crypto.randomUUID(),
-      sender_id:   currentUserId,
-      sender_name: "Tú",
-      content:     text,
-      is_read:     false,
-      sent_at:     new Date().toISOString(),
+      id: crypto.randomUUID(), sender_id: currentUserId, sender_name: "Tú",
+      content: text, is_read: false, sent_at: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, optimistic]);
+    setMessages(prev => [...prev, optimistic]);
 
     startTransition(async () => {
       const result = await sendMessage(proposalId, text);
       if (result.error) {
         setError(result.error);
-        setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+        setMessages(prev => prev.filter(m => m.id !== optimistic.id));
         setInput(text);
         router.refresh();
       }
     });
   };
 
-  // Derived values
+  // Derived
   const guestParts: string[] = [];
   if (request.guests_adults) guestParts.push(`${request.guests_adults} adulto${request.guests_adults !== 1 ? "s" : ""}`);
   if (request.guests_teens)  guestParts.push(`${request.guests_teens} adolescente${request.guests_teens !== 1 ? "s" : ""}`);
   if (request.guests_kids)   guestParts.push(`${request.guests_kids} niño${request.guests_kids !== 1 ? "s" : ""}`);
-  const guestStr = guestParts.length > 0
-    ? guestParts.join(", ")
+  const guestStr = guestParts.length > 0 ? guestParts.join(", ")
     : request.cuantas_personas ? `${request.cuantas_personas} personas` : null;
-
   const dateStr = request.event_date_end && request.event_date_end !== request.event_date_start
     ? `${formatDate(request.event_date_start)} → ${formatDate(request.event_date_end)}`
     : formatDate(request.event_date_start);
-
-  const proposalCfg = PROPOSAL_STATUS_CONFIG[proposal.status];
+  const cfg = STATUS_CFG[proposal.status];
 
   return (
-    <div className="flex flex-col h-screen max-h-screen overflow-hidden">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap');
 
-      {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-zinc-200 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/requests"
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors flex-shrink-0"
-          >
-            <ArrowLeft className="w-4 h-4 text-zinc-600" />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-semibold text-zinc-900 text-sm truncate">{clientName}</h1>
-            <p className="text-xs text-zinc-400 truncate">
-              {SERVICE_TYPE_LABELS[request.service_type] ?? request.service_type} · {dateStr}
-            </p>
-          </div>
-          {proposalCfg && (
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border flex-shrink-0 ${proposalCfg.color}`}>
-              {proposalCfg.icon}
-              {proposalCfg.label}
-            </span>
-          )}
-        </div>
-      </div>
+        .gchat { font-family: 'DM Sans', system-ui, sans-serif; }
 
-      {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
+        @keyframes gcMsgR { from { opacity: 0; transform: translateX(12px) scale(.95); } to { opacity: 1; transform: none; } }
+        @keyframes gcMsgL { from { opacity: 0; transform: translateX(-12px) scale(.95); } to { opacity: 1; transform: none; } }
+        @keyframes gcFade  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes gcDown  { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 
-        {/* Sidebar — desktop only */}
-        <aside className="hidden md:flex flex-col w-64 lg:w-72 flex-shrink-0 border-r border-zinc-200 overflow-y-auto bg-zinc-50/60">
-          <InfoPanel request={request} proposal={proposal} dateStr={dateStr} guestStr={guestStr} />
-        </aside>
+        .gchat-msg-own   { animation: gcMsgR .22s cubic-bezier(.34,1.56,.64,1) both; }
+        .gchat-msg-other { animation: gcMsgL .22s cubic-bezier(.34,1.56,.64,1) both; }
+        .gchat-fade      { animation: gcFade .35s ease both; }
+        .gchat-down      { animation: gcDown .25s ease both; }
 
-        {/* Chat column */}
-        <div className="flex flex-col flex-1 overflow-hidden bg-white">
+        .gchat-scroll::-webkit-scrollbar       { width: 3px; }
+        .gchat-scroll::-webkit-scrollbar-track { background: transparent; }
+        .gchat-scroll::-webkit-scrollbar-thumb { background: #DDD8D0; border-radius: 2px; }
 
-          {/* Mobile: collapsible details */}
-          <div className="md:hidden border-b border-zinc-100">
-            <button
-              type="button"
-              onClick={() => setDetailsOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-4 py-2.5 text-xs text-zinc-500 hover:bg-zinc-50 transition-colors"
+        .gchat-input::placeholder { color: #C0B4A8; }
+        .gchat-input:focus {
+          outline: none;
+          border-color: var(--accent) !important;
+          box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent) !important;
+        }
+
+        .gchat-send { transition: transform .12s ease, box-shadow .12s ease, opacity .15s ease; }
+        .gchat-send:not(:disabled):hover  { transform: scale(1.07); box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+        .gchat-send:not(:disabled):active { transform: scale(.95); }
+
+        .gchat-back { transition: background .15s ease; }
+        .gchat-back:hover { background: #F5EFE5 !important; }
+
+        .gchat-toggle { transition: background .15s ease; }
+        .gchat-toggle:hover { background: #F7F2E8 !important; }
+      `}</style>
+
+      <div
+        className="gchat"
+        style={{ display: "flex", flexDirection: "column", height: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: "#FAFAF7" }}
+      >
+
+        {/* ── Header ───────────────────────────────────────────────────── */}
+        <header style={{
+          flexShrink: 0, background: "#fff",
+          borderBottom: "1px solid #EFE8DC",
+          padding: "11px 16px",
+          boxShadow: "0 1px 6px rgba(160,140,100,.07)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+            <Link
+              href="/dashboard/requests"
+              className="gchat-back"
+              style={{
+                width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                border: "1px solid #EDE8DC", color: "#78716C", textDecoration: "none",
+              }}
             >
-              <span className="font-medium text-zinc-600">Detalles del evento</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${detailsOpen ? "rotate-180" : ""}`} />
-            </button>
-            {detailsOpen && (
-              <div className="bg-zinc-50 border-t border-zinc-100">
-                <InfoPanel request={request} proposal={proposal} dateStr={dateStr} guestStr={guestStr} />
+              <ArrowLeft style={{ width: 15, height: 15 }} />
+            </Link>
+
+            <Avatar name={clientName} />
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: 15, fontWeight: 600, color: "#1C1917",
+                margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>
+                {clientName}
+              </h1>
+              <p style={{ fontSize: 11, color: "#A0896B", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {SERVICE_TYPE_LABELS[request.service_type] ?? request.service_type}
+                <span style={{ margin: "0 5px", color: "#D4C4A0" }}>·</span>
+                {dateStr}
+              </p>
+            </div>
+
+            {cfg && (
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                padding: "4px 10px", borderRadius: 20, flexShrink: 0,
+                background: cfg.bg, color: cfg.fg, fontSize: 11, fontWeight: 600,
+                border: `1px solid ${cfg.bd}`,
+              }}>
+                <cfg.Icon style={{ width: 11, height: 11 }} />
+                {cfg.label}
               </div>
             )}
           </div>
+        </header>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-1 text-center">
-                <p className="text-sm text-zinc-400">Todavía no hay mensajes.</p>
-                <p className="text-xs text-zinc-300">¡Iniciá la conversación!</p>
-              </div>
-            ) : (
-              messages.map((m) => {
-                const isOwn = m.sender_id === currentUserId;
-                return (
-                  <div key={m.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[70%] flex flex-col gap-0.5 ${isOwn ? "items-end" : "items-start"}`}>
-                      {!isOwn && (
-                        <span className="text-[11px] text-zinc-400 px-1">{m.sender_name}</span>
-                      )}
-                      <div className={`px-3.5 py-2 rounded-2xl text-sm leading-relaxed break-words ${
-                        isOwn
-                          ? "bg-accent text-white rounded-br-[4px]"
-                          : "bg-zinc-100 text-zinc-800 rounded-bl-[4px]"
-                      }`}>
-                        {m.content}
-                      </div>
-                      <span className="text-[11px] text-zinc-400 px-1">{formatTime(m.sent_at)}</span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-            <div ref={bottomRef} />
-          </div>
+        {/* ── Body ─────────────────────────────────────────────────────── */}
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
 
-          {/* Input */}
-          <div className="flex-shrink-0 bg-white border-t border-zinc-100 px-4 py-3">
-            {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
-            <div className="flex items-end gap-2">
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder="Escribí un mensaje..."
-                rows={1}
-                className="flex-1 resize-none rounded-2xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm placeholder:text-zinc-400 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors"
-                style={{ maxHeight: "128px", overflowY: "auto" }}
-              />
+          {/* Sidebar — desktop only */}
+          <aside
+            className="gchat-scroll hidden md:flex"
+            style={{
+              flexDirection: "column", flexShrink: 0, width: 256,
+              borderRight: "1px solid #EDE8DC", overflowY: "auto",
+              background: "linear-gradient(170deg, #FAF7F0 0%, #F4EFE3 100%)",
+              position: "relative",
+            }}
+          >
+            <div style={{
+              position: "absolute", inset: 0, pointerEvents: "none", opacity: 1,
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23A0896B' fill-opacity='.07'/%3E%3C/svg%3E\")",
+            }} />
+            <InfoPanel request={request} proposal={proposal} dateStr={dateStr} guestStr={guestStr} />
+          </aside>
+
+          {/* Chat column */}
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+
+            {/* Mobile: collapsible details */}
+            <div className="md:hidden" style={{ borderBottom: "1px solid #EDE8DC" }}>
               <button
                 type="button"
-                onClick={handleSend}
-                disabled={!input.trim() || isPending}
-                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-accent text-white hover:bg-accent/90 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0"
+                onClick={() => setDetailsOpen(v => !v)}
+                className="gchat-toggle"
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 16px", background: "transparent", border: "none", cursor: "pointer" }}
               >
-                <Send className="w-4 h-4" />
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: "linear-gradient(135deg, #D97706, #92400E)" }} />
+                  <span style={{ fontSize: 11.5, fontWeight: 500, color: "#78716C", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                    Detalles del evento
+                  </span>
+                </div>
+                <ChevronDown style={{
+                  width: 13, height: 13, color: "#A0896B",
+                  transform: detailsOpen ? "rotate(180deg)" : "none",
+                  transition: "transform .22s ease",
+                }} />
               </button>
+              {detailsOpen && (
+                <div
+                  className="gchat-down"
+                  style={{ background: "linear-gradient(170deg, #FAF7F0, #F4EFE3)", borderTop: "1px solid #EDE8DC" }}
+                >
+                  <InfoPanel request={request} proposal={proposal} dateStr={dateStr} guestStr={guestStr} />
+                </div>
+              )}
+            </div>
+
+            {/* Messages */}
+            <div
+              className="gchat-scroll"
+              style={{ flex: 1, overflowY: "auto", padding: "18px 14px", display: "flex", flexDirection: "column", gap: 5 }}
+            >
+              {messages.length === 0 ? (
+                <div
+                  className="gchat-fade"
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 14, textAlign: "center" }}
+                >
+                  <div style={{
+                    width: 60, height: 60, borderRadius: "50%",
+                    background: "linear-gradient(135deg, #FEF9EC, #FDF0C8)",
+                    border: "2px solid #EDE8DC",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: "0 6px 20px rgba(180,140,60,.13)",
+                  }}>
+                    <MessageCircle style={{ width: 26, height: 26, color: "#C4A060" }} />
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 15, fontWeight: 500, color: "#44403C", margin: "0 0 5px" }}>
+                      Sin mensajes aún
+                    </p>
+                    <p style={{ fontSize: 12, color: "#A8A29E", margin: 0 }}>
+                      Iniciá la conversación con {clientName.split(" ")[0]}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                messages.map((m, i) => {
+                  const own = m.sender_id === currentUserId;
+                  return (
+                    <div
+                      key={m.id}
+                      className={own ? "gchat-msg-own" : "gchat-msg-other"}
+                      style={{ display: "flex", justifyContent: own ? "flex-end" : "flex-start", animationDelay: `${Math.min(i * 0.025, 0.12)}s` }}
+                    >
+                      {!own && <Avatar name={m.sender_name} sm />}
+                      <div style={{
+                        maxWidth: "68%", display: "flex", flexDirection: "column",
+                        gap: 3, alignItems: own ? "flex-end" : "flex-start",
+                        marginLeft: !own ? 7 : 0,
+                      }}>
+                        {!own && (
+                          <span style={{ fontSize: 10, color: "#A0896B", paddingLeft: 2, fontWeight: 500, letterSpacing: ".01em" }}>
+                            {m.sender_name}
+                          </span>
+                        )}
+                        <div style={{
+                          padding: "9px 13px",
+                          borderRadius: own ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                          fontSize: 13.5, lineHeight: "1.45", wordBreak: "break-word",
+                          ...(own
+                            ? { background: "var(--accent)", color: "#fff", boxShadow: "0 2px 10px rgba(0,0,0,.12)" }
+                            : { background: "#fff", color: "#1C1917", border: "1px solid #EDE8DC", boxShadow: "0 1px 4px rgba(0,0,0,.05)" }
+                          ),
+                        }}>
+                          {m.content}
+                        </div>
+                        <span style={{ fontSize: 10, color: "#C4BAB2", padding: "0 2px" }}>
+                          {formatTime(m.sent_at)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Input */}
+            <div style={{
+              flexShrink: 0, background: "#fff",
+              borderTop: "1px solid #EDE8DC",
+              padding: "11px 14px 14px",
+              boxShadow: "0 -1px 8px rgba(160,140,100,.06)",
+            }}>
+              {error && <p style={{ fontSize: 11.5, color: "#DC2626", marginBottom: 8, fontFamily: "'DM Sans', system-ui, sans-serif" }}>{error}</p>}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 9 }}>
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={handleInputChange}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                  placeholder="Escribí un mensaje..."
+                  rows={1}
+                  className="gchat-input"
+                  style={{
+                    flex: 1, resize: "none", borderRadius: 16,
+                    border: "1.5px solid #EDE8DC", background: "#FAF9F7",
+                    padding: "9px 13px", fontSize: 13.5,
+                    fontFamily: "'DM Sans', system-ui, sans-serif",
+                    color: "#1C1917", maxHeight: 128, overflowY: "auto",
+                    lineHeight: "1.45", transition: "border-color .15s, box-shadow .15s",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={!input.trim() || isPending}
+                  className="gchat-send"
+                  style={{
+                    width: 42, height: 42, flexShrink: 0, borderRadius: 13,
+                    background: "var(--accent)", border: "none",
+                    cursor: !input.trim() || isPending ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#fff", opacity: !input.trim() || isPending ? 0.3 : 1,
+                  }}
+                >
+                  <Send style={{ width: 16, height: 16 }} />
+                </button>
+              </div>
+              <p style={{ fontSize: 10, color: "#D0C4B4", marginTop: 5, marginBottom: 0, textAlign: "center" }}>
+                Enter · enviar &nbsp;·&nbsp; Shift+Enter · nueva línea
+              </p>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

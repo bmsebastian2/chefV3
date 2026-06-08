@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 
 type DialogContextValue = {
@@ -134,7 +135,7 @@ export function DialogContent({
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
@@ -151,7 +152,8 @@ export function DialogContent({
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
