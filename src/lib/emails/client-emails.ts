@@ -193,7 +193,7 @@ function buildMagicLinkEmail(name: string, magicLink: string, tempPassword?: str
   const credBlock = tempPassword
     ? `<div style="background:#F4F4F5;border-radius:8px;padding:16px;margin-top:24px;">
         <p style="margin:0 0 6px;font-size:11px;color:#71717A;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Acceso alternativo con contraseña</p>
-        <p style="margin:0 0 4px;font-size:13px;color:#3F3F46;">Si el enlace expiró, podés iniciar sesión en <a href="${SITE_URL}/login" style="color:#E09F3E;">${SITE_URL}/login</a> con:</p>
+        <p style="margin:0 0 4px;font-size:13px;color:#3F3F46;">Si el enlace expiró, podés iniciar sesión en <a href="${SITE_URL}/?login=true" style="color:#E09F3E;">${SITE_URL}</a> con:</p>
         <p style="margin:6px 0 0;font-size:14px;">
           <span style="color:#71717A;">Contraseña temporal:</span>
           <strong style="font-family:monospace;font-size:15px;margin-left:8px;">${tempPassword}</strong>

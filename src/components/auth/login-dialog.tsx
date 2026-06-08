@@ -13,11 +13,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
+  const [open, setOpen] = useState(() =>
+    typeof window !== 'undefined' && window.location.search.includes('login=true')
+  )
   const [showPassword, setShowPassword] = useState(false)
   const [loginState, loginAction, isPending] = useActionState(login, null)
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? <Button className="h-8 px-4 text-base bg-white text-zinc-900 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 shadow-sm rounded-md transition-all" variant="ghost">Acceder</Button>}
       </DialogTrigger>
