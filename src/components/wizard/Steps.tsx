@@ -1176,7 +1176,10 @@ export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
           mode="single"
           selected={data.date}
           onSelect={(date) => {
-            if (!date) return;
+            if (!date) {
+              if (data.date) nextStep();
+              return;
+            }
             updateData({ date });
             nextStep();
           }}
