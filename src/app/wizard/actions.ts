@@ -188,7 +188,6 @@ export async function registerOrVerifyClient(
   }
 
   // 5. Generar magic link — confirma el email E inicia sesión en un solo click
-  console.log('[DEBUG] SITE_URL al generar magic link:', SITE_URL)
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type:    'magiclink',
     email,
