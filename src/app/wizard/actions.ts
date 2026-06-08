@@ -81,6 +81,11 @@ const GUESTS_DISPLAY: Record<string, string> = {
 
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
 
+function normalizeCity(city: string | null | undefined): string | null {
+  if (!city) return null
+  return city.replace(/^\d+\s+/, '').replace(/\s+\d+$/, '').trim() || null
+}
+
 function formatLocalDate(date: Date): string {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -253,7 +258,7 @@ export async function submitServiceRequest(
     p_service_type:       SERVICE_TYPE_MAP[data.serviceType ?? ''] ?? 'single',
     p_occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
     p_location:           data.location.name,
-    p_city:               data.location.city,
+    p_city:               normalizeCity(data.location.city),
     p_event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
     p_event_date_end:     eventDateEnd,
     p_event_time:         eventTime,
