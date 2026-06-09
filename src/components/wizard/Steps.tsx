@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { StepProps, MealSlot } from "./types";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -1392,13 +1392,22 @@ export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
     );
   }
 
-  return (
-    <div className="flex flex-col gap-4 max-w-xl mx-auto w-full">
-      <p className="text-center text-zinc-500 text-sm mb-1 leading-relaxed">
-        Con esta información, nuestros chefs elaborarán menús personalizados adaptados a tus necesidades.
-      </p>
+  const notasRef = useRef<HTMLTextAreaElement>(null);
 
-      <div className="grid grid-cols-3 gap-3">
+  const handleNotas = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    updateData({ dietaryOtras: e.target.value });
+    if (notasRef.current) {
+      notasRef.current.style.height = "auto";
+      notasRef.current.style.height = notasRef.current.scrollHeight + "px";
+    }
+  };
+
+  return (
+    <div className="flex flex-col max-w-md mx-auto w-full">
+      <p className="text-[10px] tracking-[0.2em] uppercase text-zinc-400 mb-3">
+        Restricciones dietéticas
+      </p>
+      <div className="flex flex-wrap gap-2 mb-8">
         {RESTRICTION_OPTIONS.map(({ value, label }) => {
           const active = selected.includes(value);
           return (
@@ -1406,11 +1415,12 @@ export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
               key={value}
               type="button"
               onClick={() => toggleRestriction(value)}
-              className={`h-16 rounded-xl border text-sm font-medium transition-all duration-200 ${
+              className={[
+                "px-4 py-2 rounded-full text-sm font-medium transition-all duration-150 select-none",
                 active
-                  ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
-                  : "border-zinc-200 text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50"
-              }`}
+                  ? "bg-accent/10 text-accent border border-accent/30"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-transparent",
+              ].join(" ")}
             >
               {label}
             </button>
@@ -1418,12 +1428,25 @@ export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
         })}
       </div>
 
-      <textarea
-        placeholder="Otras restricciones..."
-        value={data.dietaryOtras ?? ""}
-        onChange={(e) => updateData({ dietaryOtras: e.target.value })}
-        className="w-full min-h-[120px] p-4 text-sm border border-zinc-200 rounded-xl outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent/50 resize-y font-sans transition-all"
-      />
+      <div className="h-px bg-zinc-100 mb-8" />
+
+      <p className="text-[10px] tracking-[0.2em] uppercase text-zinc-400 mb-3">
+        Preferencias y notas
+      </p>
+      <div className="relative mb-1">
+        <textarea
+          ref={notasRef}
+          placeholder="Otras restricciones o preferencias culinarias..."
+          value={data.dietaryOtras ?? ""}
+          onChange={handleNotas}
+          rows={3}
+          className="w-full rounded-xl border border-zinc-200 px-4 py-3 pb-7 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/10 hover:border-zinc-300 transition-all duration-200 bg-white resize-none overflow-hidden leading-relaxed"
+        />
+        <span className="absolute bottom-3 right-3 text-[10px] text-zinc-400 tabular-nums pointer-events-none">
+          {(data.dietaryOtras ?? "").length}
+        </span>
+      </div>
+      <p className="text-[10px] text-zinc-400 mb-8">Opcional</p>
 
       <Button onClick={nextStep} size="lg" className={BTN_CONTINUE}>
         Continuar
