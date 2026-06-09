@@ -1460,16 +1460,11 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
   const [error, setError]     = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const email = data.contact?.email ?? "";
-
+  const email       = data.contact?.email ?? "";
   const emailValid  = EMAIL_REGEX.test(email);
-  const { local: phoneLocal } = parsePhone(data.contact?.phone ?? '');
-  const phoneValid  = phoneLocal.replace(/\D/g, '').length >= 6;
-  const isValid = !!(
-    data.contact?.name &&
-    emailValid &&
-    phoneValid
-  );
+  const { local: phoneLocal } = parsePhone(data.contact?.phone ?? "");
+  const phoneValid  = phoneLocal.replace(/\D/g, "").length >= 6;
+  const isValid     = !!(data.contact?.name && emailValid && phoneValid);
 
   const blur = (field: string) => setTouched((p) => ({ ...p, [field]: true }));
 
@@ -1477,22 +1472,15 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
     if (!isValid) return;
     setLoading(true);
     setError("");
-
     const result = await registerOrVerifyClient(
       data.contact!.name!,
       data.contact!.email!,
       data.contact!.phone!
     );
-
-    if (result.error) {
-      setError(result.error);
-      setLoading(false);
-      return;
-    }
-
+    if (result.error) { setError(result.error); setLoading(false); return; }
     if (result.userId && onFinalSubmit) {
       await onFinalSubmit(result.userId, {
-        isNewUser:        result.isNewUser ?? false,
+        isNewUser:        result.isNewUser  ?? false,
         tempPassword:     result.tempPassword,
         confirmationLink: result.confirmationLink,
       });
@@ -1500,50 +1488,75 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
     setLoading(false);
   };
 
+  const occasionMap: Record<string, string> = {
+    birthday: "Cumpleaños", family_reunion: "Reunión familiar",
+    bachelor_party: "Despedida de soltera/o", friends_gathering: "Reunión con amigos",
+    romantic_dinner: "Cena romántica", corporate: "Evento corporativo",
+    gastronomic: "Aventura gastronómica", other: "Otra",
+  };
+  const ocasion  = data.occasion ? occasionMap[data.occasion] ?? data.occasion : "";
+  const personas = data.guestsRange === "2" ? "2 personas"
+    : data.guestsRange === "3-6"  ? "3–6 personas"
+    : data.guestsRange === "7-12" ? "7–12 personas"
+    : data.guestsRange === "13+"  ? "13+ personas" : "";
+  const horario  = data.mealTime === "lunch" ? "Comida" : data.mealTime === "dinner" ? "Cena" : "";
+  const ciudad   = data.location?.city ?? "";
+  const fechaStr = data.date ? format(new Date(data.date), "d 'de' MMMM", { locale: es }) : "";
+
   return (
-    <div className="flex flex-col gap-5 max-w-md mx-auto w-full">
-      <p className="text-zinc-500 text-sm text-center mb-1 leading-relaxed">
-        Ahora, sólo tienes que añadir tus datos de contacto y te enviaremos propuestas de menú
-        personalizadas y gratuitas en menos de 20 minutos.
+    <div className="flex flex-col w-full max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <p className="text-sm text-zinc-500 mb-6">
+        Completá tus datos para enviar la solicitud.
       </p>
 
-      <div>
-        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
-          Nombre <span className="text-red-400">*</span>
-        </label>
-        <Input
-          placeholder="John Doe"
-          className="h-14 text-base border-zinc-200 rounded-xl focus:border-accent/50 transition-colors"
-          value={data.contact?.name ?? ""}
-          onChange={(e) => updateData({ contact: { ...data.contact, name: e.target.value } })}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
-          Email <span className="text-red-400">*</span>
-        </label>
-        <Input
-          placeholder="example@mail.com"
-          type="email"
-          className={`h-14 text-base rounded-xl transition-colors ${
-            touched.email && !emailValid
-              ? "border-red-400 focus:ring-red-400"
-              : "border-zinc-200 focus:border-accent/50"
-          }`}
-          value={email}
-          onChange={(e) => updateData({ contact: { ...data.contact, email: e.target.value } })}
-          onBlur={() => blur("email")}
-        />
-        {touched.email && !emailValid && (
-          <p className="text-xs text-red-500 mt-1">Ingresá un email válido.</p>
+      {/* Resumen del evento */}
+      <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 mb-8">
+        <p className="text-sm font-medium text-zinc-800">
+          {[ocasion, personas, horario].filter(Boolean).join(" · ")}
+        </p>
+        {(ciudad || fechaStr) && (
+          <p className="text-xs text-zinc-500 mt-1">
+            {ciudad}{fechaStr ? ` · ${fechaStr}` : ""}
+          </p>
         )}
       </div>
 
-      <div>
-        <label className="block text-sm font-semibold text-zinc-800 mb-1.5">
-          Teléfono <span className="text-red-400">*</span>
-        </label>
+      {/* Nombre */}
+      <div className="mb-5">
+        <p className="text-[10px] tracking-[0.2em] uppercase text-zinc-400 mb-2.5">Nombre completo</p>
+        <input
+          type="text"
+          placeholder="Tu nombre"
+          value={data.contact?.name ?? ""}
+          onChange={(e) => updateData({ contact: { ...data.contact, name: e.target.value } })}
+          className="w-full h-14 px-4 rounded-xl border border-zinc-200 text-zinc-900 text-sm placeholder:text-zinc-400 focus:outline-none focus:border-accent/50 focus:ring-2 focus:ring-accent/10 hover:border-zinc-300 transition-all duration-200 bg-white"
+        />
+      </div>
+
+      {/* Email */}
+      <div className="mb-5">
+        <p className="text-[10px] tracking-[0.2em] uppercase text-zinc-400 mb-2.5">Email</p>
+        <input
+          type="email"
+          placeholder="tu@email.com"
+          value={email}
+          onChange={(e) => updateData({ contact: { ...data.contact, email: e.target.value } })}
+          onBlur={() => blur("email")}
+          className={[
+            "w-full h-14 px-4 rounded-xl border text-zinc-900 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 transition-all duration-200 bg-white",
+            touched.email && !emailValid
+              ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+              : "border-zinc-200 hover:border-zinc-300 focus:border-accent/50 focus:ring-accent/10",
+          ].join(" ")}
+        />
+        {touched.email && !emailValid && (
+          <p className="text-xs text-red-500 mt-1.5">Ingresá un email válido</p>
+        )}
+      </div>
+
+      {/* Teléfono */}
+      <div className="mb-10">
+        <p className="text-[10px] tracking-[0.2em] uppercase text-zinc-400 mb-2.5">Teléfono</p>
         <PhoneInput
           value={data.contact?.phone ?? ""}
           onChange={(val) => updateData({ contact: { ...data.contact, phone: val } })}
@@ -1552,35 +1565,23 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
           defaultCountryCode={data.location?.countryCode}
         />
         {touched.phone && !phoneValid && (
-          <p className="text-xs text-red-500 mt-1">Ingresá un número de teléfono válido.</p>
+          <p className="text-xs text-red-500 mt-1.5">Ingresá un número de teléfono válido</p>
         )}
       </div>
 
-      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+      {error && <p className="text-sm text-red-500 text-center mb-4">{error}</p>}
 
-      <Button
+      <button
+        type="button"
         disabled={!isValid || loading}
         onClick={handleSubmit}
-        size="lg"
-        className="w-auto mx-auto px-10 h-14 bg-accent text-zinc-900 font-bold text-base rounded-2xl mt-2 hover:bg-accent/90 hover:scale-[1.02] shadow-[0_8px_20px_rgba(224,159,62,0.2)] hover:shadow-[0_12px_28px_rgba(224,159,62,0.3)] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
+        className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-semibold rounded-xl transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {loading ? (
-          <span className="flex items-center gap-2">
-            <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-            Enviando...
-          </span>
-        ) : "Solicitar chefs y menús"}
-      </Button>
-
-      <p className="text-xs text-zinc-400 text-center">
-        Al enviar este formulario, aceptas nuestros{" "}
-        <a href="/terms" className="underline hover:text-zinc-600 transition-colors">Términos</a>{" "}
-        y reconoces la{" "}
-        <a href="/privacy" className="underline hover:text-zinc-600 transition-colors">Declaración de privacidad global</a>.
-      </p>
+        {loading
+          ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Enviando…</span></>
+          : "Enviar solicitud"
+        }
+      </button>
     </div>
   );
 }

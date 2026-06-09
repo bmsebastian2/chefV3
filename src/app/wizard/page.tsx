@@ -290,17 +290,8 @@ export default function WizardPage() {
           className="w-full max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
           key={showWeeklyForm ? "weekly" : currentStep}
         >
-          {/* Step indicator + title */}
+          {/* Title */}
           <div className="text-center mb-12">
-            {!showWeeklyForm && (
-              <div className="flex items-center justify-center gap-2.5 mb-5">
-                <div className="h-px w-8 bg-zinc-200" />
-                <span className="text-[10px] font-black tracking-[0.3em] text-zinc-400 uppercase select-none">
-                  {String(currentStep + 1).padStart(2, "0")}
-                </span>
-                <div className="h-px w-8 bg-zinc-200" />
-              </div>
-            )}
             <h1 className="font-serif text-4xl md:text-5xl text-zinc-900 leading-tight">
               {titleText}
             </h1>
