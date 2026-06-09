@@ -1,35 +1,53 @@
 "use client";
 
+import { useState } from "react";
 import { WizardData } from "./types";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { WeeklyStep1Location } from "./WeeklyStep1Location";
+import { WeeklyStep2Confirmation } from "./WeeklyStep2Confirmation";
+import { WeeklyStep3Volume } from "./WeeklyStep3Volume";
+import { WeeklyStep4Preferences } from "./WeeklyStep4Preferences";
+import { WeeklyStep5Schedule } from "./WeeklyStep5Schedule";
+import { WeeklyStep6Contact } from "./WeeklyStep6Contact";
 
 interface WeeklyMealsFormProps {
   data: WizardData;
   updateData: (updates: Partial<WizardData>) => void;
-  onSubmit: () => void;
+  onSubmit: (status: "active" | "pending") => void;
 }
 
-export function WeeklyMealsForm({ data, updateData, onSubmit }: WeeklyMealsFormProps) {
-  return (
-    <div className="flex flex-col gap-8 max-w-2xl mx-auto w-full">
-      <div className="bg-accent/5 border border-accent/20 rounded-lg p-6">
-        <h2 className="font-semibold text-accent mb-2">Formulario de Comidas Semanales</h2>
-        <p className="text-zinc-600 text-sm">
-          Aquí irá el formulario específico para contratos de comidas semanales recurrentes.
-        </p>
-      </div>
+export function WeeklyMealsForm(props: WeeklyMealsFormProps) {
+  const { data, updateData, onSubmit } = props;
+  const [step, setStep] = useState(0);
 
-      <div className="flex gap-3">
-        <Link href="/" className="flex-1">
-          <Button variant="outline" size="lg" className="w-full h-14">
-            Cancelar
-          </Button>
-        </Link>
-        <Button onClick={onSubmit} size="lg" className="flex-1 h-14 bg-accent text-zinc-900 font-bold text-lg hover:bg-accent/90">
-          Enviar Solicitud
-        </Button>
-      </div>
-    </div>
-  );
+  if (step === 0) {
+    return (
+      <WeeklyStep1Location
+        data={data}
+        updateData={updateData}
+        onNext={() => setStep(1)}
+      />
+    );
+  }
+
+  if (step === 1) {
+    return <WeeklyStep2Confirmation onNext={() => setStep(2)} />;
+  }
+
+  if (step === 2) {
+    return <WeeklyStep3Volume data={data} updateData={updateData} onNext={() => setStep(3)} />;
+  }
+
+  if (step === 3) {
+    return <WeeklyStep4Preferences data={data} updateData={updateData} onNext={() => setStep(4)} />;
+  }
+
+  if (step === 4) {
+    return <WeeklyStep5Schedule data={data} updateData={updateData} onNext={() => setStep(5)} />;
+  }
+
+  if (step === 5) {
+    return <WeeklyStep6Contact data={data} onNext={(status) => onSubmit(status)} />;
+  }
+
+  return null;
 }

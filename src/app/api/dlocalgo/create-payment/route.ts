@@ -9,10 +9,16 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
-    const { amount, currency = 'UYU', proposalId, requestId } = await req.json();
-    if (!amount || !proposalId || !requestId) {
+    const { amount: realAmount, currency: _currency, proposalId, requestId } = await req.json();
+    if (!realAmount || !proposalId || !requestId) {
       return NextResponse.json({ error: 'Parámetros faltantes' }, { status: 400 });
     }
+
+    console.warn("🚨 TESTING MODE: monto de pago fijado en $2 USD. Cambiar antes de producción.");
+    // TODO_PROD: ⚠️ MONTO DE PRUEBA — cambiar a `realAmount` antes de deploy a producción
+    // const amount = realAmount; const currency = _currency;
+    const amount = 2; const currency = 'USD'; // solo para testing
+    // FIN_TODO_PROD ⚠️
 
     // Verify the client owns this request
     const { data: request } = await supabase
@@ -55,8 +61,8 @@ export async function POST(req: Request) {
       dlocalgo_payment_id: result.id,
       proposal_id: proposalId,
       request_id: requestId,
-      amount,
-      currency,
+      amount: realAmount,
+      currency: _currency ?? 'UYU',
       status: 'pending',
     });
 

@@ -97,10 +97,26 @@ export function PaymentView({ requestId, proposalId, total }: Props) {
       setError("Método de pago no disponible aún")
       return
     }
-    // TODO_PROD: ⚠️ LINK DE PRUEBA — reemplazar con la llamada real a /api/dlocalgo/create-payment antes de deploy
-    console.warn("🚨 TESTING MODE: redirigiendo a link de pago estático de $2 USD. Cambiar antes de producción.")
-    window.location.href = "https://checkout.dlocalgo.com/validate/mkmO2kp6jiA8Th9QkOpYRm05CL5kuDun"
-    // FIN_TODO_PROD ⚠️
+    startTransition(async () => {
+      setError(null)
+      const res = await fetch("/api/dlocalgo/create-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: total, currency: "UYU", proposalId, requestId }),
+      })
+      let data: { redirect_url?: string; error?: string } = {}
+      try {
+        data = await res.json()
+      } catch {
+        setError("Error al conectar con el servidor de pagos")
+        return
+      }
+      if (data.redirect_url) {
+        window.location.href = data.redirect_url
+      } else {
+        setError(data.error ?? "Error al iniciar el pago")
+      }
+    })
   }
 
   return (

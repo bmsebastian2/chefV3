@@ -1,4 +1,5 @@
 'use server'
+'use server'
 
 import { after } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
@@ -396,6 +397,139 @@ export async function submitServiceRequest(
         requestSummary,
       }).catch((err) =>
         console.error('[wizard] sendClientEmails threw:', err)
+      ),
+    ])
+  )
+
+  return { requestId: newRequestId }
+}
+
+// ─── submitWeeklyRequest ──────────────────────────────────────────────────────
+// Requires two DB changes before this runs:
+//   1. ALTER TABLE weekly_meal_details ALTER COLUMN frecuencia_cocina TYPE text;
+//   2. CREATE FUNCTION insert_weekly_meal_details(...) SECURITY DEFINER — see below:
+//
+//   create or replace function insert_weekly_meal_details(
+//     p_request_id uuid, p_codigo_postal text, p_comidas_por_semana int,
+//     p_raciones_por_comida int, p_frecuencia_cocina text,
+//     p_preferencia_chef text, p_preferencias_culinarias text
+//   ) returns void language plpgsql security definer as $$
+//   begin
+//     insert into weekly_meal_details (request_id, codigo_postal, comidas_por_semana,
+//       raciones_por_comida, frecuencia_cocina, preferencia_chef, preferencias_culinarias)
+//     values (p_request_id, p_codigo_postal, p_comidas_por_semana, p_raciones_por_comida,
+//       p_frecuencia_cocina, p_preferencia_chef, p_preferencias_culinarias);
+//   end; $$;
+
+export async function submitWeeklyRequest(
+  data: WizardData,
+  userId: string,
+  extras?: ClientExtras
+): Promise<{ error?: string; requestId?: string }> {
+  const supabase = await createClient()
+
+  if (!data.location || !data.date || !data.contact?.name || !data.contact?.email) {
+    return { error: 'Faltan datos obligatorios' }
+  }
+
+  const restrictions = data.dietaryRestrictions ?? []
+  const raciones     = data.weeklyDetails?.racionesPorComida ?? 1
+
+  const { data: requestId, error } = await supabase.rpc('create_service_request', {
+    p_user_id:              userId,
+    p_service_type:         'weekly',
+    p_occasion:             'other',
+    p_location:             data.location.name,
+    p_city:                 normalizeCity(data.location.city),
+    p_event_date_start:     formatLocalDate(new Date(data.date as unknown as string)),
+    p_event_date_end:       null,
+    p_event_time:           null,
+    p_guests_adults:        raciones,
+    p_guests_teens:         0,
+    p_guests_kids:          0,
+    p_cuisine_type:         null,
+    p_descripcion_evento:   data.weeklyDetails?.preferenciasCulinarias ?? null,
+    p_contact_name:         data.contact.name,
+    p_contact_email:        data.contact.email,
+    p_contact_phone:        data.contact.phone ?? null,
+    p_vegetariano:          restrictions.includes('Vegetariana') || restrictions.includes('Vegetariano'),
+    p_vegano:               restrictions.includes('Vegano')      || restrictions.includes('Vegana'),
+    p_sin_gluten:           restrictions.includes('Gluten'),
+    p_sin_lactosa:          restrictions.includes('Lácteos'),
+    p_sin_mariscos:         restrictions.includes('Mariscos'),
+    p_sin_frutos_secos:     restrictions.includes('Frutos secos'),
+    p_alergias_adicionales: null,
+    p_notas_adicionales:    null,
+  })
+
+  if (error) {
+    console.error('[weekly] Error saving service request:', error)
+    return { error: 'Error al guardar la solicitud' }
+  }
+
+  const newRequestId = requestId as string
+  if (!newRequestId) return { error: 'Error al guardar la solicitud' }
+
+  if (extras?.isNewUser) {
+    const { error: statusError } = await supabase.rpc('set_request_pending', {
+      p_request_id: newRequestId,
+    })
+    if (statusError) console.error('[weekly] Error setting pending status:', statusError)
+  }
+
+  // Insertar weekly_meal_details (requiere RPC definida arriba)
+  const diasStr = (data.weeklyDetails?.frecuenciaCocina ?? []).join(',')
+  const { error: weeklyError } = await supabase.rpc('insert_weekly_meal_details', {
+    p_request_id:              newRequestId,
+    p_codigo_postal:           data.weeklyDetails?.codigoPostal           ?? null,
+    p_comidas_por_semana:      data.weeklyDetails?.comidasPorSemana        ?? null,
+    p_raciones_por_comida:     data.weeklyDetails?.racionesPorComida       ?? null,
+    p_frecuencia_cocina:       diasStr || null,
+    p_preferencia_chef:        data.weeklyDetails?.preferenciaChef         ?? null,
+    p_preferencias_culinarias: data.weeklyDetails?.preferenciasCulinarias  ?? null,
+  })
+  if (weeklyError) console.error('[weekly] Error saving weekly_meal_details:', weeklyError)
+
+  const eventDate  = new Date(data.date as unknown as string)
+  const requestSummary: RequestSummary = {
+    lugar:         data.location.name,
+    fecha:         `${eventDate.getDate()} de ${MONTHS_ES[eventDate.getMonth()]} de ${eventDate.getFullYear()}`,
+    comensales:    `${raciones} ${raciones === 1 ? 'persona' : 'personas'}`,
+    restricciones: restrictions.length > 0 ? restrictions.join(', ') : 'No',
+    notas:         data.weeklyDetails?.preferenciasCulinarias ?? undefined,
+  }
+
+  const notifyPayload = {
+    service_type:       'weekly',
+    occasion:           'other',
+    city:               data.location.city,
+    event_date_start:   formatLocalDate(eventDate),
+    event_date_end:     null,
+    event_time:         null,
+    cuantas_personas:   raciones,
+    cuisine_type:       null,
+    budget_min:         null,
+    budget_max:         null,
+    descripcion_evento: data.weeklyDetails?.preferenciasCulinarias ?? null,
+  }
+
+  after(() =>
+    Promise.all([
+      ...(extras?.isNewUser
+        ? []
+        : [notifyMatchingChefs(newRequestId, notifyPayload).catch((err) =>
+            console.error('[weekly] notifyMatchingChefs threw:', err)
+          )]
+      ),
+      sendClientEmails({
+        email:            data.contact!.email!,
+        name:             data.contact!.name!,
+        isNewUser:        extras?.isNewUser        ?? false,
+        tempPassword:     extras?.tempPassword,
+        confirmationLink: extras?.confirmationLink,
+        requestSummary,
+      }).catch((err) =>
+        console.error('[weekly] sendClientEmails threw:', err)
       ),
     ])
   )

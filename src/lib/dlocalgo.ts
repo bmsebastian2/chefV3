@@ -21,7 +21,7 @@ export async function dlocalgoRequest(path: string, body: object) {
   });
 
   const text = await res.text();
-  console.log('[dlocalgo] status:', res.status, '| body:', text.slice(0, 300));
+  console.log('[dlocalgo] status:', res.status, '| body:', text);
 
   try {
     return JSON.parse(text);

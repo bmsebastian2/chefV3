@@ -107,7 +107,7 @@ export default function WizardPage() {
 
   const handleService3Selected  = () => setShowWeeklyForm(true);
   const handleServiceTypeSelected = () => setCurrentStep(1);
-  const handleWeeklyFormSubmit   = () => setSubmitted("active");
+  const handleWeeklyFormSubmit   = (status: "active" | "pending") => setSubmitted(status);
 
   // ── Success screen ──────────────────────────────────────────────────────────
   if (submitted === "active") {

@@ -35,6 +35,14 @@ export interface WizardData {
   dietaryOtras?: string;
   mealSlots?: MealSlot[];
   details?: string;
+  weeklyDetails?: {
+    codigoPostal?: string;
+    comidasPorSemana?: number;
+    racionesPorComida?: number;
+    frecuenciaCocina?: number[];
+    preferenciaChef?: string;
+    preferenciasCulinarias?: string;
+  };
   contact?: {
     name?: string;
     email?: string;
