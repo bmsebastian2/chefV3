@@ -122,7 +122,7 @@ export default function ChefRegistrationPage() {
   };
 
   const inputCls =
-    "w-full bg-transparent border-0 border-b border-zinc-200 rounded-none px-0 h-11 text-zinc-900 placeholder:text-zinc-300 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#E09F3E] transition-colors duration-200 text-[15px] font-sans";
+    "w-full bg-transparent border-0 border-b border-zinc-200 rounded-none px-0 h-11 text-zinc-900 placeholder:text-zinc-300 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-[#22c55e] transition-colors duration-200 text-[15px] font-sans";
 
   const labelCls =
     "block text-[10px] font-sans font-semibold tracking-[0.2em] uppercase text-zinc-400 mb-2.5";
@@ -134,7 +134,7 @@ export default function ChefRegistrationPage() {
         <Header />
         <div className="flex-1 flex items-center justify-center px-6 py-20">
           <div className="max-w-md w-full text-center">
-            <div className="w-px h-12 bg-[#E09F3E]/35 mx-auto mb-10" />
+            <div className="w-px h-12 bg-[#22c55e]/35 mx-auto mb-10" />
             <div className="w-14 h-14 border border-red-500/25 rounded-full flex items-center justify-center mx-auto mb-8">
               <svg
                 className="w-6 h-6 text-red-400"
@@ -158,13 +158,13 @@ export default function ChefRegistrationPage() {
             </p>
             <Link href="/chef-registration">
               <Button
-                className="w-full bg-[#E09F3E] hover:bg-[#c8892e] text-black border-none h-12 text-xs font-sans font-semibold tracking-[0.2em] uppercase rounded-none transition-all"
+                className="w-full bg-[#22c55e] hover:bg-[#16a34a] text-black border-none h-12 text-xs font-sans font-semibold tracking-[0.2em] uppercase rounded-none transition-all"
                 onClick={() => (window.location.href = "/chef-registration")}
               >
                 Intentar de nuevo
               </Button>
             </Link>
-            <div className="w-px h-12 bg-[#E09F3E]/35 mx-auto mt-10" />
+            <div className="w-px h-12 bg-[#22c55e]/35 mx-auto mt-10" />
           </div>
         </div>
         <Footer />
@@ -194,18 +194,18 @@ export default function ChefRegistrationPage() {
             }}
           />
           {/* Amber glow */}
-          <div className="pointer-events-none absolute bottom-0 left-0 w-96 h-96 bg-[#E09F3E]/[0.07] rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute bottom-0 left-0 w-96 h-96 bg-[#22c55e]/[0.07] rounded-full blur-3xl" />
           {/* Edge accents */}
-          <div className="pointer-events-none absolute top-0 inset-x-0 h-px bg-gradient-to-r from-[#E09F3E]/45 via-[#E09F3E]/12 to-transparent" />
-          <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#E09F3E]/8 to-transparent" />
+          <div className="pointer-events-none absolute top-0 inset-x-0 h-px bg-gradient-to-r from-[#22c55e]/45 via-[#22c55e]/12 to-transparent" />
+          <div className="pointer-events-none absolute top-0 right-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#22c55e]/8 to-transparent" />
 
           {/* Inner content */}
           <div className="relative z-10 flex flex-col h-full p-12 xl:p-16 py-14">
 
             {/* Brand mark */}
             <div className="flex items-center gap-3">
-              <div className="w-7 h-7 border border-[#E09F3E]/30 rounded-full flex items-center justify-center">
-                <span className="font-serif text-[#E09F3E] text-xs font-bold leading-none">
+              <div className="w-7 h-7 border border-[#22c55e]/30 rounded-full flex items-center justify-center">
+                <span className="font-serif text-[#22c55e] text-xs font-bold leading-none">
                   G
                 </span>
               </div>
@@ -235,28 +235,28 @@ export default function ChefRegistrationPage() {
                   <ellipse cx="160" cy="196" rx="128" ry="14" fill="#09090B" fillOpacity="0.35" />
                   <ellipse cx="160" cy="187" rx="116" ry="13" fill="#1a1a1f" />
                   <ellipse cx="160" cy="182" rx="103" ry="11" fill="#222226" filter="url(#regDrop)" />
-                  <ellipse cx="160" cy="180" rx="64" ry="6.5" fill="none" stroke="#E09F3E" strokeWidth="0.7" strokeOpacity="0.18" />
+                  <ellipse cx="160" cy="180" rx="64" ry="6.5" fill="none" stroke="#22c55e" strokeWidth="0.7" strokeOpacity="0.18" />
                   <path d="M52 180 Q52 60 160 44 Q268 60 268 180" fill="url(#regCloche)" />
                   <path d="M64 155 Q72 105 84 76" fill="none" stroke="white" strokeWidth="5" strokeLinecap="round" strokeOpacity="0.04" />
                   <rect x="40" y="177" width="240" height="11" rx="5.5" fill="#18181B" />
                   <rect x="156" y="46" width="8" height="26" rx="4" fill="#92400E" />
                   <circle cx="160" cy="42" r="15" fill="url(#regHandle)" />
                   <circle cx="155" cy="36" r="4" fill="white" fillOpacity="0.32" />
-                  <path d="M262 55 L267 38 L272 55 L289 60 L272 65 L267 82 L262 65 L245 60 Z" fill="#E09F3E" fillOpacity="0.45" />
-                  <path d="M38 90 L42 74 L46 90 L62 94 L46 98 L42 114 L38 98 L22 94 Z" fill="#E09F3E" fillOpacity="0.28" />
-                  <circle cx="284" cy="110" r="3.5" fill="#E09F3E" fillOpacity="0.22" />
-                  <circle cx="40" cy="150" r="2.5" fill="#E09F3E" fillOpacity="0.18" />
+                  <path d="M262 55 L267 38 L272 55 L289 60 L272 65 L267 82 L262 65 L245 60 Z" fill="#22c55e" fillOpacity="0.45" />
+                  <path d="M38 90 L42 74 L46 90 L62 94 L46 98 L42 114 L38 98 L22 94 Z" fill="#22c55e" fillOpacity="0.28" />
+                  <circle cx="284" cy="110" r="3.5" fill="#22c55e" fillOpacity="0.22" />
+                  <circle cx="40" cy="150" r="2.5" fill="#22c55e" fillOpacity="0.18" />
                 </svg>
               </div>
 
               {/* Headline */}
               <div className="mb-10">
-                <p className="font-sans text-[#E09F3E] text-[10px] tracking-[0.38em] uppercase mb-5 font-semibold">
+                <p className="font-sans text-[#22c55e] text-[10px] tracking-[0.38em] uppercase mb-5 font-semibold">
                   Registro de Chef
                 </p>
                 <h1 className="font-serif text-[2.6rem] xl:text-[2.9rem] text-white font-semibold leading-[1.04] tracking-tight">
                   Tu arte<br />
-                  <em className="not-italic text-[#E09F3E]">merece</em><br />
+                  <em className="not-italic text-[#22c55e]">merece</em><br />
                   un escenario.
                 </h1>
                 <p className="font-sans text-zinc-500 text-sm leading-relaxed mt-5 max-w-[260px]">
@@ -280,7 +280,7 @@ export default function ChefRegistrationPage() {
             </div>
 
             {/* Bottom quote */}
-            <div className="border-l-2 border-[#E09F3E]/28 pl-5">
+            <div className="border-l-2 border-[#22c55e]/28 pl-5">
               <p className="font-serif text-zinc-600 text-sm italic leading-relaxed">
                 &ldquo;La cocina es el único<br />lenguaje universal.&rdquo;
               </p>
@@ -293,12 +293,12 @@ export default function ChefRegistrationPage() {
 
           {/* Mobile-only top banner */}
           <div className="lg:hidden bg-[#0C0C0C] px-8 pt-10 pb-10">
-            <p className="font-sans text-[#E09F3E] text-[10px] tracking-[0.3em] uppercase mb-4 font-semibold">
+            <p className="font-sans text-[#22c55e] text-[10px] tracking-[0.3em] uppercase mb-4 font-semibold">
               Registro de Chef
             </p>
             <h1 className="font-serif text-3xl text-white font-semibold leading-tight">
               Tu arte merece<br />
-              <span className="text-[#E09F3E]">un escenario.</span>
+              <span className="text-[#22c55e]">un escenario.</span>
             </h1>
           </div>
 
@@ -314,7 +314,7 @@ export default function ChefRegistrationPage() {
                 ¿Ya tienes cuenta?{" "}
                 <Link
                   href="/"
-                  className="text-[#E09F3E] hover:text-[#c8892e] transition-colors font-medium"
+                  className="text-[#22c55e] hover:text-[#16a34a] transition-colors font-medium"
                 >
                   Inicia sesión
                 </Link>
@@ -332,7 +332,7 @@ export default function ChefRegistrationPage() {
               <div className="reg-field opacity-0 grid grid-cols-1 sm:grid-cols-2 gap-x-8 mb-7">
                 <div>
                   <label htmlFor="firstName" className={labelCls}>
-                    Nombre <span className="text-[#E09F3E]">*</span>
+                    Nombre <span className="text-[#22c55e]">*</span>
                   </label>
                   <Input
                     id="firstName"
@@ -347,7 +347,7 @@ export default function ChefRegistrationPage() {
                 </div>
                 <div>
                   <label htmlFor="firstSurname" className={labelCls}>
-                    Primer apellido <span className="text-[#E09F3E]">*</span>
+                    Primer apellido <span className="text-[#22c55e]">*</span>
                   </label>
                   <Input
                     id="firstSurname"
@@ -382,7 +382,7 @@ export default function ChefRegistrationPage() {
               <div className="reg-field opacity-0 grid grid-cols-1 sm:grid-cols-2 gap-x-8 mb-7">
                 <div>
                   <label htmlFor="country" className={labelCls}>
-                    País <span className="text-[#E09F3E]">*</span>
+                    País <span className="text-[#22c55e]">*</span>
                   </label>
                   <select
                     id="country"
@@ -390,7 +390,7 @@ export default function ChefRegistrationPage() {
                     value={formData.country}
                     onChange={handleChange}
                     required
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 rounded-none px-0 h-11 text-zinc-900 text-[15px] font-sans focus:outline-none focus:border-[#E09F3E] transition-colors duration-200 appearance-none cursor-pointer"
+                    className="w-full bg-transparent border-0 border-b border-zinc-200 rounded-none px-0 h-11 text-zinc-900 text-[15px] font-sans focus:outline-none focus:border-[#22c55e] transition-colors duration-200 appearance-none cursor-pointer"
                   >
                     <option value="" disabled>Selecciona un país</option>
                     {[
@@ -421,7 +421,7 @@ export default function ChefRegistrationPage() {
                 </div>
                 <div>
                   <label htmlFor="phone" className={labelCls}>
-                    Teléfono <span className="text-[#E09F3E]">*</span>
+                    Teléfono <span className="text-[#22c55e]">*</span>
                   </label>
                   <Input
                     id="phone"
@@ -440,7 +440,7 @@ export default function ChefRegistrationPage() {
               <div className="reg-field opacity-0 grid grid-cols-1 sm:grid-cols-2 gap-x-8 mb-7">
                 <div>
                   <label htmlFor="email" className={labelCls}>
-                    Email <span className="text-[#E09F3E]">*</span>
+                    Email <span className="text-[#22c55e]">*</span>
                   </label>
                   <Input
                     id="email"
@@ -456,7 +456,7 @@ export default function ChefRegistrationPage() {
                 </div>
                 <div>
                   <label htmlFor="confirmEmail" className={labelCls}>
-                    Confirmar email <span className="text-[#E09F3E]">*</span>
+                    Confirmar email <span className="text-[#22c55e]">*</span>
                   </label>
                   <Input
                     id="confirmEmail"
@@ -480,7 +480,7 @@ export default function ChefRegistrationPage() {
               {/* Contraseña */}
               <div className="reg-field opacity-0 mb-8">
                 <label htmlFor="password" className={labelCls}>
-                  Contraseña <span className="text-[#E09F3E]">*</span>
+                  Contraseña <span className="text-[#22c55e]">*</span>
                 </label>
                 <Input
                   id="password"
@@ -510,8 +510,8 @@ export default function ChefRegistrationPage() {
                     htmlFor="acceptTerms"
                     className={`flex items-center justify-center w-4 h-4 border rounded-[2px] cursor-pointer transition-all duration-150 ${
                       formData.acceptTerms
-                        ? "bg-[#E09F3E] border-[#E09F3E]"
-                        : "border-zinc-300 bg-white hover:border-[#E09F3E]/60"
+                        ? "bg-[#22c55e] border-[#22c55e]"
+                        : "border-zinc-300 bg-white hover:border-[#22c55e]/60"
                     }`}
                   >
                     {formData.acceptTerms && (
@@ -534,18 +534,18 @@ export default function ChefRegistrationPage() {
                   Acepto los{" "}
                   <Link
                     href="/terms"
-                    className="text-[#E09F3E] hover:text-[#c8892e] transition-colors"
+                    className="text-[#22c55e] hover:text-[#16a34a] transition-colors"
                   >
                     términos y condiciones
                   </Link>{" "}
                   y la{" "}
                   <Link
                     href="/privacy"
-                    className="text-[#E09F3E] hover:text-[#c8892e] transition-colors"
+                    className="text-[#22c55e] hover:text-[#16a34a] transition-colors"
                   >
                     política de privacidad
                   </Link>
-                  <span className="text-[#E09F3E] ml-0.5">*</span>
+                  <span className="text-[#22c55e] ml-0.5">*</span>
                 </label>
               </div>
 
@@ -554,7 +554,7 @@ export default function ChefRegistrationPage() {
                 <Button
                   type="submit"
                   disabled={!isFormValid() || isPending}
-                  className="w-full bg-[#E09F3E] hover:bg-[#c8892e] active:scale-[0.99] text-white border-none h-12 rounded-none text-xs font-sans font-semibold tracking-[0.22em] uppercase shadow-none transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed"
+                  className="w-full bg-[#22c55e] hover:bg-[#16a34a] active:scale-[0.99] text-white border-none h-12 rounded-none text-xs font-sans font-semibold tracking-[0.22em] uppercase shadow-none transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed"
                 >
                   {isPending ? (
                     <span className="flex items-center justify-center gap-2.5">

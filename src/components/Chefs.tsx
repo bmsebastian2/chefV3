@@ -64,7 +64,7 @@ export function Chefs() {
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
           backgroundImage:
-            "radial-gradient(circle at 1px 1px, #E09F3E 1px, transparent 0)",
+            "radial-gradient(circle at 1px 1px, #22c55e 1px, transparent 0)",
           backgroundSize: "40px 40px",
         }}
       />

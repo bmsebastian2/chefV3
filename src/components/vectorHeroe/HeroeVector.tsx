@@ -95,7 +95,7 @@ export function HeroeVector() {
               
               {/* Fondo decorativo */}
               <circle cx="300" cy="300" r="220" fill="#f4f4f5" className="v-circle-bg opacity-0" />
-              <circle cx="300" cy="300" r="280" fill="none" stroke="#E09F3E" strokeWidth="1" strokeDasharray="8 12" className="v-circle-bg opacity-0" style={{animation: "spin 30s linear infinite"}} />
+              <circle cx="300" cy="300" r="280" fill="none" stroke="#22c55e" strokeWidth="1" strokeDasharray="8 12" className="v-circle-bg opacity-0" style={{animation: "spin 30s linear infinite"}} />
               
               {/* Base del plato */}
               <ellipse cx="300" cy="420" rx="160" ry="30" fill="#e4e4e7" className="v-plate-shadow opacity-0" />
@@ -105,19 +105,19 @@ export function HeroeVector() {
                 {/* Campana */}
                 <path d="M160 380 Q300 120 440 380" fill="none" stroke="#18181B" strokeWidth="12" className="v-cloche opacity-0" strokeLinecap="round" />
                 <path d="M140 380 L460 380" stroke="#18181B" strokeWidth="12" className="v-cloche opacity-0" strokeLinecap="round" />
-                <circle cx="300" cy="220" r="20" fill="#E09F3E" className="v-cloche opacity-0" />
+                <circle cx="300" cy="220" r="20" fill="#22c55e" className="v-cloche opacity-0" />
                 
                 {/* Vapor */}
-                <path d="M260 360 Q240 300 270 260" fill="none" stroke="#E09F3E" strokeWidth="4" strokeLinecap="round" className="v-steam opacity-0" />
+                <path d="M260 360 Q240 300 270 260" fill="none" stroke="#22c55e" strokeWidth="4" strokeLinecap="round" className="v-steam opacity-0" />
                 <path d="M300 380 Q320 320 290 280" fill="none" stroke="#18181B" strokeWidth="4" strokeLinecap="round" className="v-steam opacity-0" />
-                <path d="M340 360 Q330 290 350 250" fill="none" stroke="#E09F3E" strokeWidth="4" strokeLinecap="round" className="v-steam opacity-0" />
+                <path d="M340 360 Q330 290 350 250" fill="none" stroke="#22c55e" strokeWidth="4" strokeLinecap="round" className="v-steam opacity-0" />
               </g>
 
               {/* Estrellas */}
               <g className="v-star-float">
-                <path d="M460 200 L470 160 L480 200 L520 210 L480 220 L470 260 L460 220 L420 210 Z" fill="#E09F3E" className="v-star opacity-0" />
+                <path d="M460 200 L470 160 L480 200 L520 210 L480 220 L470 260 L460 220 L420 210 Z" fill="#22c55e" className="v-star opacity-0" />
                 <path d="M120 180 L125 150 L130 180 L160 185 L130 190 L125 220 L120 190 L90 185 Z" fill="#18181B" className="v-star opacity-0" />
-                <path d="M180 120 L183 100 L186 120 L206 123 L186 126 L183 146 L180 126 L160 123 Z" fill="#E09F3E" className="v-star opacity-0" />
+                <path d="M180 120 L183 100 L186 120 L206 123 L186 126 L183 146 L180 126 L160 123 Z" fill="#22c55e" className="v-star opacity-0" />
               </g>
 
               <style>

@@ -98,7 +98,7 @@ export function HowItWorks() {
                     <div
                       className="connector-line h-full origin-left"
                       style={{
-                        background: "linear-gradient(to right, #E09F3E40, #E09F3E, #E09F3E40)",
+                        background: "linear-gradient(to right, #22c55e40, #22c55e, #22c55e40)",
                       }}
                     />
                   </div>

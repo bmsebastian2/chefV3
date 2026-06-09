@@ -19,7 +19,7 @@ import "./daterange.css";
 import { Country as LibCountry } from "country-state-city";
 
 // ── Shared active/idle card classes ──────────────────────────────────────────
-const CARD_ACTIVE   = "border-accent bg-accent/5 shadow-[0_0_0_3px_rgba(224,159,62,0.12)]";
+const CARD_ACTIVE   = "border-accent bg-accent/5 shadow-[0_0_0_3px_rgba(34,197,94,0.12)]";
 const CARD_IDLE     = "border-zinc-200 hover:border-accent/40 hover:bg-zinc-50 hover:shadow-sm";
 const BTN_CONTINUE  = "w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200";
 
@@ -48,18 +48,18 @@ function IconCloche() {
         {/* Handle stem */}
         <rect x="20.5" y="8.5" width="3" height="3.5" rx="1.5" fill="currentColor" fillOpacity="0.35" />
         {/* Gold knob */}
-        <circle cx="22" cy="7.5" r="3" fill="#E09F3E" />
+        <circle cx="22" cy="7.5" r="3" fill="#22c55e" />
         <circle cx="21" cy="6.6" r="0.9" fill="white" fillOpacity="0.65" />
       </g>
 
       {/* Vapor 1 — izquierda */}
-      <path d="M14 31 Q12 25 15 21" stroke="#E09F3E" strokeWidth="1.6" strokeLinecap="round"
+      <path d="M14 31 Q12 25 15 21" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round"
         className="opacity-0 group-hover:opacity-90 transition-opacity duration-300" />
       {/* Vapor 2 — centro */}
       <path d="M22 33 Q24 27 21 23" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"
         className="opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
       {/* Vapor 3 — derecha */}
-      <path d="M30 31 Q32 25 29 21" stroke="#E09F3E" strokeWidth="1.6" strokeLinecap="round"
+      <path d="M30 31 Q32 25 29 21" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round"
         className="opacity-0 group-hover:opacity-90 transition-opacity duration-300 delay-150" />
     </svg>
   );
@@ -92,7 +92,7 @@ function IconMultiple() {
       <line x1="27" y1="6" x2="27" y2="38" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <path d="M27 6 Q31 9 27 15" fill="currentColor" fillOpacity="0.2" />
       {/* Punto dorado central */}
-      <circle cx="22" cy="32" r="2.5" fill="#E09F3E"
+      <circle cx="22" cy="32" r="2.5" fill="#22c55e"
         className="transition-all duration-300 group-hover:scale-110"
         style={{ transformBox: "fill-box", transformOrigin: "center center" }} />
 
@@ -127,16 +127,16 @@ function IconWeekly() {
       >
         <rect x="8" y="14.5" width="28" height="5.5" rx="3" fill="currentColor" fillOpacity="0.09" stroke="currentColor" strokeWidth="1.5" />
         {/* Pomo dorado */}
-        <circle cx="22" cy="12.5" r="3.2" fill="#E09F3E" />
+        <circle cx="22" cy="12.5" r="3.2" fill="#22c55e" />
         <circle cx="21" cy="11.5" r="0.9" fill="white" fillOpacity="0.6" />
       </g>
 
       {/* Vapor — aparece en hover */}
-      <path d="M16 13 Q14 8 17 5" stroke="#E09F3E" strokeWidth="1.5" strokeLinecap="round"
+      <path d="M16 13 Q14 8 17 5" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round"
         className="opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       <path d="M22 13 Q24 8 21 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
         className="opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
-      <path d="M28 13 Q30 8 27 5" stroke="#E09F3E" strokeWidth="1.5" strokeLinecap="round"
+      <path d="M28 13 Q30 8 27 5" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round"
         className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100" />
 
       {/* 7 puntos semanales */}
@@ -146,9 +146,9 @@ function IconWeekly() {
           cx={7 + i * 5}
           cy={41}
           r={1.6}
-          fill="#E09F3E"
+          fill="#22c55e"
           fillOpacity={i < 5 ? 0.25 : 0.1}
-          className={`transition-all duration-200 group-hover:fill-[#E09F3E] group-hover:opacity-100`}
+          className={`transition-all duration-200 group-hover:fill-[#22c55e] group-hover:opacity-100`}
           style={{ transitionDelay: `${i * 40}ms` }}
         />
       ))}
@@ -703,7 +703,7 @@ function PhoneInput({
 
   return (
     <div className={`flex items-center h-14 border rounded-xl overflow-hidden bg-white transition-all duration-200 ${
-      hasError ? 'border-red-400' : 'border-zinc-200 focus-within:border-accent/50 focus-within:shadow-[0_0_0_3px_rgba(224,159,62,0.10)]'
+      hasError ? 'border-red-400' : 'border-zinc-200 focus-within:border-accent/50 focus-within:shadow-[0_0_0_3px_rgba(34,197,94,0.10)]'
     }`}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger className="flex items-center gap-1.5 px-3 h-full border-r border-zinc-100 bg-zinc-50 hover:bg-zinc-100 transition-colors shrink-0 rounded-none">
@@ -854,7 +854,7 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
         disabled={!isValid || loading}
         onClick={handleSubmit}
         size="lg"
-        className="w-auto mx-auto px-10 h-14 bg-accent text-zinc-900 font-bold text-base rounded-2xl mt-2 hover:bg-accent/90 hover:scale-[1.02] shadow-[0_8px_20px_rgba(224,159,62,0.2)] hover:shadow-[0_12px_28px_rgba(224,159,62,0.3)] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
+        className="w-auto mx-auto px-10 h-14 bg-accent text-zinc-900 font-bold text-base rounded-2xl mt-2 hover:bg-accent/90 hover:scale-[1.02] shadow-[0_8px_20px_rgba(34,197,94,0.2)] hover:shadow-[0_12px_28px_rgba(34,197,94,0.3)] transition-all duration-200 disabled:opacity-50 disabled:hover:scale-100"
       >
         {loading ? (
           <span className="flex items-center gap-2">
@@ -1164,7 +1164,7 @@ export function StepMealTime({ data, updateData, nextStep }: StepProps) {
             onClick={() => { updateData({ mealTime: value }); nextStep(); }}
             className={`flex flex-col items-center justify-center gap-3 h-32 rounded-2xl border-2 transition-all duration-200 ${
               active
-                ? "border-accent bg-accent/5 shadow-[0_0_0_3px_rgba(224,159,62,0.12)]"
+                ? "border-accent bg-accent/5 shadow-[0_0_0_3px_rgba(34,197,94,0.12)]"
                 : "border-zinc-200 hover:border-accent/40 hover:bg-zinc-50 hover:shadow-sm"
             }`}
           >

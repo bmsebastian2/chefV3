@@ -115,7 +115,7 @@ export default function WizardPage() {
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
         {/* Ambient glow */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="w-[500px] h-[500px] rounded-full bg-amber-500/5 blur-3xl" />
+          <div className="w-[500px] h-[500px] rounded-full bg-green-500/5 blur-3xl" />
         </div>
 
         <div className="relative max-w-md w-full bg-zinc-900 rounded-2xl p-10 text-center border border-zinc-800 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)]">
@@ -150,7 +150,7 @@ export default function WizardPage() {
           </p>
           <Link
             href="/client-dashboard"
-            className="w-full h-13 bg-accent text-zinc-900 rounded-xl font-bold text-sm hover:bg-amber-400 transition-all duration-200 shadow-[0_8px_24px_rgba(224,159,62,0.25)] hover:shadow-[0_12px_32px_rgba(224,159,62,0.35)] hover:scale-[1.02] flex items-center justify-center py-4"
+            className="w-full h-13 bg-accent text-zinc-900 rounded-xl font-bold text-sm hover:bg-green-500 transition-all duration-200 shadow-[0_8px_24px_rgba(34,197,94,0.25)] hover:shadow-[0_12px_32px_rgba(34,197,94,0.35)] hover:scale-[1.02] flex items-center justify-center py-4"
           >
             Ver mi solicitud
           </Link>
@@ -168,7 +168,7 @@ export default function WizardPage() {
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
         {/* Ambient glow */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="w-[500px] h-[500px] rounded-full bg-amber-500/5 blur-3xl" />
+          <div className="w-[500px] h-[500px] rounded-full bg-green-500/5 blur-3xl" />
         </div>
 
         <div className="relative max-w-md w-full bg-zinc-900 rounded-2xl p-10 text-center border border-zinc-800 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)]">
@@ -206,7 +206,7 @@ export default function WizardPage() {
           </p>
           <Link
             href="/"
-            className="w-full h-13 bg-accent text-zinc-900 rounded-xl font-bold text-sm hover:bg-amber-400 transition-all duration-200 shadow-[0_8px_24px_rgba(224,159,62,0.25)] hover:shadow-[0_12px_32px_rgba(224,159,62,0.35)] hover:scale-[1.02] flex items-center justify-center py-4"
+            className="w-full h-13 bg-accent text-zinc-900 rounded-xl font-bold text-sm hover:bg-green-500 transition-all duration-200 shadow-[0_8px_24px_rgba(34,197,94,0.25)] hover:shadow-[0_12px_32px_rgba(34,197,94,0.35)] hover:scale-[1.02] flex items-center justify-center py-4"
           >
             Volver al Inicio
           </Link>

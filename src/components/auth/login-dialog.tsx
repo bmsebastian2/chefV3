@@ -34,7 +34,7 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
     </DialogClose>
         {/* Header */}
         <div className="text-center mb-6">
-          <h2 className="text-xl font-medium text-amber-600">Accedé a tu cuenta</h2>
+          <h2 className="text-xl font-medium text-accent">Accedé a tu cuenta</h2>
           <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
             Si sos cliente, gestioná tu solicitud.<br />
             Si sos Chef, gestioná tus servicios, platos y menús.
@@ -92,7 +92,7 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
 
         {/* Forgot password */}
         <p className="text-center text-sm mt-3">
-          <button className="underline text-foreground hover:text-amber-600">
+          <button className="underline text-foreground hover:text-accent">
             ¿Olvidaste tu contraseña?
           </button>
         </p>

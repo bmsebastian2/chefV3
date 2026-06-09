@@ -42,7 +42,7 @@ function shell(body: string): string {
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
         <tr>
           <td style="background:#18181B;padding:28px 32px;">
-            <p style="margin:0;font-size:22px;font-weight:700;color:#E09F3E;letter-spacing:-0.5px;">GetChef</p>
+            <p style="margin:0;font-size:22px;font-weight:700;color:#22c55e;letter-spacing:-0.5px;">GetChef</p>
             <p style="margin:6px 0 0;font-size:13px;color:#A1A1AA;">Nueva solicitud de servicio</p>
           </td>
         </tr>
@@ -65,7 +65,7 @@ function shell(body: string): string {
 function cta(href: string, label: string): string {
   return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;">
   <tr><td align="center">
-    <a href="${href}" style="display:inline-block;background:#E09F3E;color:#18181B;font-weight:700;font-size:15px;text-decoration:none;padding:14px 32px;border-radius:8px;">${label}</a>
+    <a href="${href}" style="display:inline-block;background:#22c55e;color:#18181B;font-weight:700;font-size:15px;text-decoration:none;padding:14px 32px;border-radius:8px;">${label}</a>
   </td></tr>
 </table>`
 }

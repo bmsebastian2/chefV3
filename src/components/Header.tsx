@@ -65,7 +65,7 @@ export function Header() {
             <InstallButton />
             <LoginDialog />
             <Link href="/wizard">
-              <Button className="bg-accent text-white border-none h-9 px-5 text-sm font-medium rounded-full shadow-lg shadow-amber-400/20 hover:scale-105 hover:shadow-amber-400/30 transition-all duration-200">
+              <Button className="bg-accent text-white border-none h-9 px-5 text-sm font-medium rounded-full shadow-lg shadow-green-400/20 hover:scale-105 hover:shadow-green-400/30 transition-all duration-200">
                 Reservar experiencia
               </Button>
             </Link>

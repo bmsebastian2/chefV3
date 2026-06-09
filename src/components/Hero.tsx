@@ -265,7 +265,7 @@ export function Hero() {
       </div>
 
       {/* Warm glow behind illustration */}
-      <div className="pointer-events-none absolute right-0 top-1/4 w-[55vw] h-[55vw] max-w-[700px] max-h-[700px] rounded-full bg-amber-100/40 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 top-1/4 w-[55vw] h-[55vw] max-w-[700px] max-h-[700px] rounded-full bg-green-100/40 blur-3xl" />
 
       <div className="container mx-auto px-6 max-w-[1280px] relative z-10">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-6">
@@ -301,7 +301,7 @@ export function Hero() {
                 >
                   <path
                     d="M0 6 Q75 0 150 5 Q225 10 300 4"
-                    stroke="#E09F3E"
+                    stroke="#22c55e"
                     strokeWidth="2.5"
                     strokeLinecap="round"
                   />
@@ -318,7 +318,7 @@ export function Hero() {
               <Link href="/wizard">
                 <Button
                   size="lg"
-                  className="bg-accent text-white border-none h-12 px-8 text-base font-medium shadow-xl shadow-amber-400/25 rounded-full hover:scale-105 hover:shadow-amber-400/40 transition-all duration-200"
+                  className="bg-accent text-white border-none h-12 px-8 text-base font-medium shadow-xl shadow-green-400/25 rounded-full hover:scale-105 hover:shadow-green-400/40 transition-all duration-200"
                 >
                   Solicitar un chef
                 </Button>
@@ -399,7 +399,7 @@ export function Hero() {
                 cy="300"
                 r="275"
                 fill="none"
-                stroke="#E09F3E"
+                stroke="#22c55e"
                 strokeWidth="0.8"
                 strokeDasharray="7 13"
                 strokeOpacity="0.5"
@@ -412,7 +412,7 @@ export function Hero() {
                 cy="300"
                 r="210"
                 fill="none"
-                stroke="#E09F3E"
+                stroke="#22c55e"
                 strokeWidth="0.5"
                 strokeOpacity="0.25"
                 className="v-circle-bg opacity-0"
@@ -521,7 +521,7 @@ export function Hero() {
                 <path
                   d="M250 380 Q228 320 258 278"
                   fill="none"
-                  stroke="#E09F3E"
+                  stroke="#22c55e"
                   strokeWidth="3"
                   strokeLinecap="round"
                   className="v-steam opacity-0"
@@ -537,7 +537,7 @@ export function Hero() {
                 <path
                   d="M350 380 Q348 308 366 268"
                   fill="none"
-                  stroke="#E09F3E"
+                  stroke="#22c55e"
                   strokeWidth="3"
                   strokeLinecap="round"
                   className="v-steam opacity-0"
@@ -548,7 +548,7 @@ export function Hero() {
               <g className="v-star-float" filter="url(#starGlow)">
                 <path
                   d="M490 188 L498 155 L506 188 L539 196 L506 204 L498 237 L490 204 L457 196 Z"
-                  fill="#E09F3E"
+                  fill="#22c55e"
                   className="v-star opacity-0"
                 />
                 <path
@@ -558,23 +558,23 @@ export function Hero() {
                 />
                 <path
                   d="M168 110 L172 90 L176 110 L196 114 L176 118 L172 138 L168 118 L148 114 Z"
-                  fill="#E09F3E"
+                  fill="#22c55e"
                   className="v-star opacity-0"
                 />
               </g>
 
               {/* Small dot accents */}
-              <circle cx="520" cy="310" r="5" fill="#E09F3E" fillOpacity="0.4" className="v-dot opacity-0" />
-              <circle cx="80" cy="365" r="3.5" fill="#E09F3E" fillOpacity="0.35" className="v-dot opacity-0" />
+              <circle cx="520" cy="310" r="5" fill="#22c55e" fillOpacity="0.4" className="v-dot opacity-0" />
+              <circle cx="80" cy="365" r="3.5" fill="#22c55e" fillOpacity="0.35" className="v-dot opacity-0" />
               <circle cx="460" cy="108" r="4" fill="#18181B" fillOpacity="0.2" className="v-dot opacity-0" />
-              <circle cx="130" cy="440" r="3" fill="#E09F3E" fillOpacity="0.3" className="v-dot opacity-0" />
+              <circle cx="130" cy="440" r="3" fill="#22c55e" fillOpacity="0.3" className="v-dot opacity-0" />
               <circle cx="490" cy="420" r="2.5" fill="#18181B" fillOpacity="0.15" className="v-dot opacity-0" />
 
               {/* Small fork + knife silhouette — far left */}
               <g className="v-star-float v-star opacity-0" transform="translate(72, 265) rotate(-18)">
-                <rect x="-1.5" y="-28" width="3" height="56" rx="1.5" fill="#E09F3E" fillOpacity="0.7" />
-                <rect x="-5" y="-28" width="1.5" height="16" rx="0.75" fill="#E09F3E" fillOpacity="0.7" />
-                <rect x="2" y="-28" width="1.5" height="16" rx="0.75" fill="#E09F3E" fillOpacity="0.7" />
+                <rect x="-1.5" y="-28" width="3" height="56" rx="1.5" fill="#22c55e" fillOpacity="0.7" />
+                <rect x="-5" y="-28" width="1.5" height="16" rx="0.75" fill="#22c55e" fillOpacity="0.7" />
+                <rect x="2" y="-28" width="1.5" height="16" rx="0.75" fill="#22c55e" fillOpacity="0.7" />
               </g>
             </svg>
           </div>
