@@ -301,7 +301,7 @@ export default function WizardPage() {
                 <div className="h-px w-8 bg-zinc-200" />
               </div>
             )}
-            <h1 className="font-serif text-3xl md:text-[2.75rem] font-semibold text-zinc-900 leading-tight">
+            <h1 className="font-serif text-4xl md:text-5xl text-zinc-900 leading-tight">
               {titleText}
             </h1>
           </div>
