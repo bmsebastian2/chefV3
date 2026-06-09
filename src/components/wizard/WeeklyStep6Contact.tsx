@@ -52,8 +52,8 @@ interface Props {
 }
 
 export function WeeklyStep6Contact({ data, onNext }: Props) {
-  const defaultCountry = data.location?.countryCode in PHONE_CODES
-    ? data.location!.countryCode!
+  const defaultCountry = data.location?.countryCode && data.location.countryCode in PHONE_CODES
+    ? data.location.countryCode
     : "AR";
 
   const [name,        setName]        = useState(data.contact?.name  ?? "");
