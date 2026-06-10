@@ -28,9 +28,9 @@ export function Footer() {
             <h4 className="font-serif text-white text-lg font-medium mb-4">La Empresa</h4>
             <ul className="space-y-3 font-sans text-sm">
               <li><Link href="/sobre-nosotros" className="hover:text-accent transition-colors">Sobre Nosotros</Link></li>
-              <li><Link href="#" className="hover:text-accent transition-colors">Sé un Chef en GetChef</Link></li>
+              <li><Link href="/chef-registration" className="hover:text-accent transition-colors">Sé un Chef en GetChef</Link></li>
               <li><Link href="#" className="hover:text-accent transition-colors">Preguntas Frecuentes</Link></li>
-              <li><Link href="#" className="hover:text-accent transition-colors">Contacto</Link></li>
+              <li><Link href="/#contacto" className="hover:text-accent transition-colors">Contacto</Link></li>
             </ul>
           </div>
 
@@ -58,9 +58,9 @@ export function Footer() {
         <div className="border-t border-zinc-800/50 pt-8 flex flex-col md:flex-row justify-between items-center text-sm font-sans text-zinc-500">
           <p>© {new Date().getFullYear()} GetChef. Todos los derechos reservados.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
-            <Link href="#" className="hover:text-white transition-colors">Términos Legales</Link>
-            <Link href="#" className="hover:text-white transition-colors">Privacidad</Link>
-            <Link href="#" className="hover:text-white transition-colors">Cookies</Link>
+            <Link href="/legal/terminos" className="hover:text-white transition-colors">Términos Legales</Link>
+            <Link href="/legal/privacidad" className="hover:text-white transition-colors">Privacidad</Link>
+            <Link href="/legal/cookies" className="hover:text-white transition-colors">Cookies</Link>
           </div>
         </div>
       </div>

@@ -88,7 +88,7 @@ export function ClientSidebar() {
       <button
         type="button"
         aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
-        className="fixed top-4 left-4 z-50 md:hidden w-10 h-10 bg-white shadow-md rounded-full flex items-center justify-center"
+        className="fixed top-4 right-4 z-50 md:hidden w-11 h-11 bg-white shadow-md rounded-full flex items-center justify-center"
         onClick={() => setMobileOpen((v) => !v)}
       >
         {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -103,7 +103,7 @@ export function ClientSidebar() {
       )}
 
       {/* Mobile drawer */}
-      <div className={`fixed top-0 left-0 z-50 h-full w-64 bg-white shadow-xl md:hidden transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <div className={`fixed top-0 right-0 z-50 h-full w-64 bg-white shadow-xl md:hidden transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "translate-x-full"}`}>
         {sidebarInner}
       </div>
 
