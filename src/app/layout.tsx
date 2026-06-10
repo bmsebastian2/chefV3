@@ -5,6 +5,8 @@ import "./globals.css";
 import { AuthHashHandler } from "@/components/AuthHashHandler";
 import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -67,6 +69,8 @@ export default function RootLayout({
         {children}
         <ServiceWorkerRegister />
         <PushNotificationPrompt />
+        <WhatsAppButton />
+        <ScrollToTopButton />
       </body>
     </html>
   );

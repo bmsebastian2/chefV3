@@ -10,6 +10,7 @@ import { InstallButton } from "@/components/InstallButton";
 const navLinks = [
   { href: "#experiencia", label: "La Experiencia" },
   { href: "#chefs", label: "Nuestros Chefs" },
+  { href: "/sobre-nosotros", label: "Sobre nosotros" },
   { href: "#contacto", label: "Contacto" },
   { href: "/chef-registration", label: "Registro de Chef" },
 ];

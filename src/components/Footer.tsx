@@ -7,7 +7,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="md:col-span-1">
             <Link href="/" className="font-serif text-3xl font-bold tracking-tight text-white mb-4 block">
-              Reserva Epicúrea
+              GetChef
             </Link>
             <p className="font-sans text-sm text-zinc-500 max-w-sm leading-relaxed">
               Conectando la élite culinaria con los paladares más exigentes. Su concierge digital personal.
@@ -27,8 +27,8 @@ export function Footer() {
           <div>
             <h4 className="font-serif text-white text-lg font-medium mb-4">La Empresa</h4>
             <ul className="space-y-3 font-sans text-sm">
-              <li><Link href="#" className="hover:text-accent transition-colors">Sobre Nosotros</Link></li>
-              <li><Link href="#" className="hover:text-accent transition-colors">Sé un Chef Epicúreo</Link></li>
+              <li><Link href="/sobre-nosotros" className="hover:text-accent transition-colors">Sobre Nosotros</Link></li>
+              <li><Link href="#" className="hover:text-accent transition-colors">Sé un Chef en GetChef</Link></li>
               <li><Link href="#" className="hover:text-accent transition-colors">Preguntas Frecuentes</Link></li>
               <li><Link href="#" className="hover:text-accent transition-colors">Contacto</Link></li>
             </ul>
@@ -49,14 +49,14 @@ export function Footer() {
             </div>
             <div>
               <p className="font-sans text-xs uppercase tracking-wider mb-2 text-zinc-500">¿Hablamos?</p>
-              <a href="tel:+34600000000" className="text-white font-serif text-lg hover:text-accent transition-colors block mb-1">+34 600 000 000</a>
-              <a href="mailto:hola@reservaepicurea.com" className="text-white font-sans text-sm hover:text-accent transition-colors">hola@reservaepicurea.com</a>
+              <a href="tel:+59899521989" className="text-white font-serif text-lg hover:text-accent transition-colors block mb-1">+598 99 521 989</a>
+              <a href="mailto:getchef.com@gmail.com" className="text-white font-sans text-sm hover:text-accent transition-colors">getchef.com@gmail.com</a>
             </div>
           </div>
         </div>
 
         <div className="border-t border-zinc-800/50 pt-8 flex flex-col md:flex-row justify-between items-center text-sm font-sans text-zinc-500">
-          <p>© {new Date().getFullYear()} Reserva Epicúrea. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} GetChef. Todos los derechos reservados.</p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <Link href="#" className="hover:text-white transition-colors">Términos Legales</Link>
             <Link href="#" className="hover:text-white transition-colors">Privacidad</Link>
