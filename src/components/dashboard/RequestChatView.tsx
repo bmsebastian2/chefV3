@@ -98,10 +98,10 @@ function Avatar({ name, sm }: { name: string; sm?: boolean }) {
   return (
     <div style={{
       width: sz, height: sz, borderRadius: "50%", flexShrink: 0,
-      background: "linear-gradient(135deg, #D97706 0%, #92400E 100%)",
+      background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
       display: "flex", alignItems: "center", justifyContent: "center",
       color: "#fff", fontSize: fs, fontWeight: 600,
-      boxShadow: "0 2px 8px rgba(146,64,14,.22)", letterSpacing: ".03em",
+      boxShadow: "0 2px 8px rgba(34,197,94,.18)", letterSpacing: ".03em",
     }}>
       {initials(name)}
     </div>
@@ -111,11 +111,11 @@ function Avatar({ name, sm }: { name: string; sm?: boolean }) {
 function SectionDivider({ label }: { label: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-      <span style={{ flex: 1, height: 1, background: "linear-gradient(to right, transparent, #D4C0A0)" }} />
-      <span style={{ fontSize: 9, letterSpacing: ".14em", textTransform: "uppercase", color: "#A08060", fontWeight: 600, whiteSpace: "nowrap" }}>
+      <span style={{ flex: 1, height: 1, background: "linear-gradient(to right, transparent, #e5e7eb)" }} />
+      <span style={{ fontSize: 9, letterSpacing: ".14em", textTransform: "uppercase", color: "#9ca3af", fontWeight: 600, whiteSpace: "nowrap" }}>
         {label}
       </span>
-      <span style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, #D4C0A0)" }} />
+      <span style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, #e5e7eb)" }} />
     </div>
   );
 }
@@ -127,31 +127,31 @@ function InfoPanel({ request, proposal, dateStr, guestStr }: {
     <div style={{ padding: "20px 16px", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <SectionDivider label="Evento" />
       <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 9 }}>
-        <li style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13, color: "#44403C", lineHeight: "1.45" }}>
-          <CalendarDays style={{ width: 14, height: 14, color: "#A0896B", flexShrink: 0, marginTop: 1 }} />
-          <span>{dateStr}{request.event_time && <span style={{ color: "#A0896B" }}> · {request.event_time}</span>}</span>
+        <li style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13, color: "#1c1c1c", lineHeight: "1.45" }}>
+          <CalendarDays style={{ width: 14, height: 14, color: "#6b7280", flexShrink: 0, marginTop: 1 }} />
+          <span>{dateStr}{request.event_time && <span style={{ color: "#6b7280" }}> · {request.event_time}</span>}</span>
         </li>
         {guestStr && (
-          <li style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: "#44403C" }}>
-            <Users style={{ width: 14, height: 14, color: "#A0896B", flexShrink: 0 }} />
+          <li style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: "#1c1c1c" }}>
+            <Users style={{ width: 14, height: 14, color: "#6b7280", flexShrink: 0 }} />
             {guestStr}
           </li>
         )}
         {request.occasion && (
-          <li style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: "#44403C" }}>
-            <ChefHat style={{ width: 14, height: 14, color: "#A0896B", flexShrink: 0 }} />
+          <li style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: "#1c1c1c" }}>
+            <ChefHat style={{ width: 14, height: 14, color: "#6b7280", flexShrink: 0 }} />
             {OCCASION_LABELS[request.occasion] ?? request.occasion}
           </li>
         )}
         {request.cuisine_type && (
-          <li style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: "#44403C" }}>
-            <UtensilsCrossed style={{ width: 14, height: 14, color: "#A0896B", flexShrink: 0 }} />
+          <li style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: "#1c1c1c" }}>
+            <UtensilsCrossed style={{ width: 14, height: 14, color: "#6b7280", flexShrink: 0 }} />
             <span style={{ textTransform: "capitalize" }}>{request.cuisine_type.replace(/_/g, " ")}</span>
           </li>
         )}
         {request.location && (
-          <li style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13, color: "#44403C", lineHeight: "1.45" }}>
-            <MapPin style={{ width: 14, height: 14, color: "#A0896B", flexShrink: 0, marginTop: 1 }} />
+          <li style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13, color: "#1c1c1c", lineHeight: "1.45" }}>
+            <MapPin style={{ width: 14, height: 14, color: "#6b7280", flexShrink: 0, marginTop: 1 }} />
             {request.location}
           </li>
         )}
@@ -162,29 +162,29 @@ function InfoPanel({ request, proposal, dateStr, guestStr }: {
           <SectionDivider label="Tu propuesta" />
           <div style={{
             background: "rgba(255,255,255,.75)", borderRadius: 12,
-            border: "1px solid rgba(212,196,160,.55)", padding: 14,
+            border: "1px solid rgba(229,231,235,.6)", padding: 14,
             backdropFilter: "blur(4px)",
           }}>
             {proposal.price_per_person && (
               <div style={{ marginBottom: 10 }}>
-                <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 700, color: "#1C1917" }}>
+                <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 700, color: "#1c1c1c" }}>
                   ${fmt(proposal.price_per_person)}
                 </span>
-                <span style={{ fontSize: 12, color: "#A0896B", marginLeft: 4 }}>/persona</span>
+                <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 4 }}>/persona</span>
               </div>
             )}
             {proposal.menu_description && (
               <pre style={{
-                fontSize: 11.5, color: "#57534E", whiteSpace: "pre-wrap",
+                fontSize: 11.5, color: "#6b7280", whiteSpace: "pre-wrap",
                 fontFamily: "'DM Sans', system-ui, sans-serif",
                 lineHeight: "1.6", margin: 0, padding: 10,
-                background: "#FAF7F2", borderRadius: 8, border: "1px solid #EDE8DC",
+                background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb",
               }}>
                 {proposal.menu_description}
               </pre>
             )}
             {proposal.message && (
-              <p style={{ fontSize: 11.5, color: "#78716C", fontStyle: "italic", lineHeight: "1.5", marginTop: 8, marginBottom: 0 }}>
+              <p style={{ fontSize: 11.5, color: "#6b7280", fontStyle: "italic", lineHeight: "1.5", marginTop: 8, marginBottom: 0 }}>
                 &ldquo;{proposal.message}&rdquo;
               </p>
             )}
@@ -290,9 +290,9 @@ export function RequestChatView({
 
         .gchat-scroll::-webkit-scrollbar       { width: 3px; }
         .gchat-scroll::-webkit-scrollbar-track { background: transparent; }
-        .gchat-scroll::-webkit-scrollbar-thumb { background: #DDD8D0; border-radius: 2px; }
+        .gchat-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
 
-        .gchat-input::placeholder { color: #C0B4A8; }
+        .gchat-input::placeholder { color: #9ca3af; }
         .gchat-input:focus {
           outline: none;
           border-color: var(--accent) !important;
@@ -304,23 +304,23 @@ export function RequestChatView({
         .gchat-send:not(:disabled):active { transform: scale(.95); }
 
         .gchat-back { transition: background .15s ease; }
-        .gchat-back:hover { background: #F5EFE5 !important; }
+        .gchat-back:hover { background: #f4f4f5 !important; }
 
         .gchat-toggle { transition: background .15s ease; }
-        .gchat-toggle:hover { background: #F7F2E8 !important; }
+        .gchat-toggle:hover { background: #f4f4f5 !important; }
       `}</style>
 
       <div
         className="gchat"
-        style={{ display: "flex", flexDirection: "column", height: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: "#FAFAF7" }}
+        style={{ display: "flex", flexDirection: "column", height: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: "#fafaf9" }}
       >
 
         {/* ── Header ───────────────────────────────────────────────────── */}
         <header style={{
           flexShrink: 0, background: "#fff",
-          borderBottom: "1px solid #EFE8DC",
+          borderBottom: "1px solid #e5e7eb",
           padding: "11px 16px",
-          boxShadow: "0 1px 6px rgba(160,140,100,.07)",
+          boxShadow: "0 1px 6px rgba(0,0,0,.04)",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
             <Link
@@ -329,7 +329,7 @@ export function RequestChatView({
               style={{
                 width: 34, height: 34, borderRadius: 10, flexShrink: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                border: "1px solid #EDE8DC", color: "#78716C", textDecoration: "none",
+                border: "1px solid #e5e7eb", color: "#6b7280", textDecoration: "none",
               }}
             >
               <ArrowLeft style={{ width: 15, height: 15 }} />
@@ -340,14 +340,14 @@ export function RequestChatView({
             <div style={{ flex: 1, minWidth: 0 }}>
               <h1 style={{
                 fontFamily: "'Playfair Display', Georgia, serif",
-                fontSize: 15, fontWeight: 600, color: "#1C1917",
+                fontSize: 15, fontWeight: 600, color: "#1c1c1c",
                 margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
               }}>
                 {clientName}
               </h1>
-              <p style={{ fontSize: 11, color: "#A0896B", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <p style={{ fontSize: 11, color: "#6b7280", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {SERVICE_TYPE_LABELS[request.service_type] ?? request.service_type}
-                <span style={{ margin: "0 5px", color: "#D4C4A0" }}>·</span>
+                <span style={{ margin: "0 5px", color: "#e5e7eb" }}>·</span>
                 {dateStr}
               </p>
             </div>
@@ -374,14 +374,14 @@ export function RequestChatView({
             className="gchat-scroll hidden md:flex"
             style={{
               flexDirection: "column", flexShrink: 0, width: 256,
-              borderRight: "1px solid #EDE8DC", overflowY: "auto",
-              background: "linear-gradient(170deg, #FAF7F0 0%, #F4EFE3 100%)",
+              borderRight: "1px solid #e5e7eb", overflowY: "auto",
+              background: "linear-gradient(170deg, #fafaf9 0%, #f4f4f5 100%)",
               position: "relative",
             }}
           >
             <div style={{
               position: "absolute", inset: 0, pointerEvents: "none", opacity: 1,
-              backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%23A0896B' fill-opacity='.07'/%3E%3C/svg%3E\")",
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='%236b7280' fill-opacity='.07'/%3E%3C/svg%3E\")",
             }} />
             <InfoPanel request={request} proposal={proposal} dateStr={dateStr} guestStr={guestStr} />
           </aside>
@@ -390,7 +390,7 @@ export function RequestChatView({
           <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
 
             {/* Mobile: collapsible details */}
-            <div className="md:hidden" style={{ borderBottom: "1px solid #EDE8DC" }}>
+            <div className="md:hidden" style={{ borderBottom: "1px solid #e5e7eb" }}>
               <button
                 type="button"
                 onClick={() => setDetailsOpen(v => !v)}
@@ -398,13 +398,13 @@ export function RequestChatView({
                 style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 16px", background: "transparent", border: "none", cursor: "pointer" }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: "linear-gradient(135deg, #D97706, #92400E)" }} />
-                  <span style={{ fontSize: 11.5, fontWeight: 500, color: "#78716C", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: "linear-gradient(135deg, #22c55e, #16a34a)" }} />
+                  <span style={{ fontSize: 11.5, fontWeight: 500, color: "#6b7280", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
                     Detalles del evento
                   </span>
                 </div>
                 <ChevronDown style={{
-                  width: 13, height: 13, color: "#A0896B",
+                  width: 13, height: 13, color: "#6b7280",
                   transform: detailsOpen ? "rotate(180deg)" : "none",
                   transition: "transform .22s ease",
                 }} />
@@ -412,7 +412,7 @@ export function RequestChatView({
               {detailsOpen && (
                 <div
                   className="gchat-down"
-                  style={{ background: "linear-gradient(170deg, #FAF7F0, #F4EFE3)", borderTop: "1px solid #EDE8DC" }}
+                  style={{ background: "linear-gradient(170deg, #fafaf9, #f4f4f5)", borderTop: "1px solid #e5e7eb" }}
                 >
                   <InfoPanel request={request} proposal={proposal} dateStr={dateStr} guestStr={guestStr} />
                 </div>
@@ -431,18 +431,18 @@ export function RequestChatView({
                 >
                   <div style={{
                     width: 60, height: 60, borderRadius: "50%",
-                    background: "linear-gradient(135deg, #FEF9EC, #FDF0C8)",
-                    border: "2px solid #EDE8DC",
+                    background: "linear-gradient(135deg, #f0fdf4, #dcfce7)",
+                    border: "2px solid #e5e7eb",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    boxShadow: "0 6px 20px rgba(180,140,60,.13)",
+                    boxShadow: "0 6px 20px rgba(34,197,94,.12)",
                   }}>
-                    <MessageCircle style={{ width: 26, height: 26, color: "#C4A060" }} />
+                    <MessageCircle style={{ width: 26, height: 26, color: "#22c55e" }} />
                   </div>
                   <div>
-                    <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 15, fontWeight: 500, color: "#44403C", margin: "0 0 5px" }}>
+                    <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 15, fontWeight: 500, color: "#1c1c1c", margin: "0 0 5px" }}>
                       Sin mensajes aún
                     </p>
-                    <p style={{ fontSize: 12, color: "#A8A29E", margin: 0 }}>
+                    <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>
                       Iniciá la conversación con {clientName.split(" ")[0]}
                     </p>
                   </div>
@@ -463,7 +463,7 @@ export function RequestChatView({
                         marginLeft: !own ? 7 : 0,
                       }}>
                         {!own && (
-                          <span style={{ fontSize: 10, color: "#A0896B", paddingLeft: 2, fontWeight: 500, letterSpacing: ".01em" }}>
+                          <span style={{ fontSize: 10, color: "#6b7280", paddingLeft: 2, fontWeight: 500, letterSpacing: ".01em" }}>
                             {m.sender_name}
                           </span>
                         )}
@@ -473,12 +473,12 @@ export function RequestChatView({
                           fontSize: 13.5, lineHeight: "1.45", wordBreak: "break-word",
                           ...(own
                             ? { background: "var(--accent)", color: "#fff", boxShadow: "0 2px 10px rgba(0,0,0,.12)" }
-                            : { background: "#fff", color: "#1C1917", border: "1px solid #EDE8DC", boxShadow: "0 1px 4px rgba(0,0,0,.05)" }
+                            : { background: "#fff", color: "#1c1c1c", border: "1px solid #e5e7eb", boxShadow: "0 1px 4px rgba(0,0,0,.05)" }
                           ),
                         }}>
                           {m.content}
                         </div>
-                        <span style={{ fontSize: 10, color: "#C4BAB2", padding: "0 2px" }}>
+                        <span style={{ fontSize: 10, color: "#9ca3af", padding: "0 2px" }}>
                           {formatTime(m.sent_at)}
                         </span>
                       </div>
@@ -492,9 +492,9 @@ export function RequestChatView({
             {/* Input */}
             <div style={{
               flexShrink: 0, background: "#fff",
-              borderTop: "1px solid #EDE8DC",
+              borderTop: "1px solid #e5e7eb",
               padding: "11px 14px 14px",
-              boxShadow: "0 -1px 8px rgba(160,140,100,.06)",
+              boxShadow: "0 -1px 8px rgba(0,0,0,.04)",
             }}>
               {error && <p style={{ fontSize: 11.5, color: "#DC2626", marginBottom: 8, fontFamily: "'DM Sans', system-ui, sans-serif" }}>{error}</p>}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 9 }}>
@@ -508,10 +508,10 @@ export function RequestChatView({
                   className="gchat-input"
                   style={{
                     flex: 1, resize: "none", borderRadius: 16,
-                    border: "1.5px solid #EDE8DC", background: "#FAF9F7",
+                    border: "1.5px solid #e5e7eb", background: "#f9fafb",
                     padding: "9px 13px", fontSize: 13.5,
                     fontFamily: "'DM Sans', system-ui, sans-serif",
-                    color: "#1C1917", maxHeight: 128, overflowY: "auto",
+                    color: "#1c1c1c", maxHeight: 128, overflowY: "auto",
                     lineHeight: "1.45", transition: "border-color .15s, box-shadow .15s",
                   }}
                 />
@@ -531,7 +531,7 @@ export function RequestChatView({
                   <Send style={{ width: 16, height: 16 }} />
                 </button>
               </div>
-              <p style={{ fontSize: 10, color: "#D0C4B4", marginTop: 5, marginBottom: 0, textAlign: "center" }}>
+              <p style={{ fontSize: 10, color: "#9ca3af", marginTop: 5, marginBottom: 0, textAlign: "center" }}>
                 Enter · enviar &nbsp;·&nbsp; Shift+Enter · nueva línea
               </p>
             </div>

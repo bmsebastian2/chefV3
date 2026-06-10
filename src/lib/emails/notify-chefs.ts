@@ -90,6 +90,11 @@ function section(title: string, rows: [string, string | undefined][]): string {
     </table>`
 }
 
+const DAY_NAMES_CHEF: Record<number, string> = {
+  1: 'Lunes', 2: 'Martes', 3: 'Miércoles',
+  4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 7: 'Domingo',
+}
+
 function buildEmailHtml(chef: string, req: RequestData): string {
   const fmtDate = (d: string) =>
     new Date(d + 'T00:00:00').toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -107,6 +112,15 @@ function buildEmailHtml(chef: string, req: RequestData): string {
     ? `$${req.budget_min.toLocaleString('es-UY')} – $${req.budget_max.toLocaleString('es-UY')}`
     : undefined
 
+  const wd = req.weeklyDetails
+  const frecuenciaLabel = wd?.frecuencia_cocina
+    ? wd.frecuencia_cocina
+        .split(',')
+        .map((n) => DAY_NAMES_CHEF[Number(n.trim())] ?? n.trim())
+        .filter(Boolean)
+        .join(', ')
+    : undefined
+
   const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
   return shell(`
@@ -115,11 +129,18 @@ function buildEmailHtml(chef: string, req: RequestData): string {
     </p>
     <div style="margin-top:8px;">
       ${section('Dónde y cuándo', [
-        ['Ciudad', req.city ?? undefined],
-        ['Fecha',  dateFormatted],
+        ['Ciudad',          req.city ?? undefined],
+        ['Fecha de inicio', dateFormatted],
       ])}
       ${req.mealSlots?.length ? mealSlotsTableChef(req.mealSlots) : ''}
-      ${section('Solicitud', [
+      ${req.service_type === 'weekly' ? section('Servicio semanal', [
+        ['Tipo de servicio',      SERVICE_TYPE_LABELS['weekly']],
+        ['Comidas por semana',    wd?.comidas_por_semana != null ? String(wd.comidas_por_semana) : undefined],
+        ['Raciones por comida',   wd?.raciones_por_comida != null ? String(wd.raciones_por_comida) : undefined],
+        ['Días preferidos',       frecuenciaLabel],
+        ['Preferencia de chef',   wd?.preferencia_chef ?? undefined],
+        ['Preferencias culinarias', wd?.preferencias_culinarias ?? undefined],
+      ]) : section('Solicitud', [
         ['Tipo de servicio',   SERVICE_TYPE_LABELS[req.service_type] ?? req.service_type],
         ['Ocasión',            OCCASION_LABELS[req.occasion] ?? req.occasion],
         ['Horario',            mealTimeLabel],
@@ -189,6 +210,14 @@ type MealSlot = {
   cena: boolean
 }
 
+type WeeklyDetails = {
+  comidas_por_semana: number | null
+  raciones_por_comida: number | null
+  frecuencia_cocina: string | null
+  preferencia_chef: string | null
+  preferencias_culinarias: string | null
+}
+
 export type RequestData = {
   service_type: string
   occasion: string
@@ -202,6 +231,7 @@ export type RequestData = {
   budget_max: number | null
   descripcion_evento: string | null
   mealSlots?: MealSlot[]
+  weeklyDetails?: WeeklyDetails
 }
 
 export async function notifyMatchingChefs(requestId: string, incomingReq?: RequestData): Promise<void> {
@@ -234,6 +264,16 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
     mealSlots = (dates ?? []) as MealSlot[]
   }
 
+  let weeklyDetails: WeeklyDetails | undefined
+  if (requestRow.service_type === 'weekly') {
+    const { data: wd } = await admin
+      .from('weekly_meal_details')
+      .select('comidas_por_semana, raciones_por_comida, frecuencia_cocina, preferencia_chef, preferencias_culinarias')
+      .eq('request_id', requestId)
+      .single()
+    if (wd) weeklyDetails = wd as WeeklyDetails
+  }
+
   const req: RequestData = {
     service_type:       requestRow.service_type,
     occasion:           requestRow.occasion,
@@ -247,6 +287,7 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
     budget_max:         requestRow.budget_max,
     descripcion_evento: requestRow.descripcion_evento,
     mealSlots,
+    weeklyDetails,
   }
 
   const { data: rows, error: chefsError } = await admin
@@ -281,11 +322,13 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
       if (cp.city && vCity &&
           cp.city.toLowerCase().trim() !== vCity.toLowerCase().trim()) return false
 
-      if (vType === 'single'   && !rs.accepts_single)   return false
-      if (vType === 'multiple' && !rs.accepts_multiple) return false
-      if (vType === 'weekly'   && !rs.accepts_weekly)   return false
+      if (vType === 'single'   && !rs.accepts_single)          return false
+      if (vType === 'multiple' && !rs.accepts_multiple)        return false
+      if (vType === 'weekly'   && rs.accepts_weekly === false) return false
 
-      if (vGuests != null) {
+      // Para weekly, guests_adults es raciones_por_comida — no comparable al rango de
+      // comensales de un evento. Se omite el filtro para no descartar chefs incorrectamente.
+      if (vType !== 'weekly' && vGuests != null) {
         if (vGuests < (rs.min_guests ?? 1) || vGuests > (rs.max_guests ?? 9999)) return false
       }
 

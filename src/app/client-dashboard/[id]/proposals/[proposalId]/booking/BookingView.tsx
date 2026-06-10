@@ -126,7 +126,7 @@ export function BookingView({ requestId, proposalId, chef, menu, maxGuests }: Pr
           <div className="flex-1 space-y-4 min-w-0 w-full">
 
             {/* Main card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-zinc-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-zinc-100">
 
               {/* Back + Chef header */}
               <div className="px-5 md:px-6 pt-5 md:pt-6 pb-4 md:pb-5 border-b border-zinc-50">

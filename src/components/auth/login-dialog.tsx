@@ -82,7 +82,7 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
             <Button
               type="submit"
               disabled={isPending}
-              className="w-full h-12 rounded-2xl bg-accent hover:bg-accent/90 text-zinc-900 font-bold text-base disabled:opacity-50 shadow-[0_6px_18px_rgb(224,159,62,0.25)] transition-all"
+              className="w-full h-12 rounded-2xl bg-accent hover:bg-accent/90 text-zinc-900 font-bold text-base disabled:opacity-50 shadow-[0_6px_18px_rgba(34,197,94,0.25)] transition-all"
             >
               {isPending ? <span className="animate-pulse">Accediendo...</span> : 'Acceder'}
             </Button>
