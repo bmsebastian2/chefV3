@@ -5,6 +5,7 @@ import { PersonalizaMenu } from "@/components/PersonalizaMenu";
 import { Chefs } from "@/components/Chefs";
 import { Menus } from "@/components/Menus";
 import { About } from "@/components/About";
+import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
       <Chefs />
       <Menus />
       <About />
+      <Contact />
       <Footer />
     </main>
   );
