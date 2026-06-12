@@ -1488,38 +1488,11 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
     setLoading(false);
   };
 
-  const occasionMap: Record<string, string> = {
-    birthday: "Cumpleaños", family_reunion: "Reunión familiar",
-    bachelor_party: "Despedida de soltera/o", friends_gathering: "Reunión con amigos",
-    romantic_dinner: "Cena romántica", corporate: "Evento corporativo",
-    gastronomic: "Aventura gastronómica", other: "Otra",
-  };
-  const ocasion  = data.occasion ? occasionMap[data.occasion] ?? data.occasion : "";
-  const personas = data.guestsRange === "2" ? "2 personas"
-    : data.guestsRange === "3-6"  ? "3–6 personas"
-    : data.guestsRange === "7-12" ? "7–12 personas"
-    : data.guestsRange === "13+"  ? "13+ personas" : "";
-  const horario  = data.mealTime === "lunch" ? "Comida" : data.mealTime === "dinner" ? "Cena" : "";
-  const ciudad   = data.location?.city ?? "";
-  const fechaStr = data.date ? format(new Date(data.date), "d 'de' MMMM", { locale: es }) : "";
-
   return (
     <div className="flex flex-col w-full max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       <p className="text-sm text-zinc-500 mb-6">
         Completá tus datos para enviar la solicitud.
       </p>
-
-      {/* Resumen del evento */}
-      <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 mb-8">
-        <p className="text-sm font-medium text-zinc-800">
-          {[ocasion, personas, horario].filter(Boolean).join(" · ")}
-        </p>
-        {(ciudad || fechaStr) && (
-          <p className="text-xs text-zinc-500 mt-1">
-            {ciudad}{fechaStr ? ` · ${fechaStr}` : ""}
-          </p>
-        )}
-      </div>
 
       {/* Nombre */}
       <div className="mb-5">

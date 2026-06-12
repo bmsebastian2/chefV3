@@ -3,8 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { WizardData, ClientExtras } from "./types";
 import { registerOrVerifyClient, submitWeeklyRequest } from "@/app/wizard/actions";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
 const PHONE_CODES: Record<string, { flag: string; dialCode: string; name: string }> = {
   AR: { flag: "🇦🇷", dialCode: "+54",  name: "Argentina" },
@@ -20,11 +18,6 @@ const PHONE_CODES: Record<string, { flag: string; dialCode: string; name: string
   PY: { flag: "🇵🇾", dialCode: "+595", name: "Paraguay" },
   BO: { flag: "🇧🇴", dialCode: "+591", name: "Bolivia" },
   NI: { flag: "🇳🇮", dialCode: "+505", name: "Nicaragua" },
-};
-
-const DAY_NAMES: Record<number, string> = {
-  1: "Lun", 2: "Mar", 3: "Mié",
-  4: "Jue", 5: "Vie", 6: "Sáb", 7: "Dom",
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -126,18 +119,6 @@ export function WeeklyStep6Contact({ data, onNext }: Props) {
     onNext(extras.isNewUser ? "pending" : "active");
   };
 
-  // Summary values
-  const comidas  = data.weeklyDetails?.comidasPorSemana  ?? 7;
-  const personas = data.weeklyDetails?.racionesPorComida ?? 2;
-  const dias     = (data.weeklyDetails?.frecuenciaCocina ?? [])
-    .map((d) => DAY_NAMES[d])
-    .join(" · ");
-  const ciudad   = data.location?.city ?? "";
-  const pais     = PHONE_CODES[data.location?.countryCode ?? ""]?.name ?? "";
-  const fechaStr = data.date
-    ? format(new Date(data.date), "d 'de' MMMM", { locale: es })
-    : "";
-
   return (
     <div className="flex flex-col w-full max-w-md mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       <h2 className="font-serif text-3xl leading-tight text-zinc-900 mb-2">
@@ -146,20 +127,6 @@ export function WeeklyStep6Contact({ data, onNext }: Props) {
       <p className="text-sm text-zinc-500 mb-6">
         Completá tus datos para enviar la solicitud.
       </p>
-
-      {/* Resumen del pedido */}
-      <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 mb-8">
-        <p className="text-sm font-medium text-zinc-800">
-          {comidas} comidas · {personas} {personas === 1 ? "persona" : "personas"}
-          {dias ? ` · ${dias}` : ""}
-        </p>
-        {(ciudad || pais) && (
-          <p className="text-xs text-zinc-500 mt-1">
-            {[ciudad, pais].filter(Boolean).join(", ")}
-            {fechaStr ? ` · Inicio ${fechaStr}` : ""}
-          </p>
-        )}
-      </div>
 
       {/* Nombre */}
       <div className="mb-5">

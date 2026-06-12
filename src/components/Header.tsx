@@ -8,7 +8,6 @@ import { LoginDialog } from "../components/auth/login-dialog";
 import { InstallButton } from "@/components/InstallButton";
 
 const navLinks = [
-  { href: "#experiencia", label: "La Experiencia" },
   { href: "#chefs", label: "Nuestros Chefs" },
   { href: "/sobre-nosotros", label: "Sobre nosotros" },
   { href: "#contacto", label: "Contacto" },

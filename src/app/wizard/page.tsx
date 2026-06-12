@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, X, UtensilsCrossed } from "lucide-react";
 import { WizardData } from "@/components/wizard/types";
 import { StepServiceType, StepLocation, StepOccasion, StepGuests, StepDateRange, StepMealSlots, StepCuisine, StepDetails, StepContact, StepOccasion1, StepGuestsStatic, StepMealTime, StepDateCalendar, StepBudgetTier, StepBudgetMultiple, StepDietarySimple, StepContact1 } from "@/components/wizard/Steps";
 import { WeeklyMealsForm } from "@/components/wizard/WeeklyMealsForm";
+import { WizardSummaryBar } from "@/components/wizard/WizardSummaryBar";
 import { submitServiceRequest } from "@/app/wizard/actions";
 import { ClientExtras } from "@/components/wizard/types";
 import { createClient } from "@/utils/supabase/clients";
@@ -48,29 +49,72 @@ const getStepsForService = (serviceType?: string) => {
   return baseSteps;
 };
 
-export default function WizardPage() {
+// Estado inicial del wizard a partir de los query params.
+// Incluye el contacto (comportamiento previo) y el pre-llenado que envía
+// el asistente de búsqueda de la home (servicio, ocasión, personas, cocina,
+// restricciones). Cuando el tipo de servicio ya viene elegido, se arranca
+// saltando ese primer paso.
+function parseInitialState(
+  params: { get(key: string): string | null }
+): { data: WizardData; step: number; weekly: boolean } {
+  const data: WizardData = {};
+
+  const name  = params.get("name");
+  const email = params.get("email");
+  const phone = params.get("phone");
+  if (name || email || phone) {
+    data.contact = {
+      ...(name  ? { name }  : {}),
+      ...(email ? { email } : {}),
+      ...(phone ? { phone } : {}),
+      prefilled: true,
+    };
+  }
+
+  // Pre-llenado del asistente de la home
+  const service  = params.get("service");   // "1" | "2" | "3"
+  const occasion = params.get("occasion");  // enum de ocasión
+  const guests   = params.get("guests");    // "2" | "3-6" | "7-12" | "13+"
+  const cuisine  = params.get("cuisine");   // enum de cocina
+  const dietary  = params.get("dietary");   // CSV de restricciones (valores del wizard)
+
+  if (service)  data.serviceType = service;
+  if (occasion) data.occasion    = occasion;
+  if (guests)   data.guestsRange = guests;
+  if (cuisine)  data.cuisine     = cuisine;
+  if (dietary) {
+    const list = dietary.split(",").map((s) => s.trim()).filter(Boolean);
+    if (list.length) data.dietaryRestrictions = ["Sí", ...list];
+  }
+
+  const weekly = service === "3";
+  const step   = service === "1" || service === "2" ? 1 : 0;
+
+  return { data, step, weekly };
+}
+
+function WizardContent() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [data, setData] = useState<WizardData>(() => {
-    if (typeof window === "undefined") return {};
-    const params = new URLSearchParams(window.location.search);
-    const name  = params.get("name");
-    const email = params.get("email");
-    const phone = params.get("phone");
-    if (name || email || phone) {
-      return {
-        contact: {
-          ...(name  ? { name }  : {}),
-          ...(email ? { email } : {}),
-          ...(phone ? { phone } : {}),
-          prefilled: true,
-        },
-      };
-    }
-    return {};
-  });
+  const searchParams = useSearchParams();
+  const [initial] = useState(() => parseInitialState(searchParams));
+  const [currentStep, setCurrentStep] = useState(initial.step);
+  const [data, setData] = useState<WizardData>(initial.data);
+
+  // Pasos a saltar porque el asistente de la home ya los respondió.
+  // Se calcula del pre-llenado inicial (no del estado vivo) para que el flujo
+  // sea estable aunque el usuario edite valores en el resumen.
+  const skipStepIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (initial.data.occasion)                       ids.add("occasion");
+    // El rango del asistente solo aplica al servicio único (servicio múltiple
+    // usa contadores de invitados distintos), así que solo se saltea ahí.
+    if (initial.data.guestsRange && data.serviceType === "1") ids.add("guests");
+    if (initial.data.cuisine)                        ids.add("cuisine");
+    if (initial.data.dietaryRestrictions?.length)    ids.add("dietary");
+    return ids;
+  }, [initial, data.serviceType]);
   const [submitted, setSubmitted] = useState<false | "active" | "pending">(false);
-  const [showWeeklyForm, setShowWeeklyForm] = useState(false);
+  const [showWeeklyForm, setShowWeeklyForm] = useState(initial.weekly);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -84,7 +128,9 @@ export default function WizardPage() {
     return () => subscription.unsubscribe();
   }, [submitted, router]);
 
-  const stepsObj = getStepsForService(data.serviceType);
+  const stepsObj = getStepsForService(data.serviceType).filter(
+    (s) => !skipStepIds.has(s.id)
+  );
 
   const updateData = (updates: Partial<WizardData>) =>
     setData((prev) => ({ ...prev, ...updates }));
@@ -219,6 +265,11 @@ export default function WizardPage() {
   const progressPercent  = showWeeklyForm ? 30 : ((currentStep + 1) / stepsObj.length) * 100;
   const titleText        = showWeeklyForm ? "Cuéntanos sobre tus comidas semanales" : stepsObj[currentStep].title;
 
+  // Resumen progresivo: servicios 1 y 2 en su flujo de pasos; servicio 3 en el form semanal.
+  const showSummary =
+    ((data.serviceType === "1" || data.serviceType === "2") && !showWeeklyForm) ||
+    (data.serviceType === "3" && showWeeklyForm);
+
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
 
@@ -286,16 +337,23 @@ export default function WizardPage() {
 
       {/* ── Main content ────────────────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col pt-16 md:pt-24 px-6 pb-16">
-        <div
-          className="w-full max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
-          key={showWeeklyForm ? "weekly" : currentStep}
-        >
-          {/* Title */}
-          <div className="text-center mb-12">
-            <h1 className="font-serif text-4xl md:text-5xl text-zinc-900 leading-tight">
-              {titleText}
-            </h1>
-          </div>
+        <div className="w-full max-w-3xl mx-auto">
+
+          {/* Resumen progresivo dentro del recuadro (Servicios 1, 2 y 3). Persiste
+              hasta el paso final para que el usuario vea su pedido completo.
+              Va fuera del bloque animado para persistir entre pasos. */}
+          {showSummary && <WizardSummaryBar data={data} />}
+
+          <div
+            className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
+            key={showWeeklyForm ? "weekly" : currentStep}
+          >
+            {/* Title */}
+            <div className="text-center mb-12">
+              <h1 className="font-serif text-4xl md:text-5xl text-zinc-900 leading-tight">
+                {titleText}
+              </h1>
+            </div>
 
           {/* Step component */}
           <div className="w-full">
@@ -317,8 +375,17 @@ export default function WizardPage() {
               </>
             )}
           </div>
+          </div>
         </div>
       </main>
     </div>
+  );
+}
+
+export default function WizardPage() {
+  return (
+    <Suspense fallback={null}>
+      <WizardContent />
+    </Suspense>
   );
 }

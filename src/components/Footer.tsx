@@ -20,7 +20,6 @@ export function Footer() {
               <li><Link href="#experiencia" className="hover:text-accent transition-colors">La Experiencia</Link></li>
               <li><Link href="#chefs" className="hover:text-accent transition-colors">Nuestros Chefs</Link></li>
               <li><Link href="#" className="hover:text-accent transition-colors">Regala una Cena</Link></li>
-              <li><Link href="#" className="hover:text-accent transition-colors">Para Empresas</Link></li>
             </ul>
           </div>
 

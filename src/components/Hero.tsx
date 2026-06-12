@@ -1,139 +1,47 @@
-"use client";
-
-import { useEffect, useRef } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import Link from "next/link";
+import { ChefHat, MapPin, ChevronDown, ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-gsap.registerPlugin(ScrollTrigger);
+// Posiciones de los chefs en el radar (en %)
+const chefPins = [
+  { top: "30%", left: "34%", delay: "0s" },
+  { top: "24%", left: "64%", delay: ".5s" },
+  { top: "62%", left: "28%", delay: "1s" },
+  { top: "66%", left: "60%", delay: ".7s" },
+  { top: "46%", left: "80%", delay: "1.3s" },
+];
+
+const experiences = [
+  { title: "Cena romántica", subtitle: "Momentos inolvidables", image: "/Lomito.png", href: "/wizard" },
+  { title: "Eventos especiales", subtitle: "Celebraciones únicas", image: "/milhoja.png", href: "/wizard" },
+  { title: "Chef semanal", subtitle: "Tu chef toda la semana", image: "/pan%20brioche.png", href: "/wizard" },
+  { title: "Eventos corporativos", subtitle: "Impresiona a tu equipo", image: "/hero.webp", href: "/wizard" },
+];
 
 export function Hero() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const vectorRef = useRef<SVGSVGElement>(null);
-  const parallaxRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current || !vectorRef.current) return;
-
-    const ctx = gsap.context(() => {
-      // Text entrance
-      gsap.fromTo(
-        ".hero-text",
-        { opacity: 0, y: 50 },
-        { opacity: 1, y: 0, duration: 1.3, stagger: 0.18, ease: "power3.out" }
-      );
-
-      // Badge entrance
-      gsap.fromTo(
-        ".hero-badge",
-        { opacity: 0, scale: 0.85 },
-        { opacity: 1, scale: 1, duration: 0.8, ease: "back.out(1.5)" }
-      );
-
-      // Background ring
-      gsap.fromTo(
-        ".v-circle-bg",
-        { scale: 0, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 1.6, ease: "power3.out", delay: 0.1, stagger: 0.15 }
-      );
-
-      // Plate assembly
-      gsap.fromTo(
-        ".v-plate-shadow",
-        { scaleX: 0, opacity: 0 },
-        { scaleX: 1, opacity: 1, duration: 0.9, ease: "power2.out", delay: 0.5 }
-      );
-      gsap.fromTo(
-        ".v-plate",
-        { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, ease: "power2.out", delay: 0.6 }
-      );
-
-      // Cloche drop-in
-      gsap.fromTo(
-        ".v-cloche",
-        { y: -120, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1.4, ease: "bounce.out", delay: 0.8, stagger: 0.05 }
-      );
-
-      // Stars burst
-      gsap.fromTo(
-        ".v-star",
-        { scale: 0, opacity: 0, rotation: -180 },
-        { scale: 1, opacity: 1, rotation: 0, duration: 0.9, stagger: 0.15, ease: "back.out(2)", delay: 1.4 }
-      );
-
-      // Decorative dots
-      gsap.fromTo(
-        ".v-dot",
-        { scale: 0, opacity: 0 },
-        { scale: 1, opacity: 1, duration: 0.6, stagger: 0.1, ease: "back.out(2)", delay: 1.8 }
-      );
-
-      // Continuous float
-      gsap.to(".v-floating", {
-        y: -18,
-        duration: 3.2,
-        ease: "sine.inOut",
-        repeat: -1,
-        yoyo: true,
-      });
-
-      // Stars gentle drift
-      gsap.to(".v-star-float", {
-        y: -12,
-        rotation: 12,
-        duration: 4,
-        ease: "sine.inOut",
-        repeat: -1,
-        yoyo: true,
-        stagger: 0.7,
-      });
-
-      // Steam rising
-      gsap.to(".v-steam", {
-        y: -30,
-        opacity: 0,
-        scale: 1.3,
-        duration: 2.8,
-        ease: "power1.inOut",
-        stagger: 0.45,
-        repeat: -1,
-      });
-
-      // Orbit ring spin via CSS override
-      gsap.to(".v-orbit", {
-        rotation: 360,
-        duration: 50,
-        ease: "none",
-        repeat: -1,
-        transformOrigin: "300px 300px",
-      });
-
-      // Parallax on scroll
-      if (parallaxRef.current) {
-        gsap.to(parallaxRef.current, {
-          y: -80,
-          ease: "none",
-          scrollTrigger: {
-            trigger: containerRef.current,
-            start: "top top",
-            end: "bottom top",
-            scrub: 1.5,
-          },
-        });
-      }
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <section
-      ref={containerRef}
-      className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-[#FAFAFA]"
-    >
+    <section className="relative overflow-hidden bg-[#FAFAFA]">
+      {/* Animaciones CSS puras del hero (respetan prefers-reduced-motion) */}
+      <style>{`
+        @keyframes heroFade {
+          from { opacity: 0; transform: translateY(18px); }
+          to   { opacity: 1; transform: none; }
+        }
+        @keyframes radarSweep { to { transform: rotate(360deg); } }
+        @keyframes radarPing {
+          0%        { transform: scale(.5); opacity: .7; }
+          70%, 100% { transform: scale(2.4); opacity: 0; }
+        }
+        @keyframes heroCaret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+        .hero-anim { opacity: 0; animation: heroFade .7s cubic-bezier(.22,.61,.36,1) both; }
+        .hero-caret { animation: heroCaret 1.1s step-end infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-anim { animation: none; opacity: 1; transform: none; }
+          .radar-sweep, .chef-pin > span, .hero-caret { animation: none !important; }
+        }
+      `}</style>
+
       {/* Subtle grain texture overlay */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
@@ -144,439 +52,315 @@ export function Hero() {
         }}
       />
 
-      {/* Nicaragua — bandera etérea desde la izquierda */}
-      <div
-        className="pointer-events-none absolute left-0 top-0 h-full overflow-hidden"
-        style={{
-          width: "72vw",
-          maskImage:
-            "linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,0.55) 48%, rgba(0,0,0,0.1) 68%, transparent 85%)",
-          WebkitMaskImage:
-            "linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 18%, rgba(0,0,0,0.55) 48%, rgba(0,0,0,0.1) 68%, transparent 85%)",
-        }}
-      >
-        {/* Franja azul superior — 1/3 del alto */}
-        <div
-          className="absolute left-0 right-0 top-0"
-          style={{ height: "33.33%", backgroundColor: "#3E6EB4", opacity: 0.10 }}
-        />
-        {/* Franja azul inferior — 1/3 del alto */}
-        <div
-          className="absolute left-0 right-0 bottom-0"
-          style={{ height: "33.33%", backgroundColor: "#3E6EB4", opacity: 0.10 }}
-        />
-        {/* Borde entre franja azul y blanca */}
-        <div
-          className="absolute left-0 right-0"
-          style={{ top: "33.33%", height: "1px", backgroundColor: "#3E6EB4", opacity: 0.25 }}
-        />
-        <div
-          className="absolute left-0 right-0"
-          style={{ top: "66.66%", height: "1px", backgroundColor: "#3E6EB4", opacity: 0.25 }}
-        />
+      {/* Warm glows */}
+      <div className="pointer-events-none absolute -left-40 top-10 h-[480px] w-[480px] rounded-full bg-amber-100/40 blur-3xl" />
+      <div className="pointer-events-none absolute -right-32 bottom-0 h-[420px] w-[420px] rounded-full bg-green-100/30 blur-3xl" />
 
-        {/* Escudo Nacional — centrado en la franja blanca */}
-        <svg
-          viewBox="0 0 600 560"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-          preserveAspectRatio="xMidYMid meet"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "35%",
-            transform: "translate(-50%, -50%)",
-            width: "54vw",
-            maxWidth: "620px",
-            height: "auto",
-            opacity: 0.28,
-          }}
-        >
-          {/* Anillos exteriores decorativos */}
-          <circle cx="300" cy="285" r="265" fill="none" stroke="#475569" strokeWidth="1.0" />
-          <circle cx="300" cy="285" r="250" fill="none" stroke="#475569" strokeWidth="0.55" strokeDasharray="2 4" />
-          <circle cx="300" cy="285" r="240" fill="none" stroke="#64748b" strokeWidth="0.4" strokeDasharray="1 3" strokeOpacity="0.6" />
+      <div className="container mx-auto max-w-[1280px] px-6 relative z-10">
+        <div className="grid grid-cols-1 items-stretch gap-12 pt-28 pb-14 lg:grid-cols-2 lg:gap-14">
 
-          {/* Triángulo equilátero — símbolo de igualdad */}
-          <path
-            d="M 300,67 L 111,394 L 489,394 Z"
-            fill="none"
-            stroke="#475569"
-            strokeWidth="1.1"
-            strokeLinejoin="round"
-          />
+          {/* ── Texto (columna izquierda, alineado arriba) ── */}
+          <div className="flex flex-col justify-start">
 
-          {/* Líneas de agua — dos mares */}
-          <path d="M 128,370 C 162,362 200,378 240,370 C 280,362 320,378 360,370 C 400,362 438,374 472,368"
-            fill="none" stroke="#475569" strokeWidth="0.75" strokeLinecap="round" />
-          <path d="M 126,380 C 160,372 198,388 238,380 C 278,372 318,388 358,380 C 398,372 436,384 470,378"
-            fill="none" stroke="#475569" strokeWidth="0.68" strokeLinecap="round" />
-          <path d="M 124,390 C 158,382 196,398 236,390 C 276,382 316,398 356,390 C 396,382 434,394 468,388"
-            fill="none" stroke="#64748b" strokeWidth="0.55" strokeLinecap="round" strokeOpacity="0.65" />
-
-          {/* Cinco volcanes — el central más alto */}
-          <path d="M 132,364 Q 146,340 160,314 Q 174,340 188,364"
-            fill="none" stroke="#475569" strokeWidth="0.95" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M 194,364 Q 207,330 220,300 Q 233,330 247,364"
-            fill="none" stroke="#475569" strokeWidth="0.95" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M 272,364 Q 286,322 300,278 Q 314,322 328,364"
-            fill="none" stroke="#475569" strokeWidth="1.05" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M 353,364 Q 367,330 380,300 Q 393,330 406,364"
-            fill="none" stroke="#475569" strokeWidth="0.95" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M 412,364 Q 426,340 440,314 Q 454,340 468,364"
-            fill="none" stroke="#475569" strokeWidth="0.95" strokeLinecap="round" strokeLinejoin="round" />
-
-          {/* Arco iris — 7 arcos elípticos */}
-          <path d="M 148,364 A 152,100 0 0,1 452,364" fill="none" stroke="#64748b" strokeWidth="0.70" strokeLinecap="round" />
-          <path d="M 162,364 A 138,90  0 0,1 438,364" fill="none" stroke="#64748b" strokeWidth="0.65" strokeLinecap="round" />
-          <path d="M 176,364 A 124,80  0 0,1 424,364" fill="none" stroke="#64748b" strokeWidth="0.61" strokeLinecap="round" />
-          <path d="M 192,364 A 108,70  0 0,1 408,364" fill="none" stroke="#64748b" strokeWidth="0.58" strokeLinecap="round" />
-          <path d="M 208,364 A 92,58   0 0,1 392,364" fill="none" stroke="#64748b" strokeWidth="0.54" strokeLinecap="round" />
-          <path d="M 224,364 A 76,46   0 0,1 376,364" fill="none" stroke="#64748b" strokeWidth="0.50" strokeLinecap="round" />
-          <path d="M 240,364 A 60,34   0 0,1 360,364" fill="none" stroke="#64748b" strokeWidth="0.45" strokeLinecap="round" />
-
-          {/* Sol — círculo con 12 rayos */}
-          <circle cx="300" cy="215" r="22" fill="none" stroke="#475569" strokeWidth="0.88" />
-          <line x1="326" y1="215" x2="342" y2="215" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <line x1="323" y1="228" x2="336" y2="236" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <line x1="313" y1="238" x2="321" y2="251" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <line x1="300" y1="241" x2="300" y2="257" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <line x1="287" y1="238" x2="279" y2="251" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <line x1="278" y1="228" x2="264" y2="236" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <line x1="274" y1="215" x2="258" y2="215" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <line x1="278" y1="202" x2="264" y2="194" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <line x1="287" y1="193" x2="279" y2="179" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <line x1="300" y1="189" x2="300" y2="173" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <line x1="313" y1="193" x2="321" y2="179" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <line x1="323" y1="202" x2="336" y2="194" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-
-          {/* Gorro frigio */}
-          <path d="M 282,208 C 285,186 290,160 294,136 C 297,118 299,106 300,96"
-            fill="none" stroke="#475569" strokeWidth="0.9" strokeLinecap="round" />
-          <path d="M 318,208 C 315,186 310,160 306,136 C 303,118 301,106 300,96"
-            fill="none" stroke="#475569" strokeWidth="0.9" strokeLinecap="round" />
-          <path d="M 278,214 Q 300,207 322,214"
-            fill="none" stroke="#475569" strokeWidth="0.84" strokeLinecap="round" />
-          <path d="M 300,96 C 302,88 306,84 307,92"
-            fill="none" stroke="#475569" strokeWidth="0.72" strokeLinecap="round" />
-          <path d="M 287,148 Q 300,144 313,148"
-            fill="none" stroke="#64748b" strokeWidth="0.55" strokeLinecap="round" strokeOpacity="0.7" />
-        </svg>
-      </div>
-
-      {/* Warm glow behind illustration */}
-      <div className="pointer-events-none absolute right-0 top-1/4 w-[55vw] h-[55vw] max-w-[700px] max-h-[700px] rounded-full bg-green-100/40 blur-3xl" />
-
-      <div className="container mx-auto px-6 max-w-[1280px] relative z-10">
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-6">
-
-          {/* Left: Text */}
-          <div className="w-full lg:w-5/12 flex flex-col justify-center text-left z-10">
-            <div className="hero-badge opacity-0 inline-flex mb-7">
-              <span className="flex items-center gap-2.5 px-4 py-1.5 text-[10px] font-black tracking-[0.25em] uppercase text-accent border border-accent/25 rounded-full bg-accent/5">
-                {/* Nicaragua flag — blue/white/blue tricolor */}
-                <svg
-                  viewBox="0 0 21 14"
-                  className="w-[18px] h-3 rounded-[2px] flex-shrink-0"
-                  aria-label="Bandera de Nicaragua"
-                >
-                  <rect width="21" height="4.67" y="0" fill="#3E6EB4" />
-                  <rect width="21" height="4.66" y="4.67" fill="#FFFFFF" />
-                  <rect width="21" height="4.67" y="9.33" fill="#3E6EB4" />
-                </svg>
-                Nicaragua · Alta Cocina Privada
+            {/* Eyebrow */}
+            <div className="hero-anim flex items-center gap-3 mb-4" style={{ animationDelay: "0ms" }}>
+              <span className="h-px w-10 bg-amber-500/70" aria-hidden="true" />
+              <svg
+                viewBox="0 0 21 14"
+                className="w-[18px] h-3 rounded-[2px] flex-shrink-0"
+                aria-label="Bandera de Nicaragua"
+              >
+                <rect width="21" height="4.67" y="0" fill="#3E6EB4" />
+                <rect width="21" height="4.66" y="4.67" fill="#FFFFFF" />
+                <rect width="21" height="4.67" y="9.33" fill="#3E6EB4" />
+              </svg>
+              <span className="text-[11px] font-semibold tracking-[0.28em] uppercase text-amber-700">
+                Chefs privados en tu hogar
               </span>
             </div>
 
-            <h1 className="hero-text opacity-0 font-serif text-5xl md:text-6xl lg:text-[4.5rem] font-semibold text-zinc-900 tracking-tight mb-7 leading-[1.03]">
-              Transforma tu comedor en el restaurante{" "}
-              <span className="relative inline-block">
-                más exclusivo
-                <svg
-                  className="absolute -bottom-2 left-0 w-full"
-                  viewBox="0 0 300 8"
-                  fill="none"
-                  preserveAspectRatio="none"
-                  style={{ height: "6px" }}
-                >
-                  <path
-                    d="M0 6 Q75 0 150 5 Q225 10 300 4"
-                    stroke="#22c55e"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </span>
+            {/* Titular display */}
+            <h1
+              className="hero-anim font-serif text-5xl md:text-6xl lg:text-[4rem] font-semibold text-zinc-900 tracking-tight mb-6 leading-[1.05]"
+              style={{ animationDelay: "120ms" }}
+            >
+              Alta cocina.
+              <br />
+              Donde tú estés.
             </h1>
 
-            <p className="hero-text opacity-0 font-sans text-lg text-zinc-500 mb-10 max-w-md font-light leading-relaxed">
-              Chefs de élite en la intimidad de tu hogar. Se encargan de la
-              compra, la cocina y el servicio en mesa.
+            {/* Subtítulo */}
+            <p
+              className="hero-anim font-sans text-base md:text-lg text-zinc-500 mb-8 max-w-md font-light leading-relaxed"
+              style={{ animationDelay: "240ms" }}
+            >
+              Disfruta experiencias gastronómicas únicas con chefs de élite, sin
+              salir de casa.
             </p>
 
-            <div className="hero-text opacity-0 flex flex-col sm:flex-row gap-4 items-start">
-              <Link href="/wizard">
+            {/* CTAs */}
+            <div
+              className="hero-anim flex flex-col sm:flex-row gap-4 items-stretch sm:items-center"
+              style={{ animationDelay: "360ms" }}
+            >
+              <Link href="/wizard" className="w-full sm:w-auto">
                 <Button
                   size="lg"
-                  className="bg-accent text-white border-none h-12 px-8 text-base font-medium shadow-xl shadow-green-400/25 rounded-full hover:scale-105 hover:shadow-green-400/40 transition-all duration-200"
+                  className="group/cta w-full sm:w-auto bg-accent text-white border-none h-12 px-8 text-base font-medium shadow-xl shadow-green-400/25 rounded-full hover:bg-green-600 hover:shadow-green-400/40 transition-all duration-200"
                 >
                   Solicitar un chef
+                  <span className="ml-2 transition-transform duration-200 group-hover/cta:translate-x-1">→</span>
                 </Button>
               </Link>
               <Link
                 href="#chefs"
-                className="inline-flex items-center gap-2 h-12 px-4 text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors"
+                className="group/ghost inline-flex items-center justify-center sm:justify-start gap-2 h-12 px-2 text-sm font-semibold text-amber-700 transition-colors hover:text-amber-800"
               >
-                Ver nuestros chefs
-                <span className="text-accent">→</span>
+                <span className="border-b border-amber-500/40 group-hover/ghost:border-amber-700 transition-colors">
+                  Ver nuestros chefs
+                </span>
+                <span className="transition-transform duration-200 group-hover/ghost:translate-x-1">→</span>
               </Link>
             </div>
 
-            {/* Social proof strip */}
-            <div className="hero-text opacity-0 mt-12 flex items-center gap-6 border-t border-zinc-100 pt-7">
-              <div className="text-center">
-                <div className="font-serif text-2xl font-semibold text-zinc-900">+500</div>
-                <div className="text-xs text-zinc-400 tracking-wide mt-0.5">Experiencias</div>
+            {/* ── Trust indicators ── */}
+            <div
+              className="hero-anim mt-10 flex flex-wrap items-start gap-x-8 gap-y-5 border-t border-zinc-100 pt-7"
+              style={{ animationDelay: "480ms" }}
+            >
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5 flex-shrink-0 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M7 21h10M8 21V11M16 21V11" />
+                  <path d="M6 11a4 4 0 0 1-1-7.9A4.5 4.5 0 0 1 12 2a4.5 4.5 0 0 1 7 1.1A4 4 0 0 1 18 11Z" />
+                </svg>
+                <span className="text-[13px] leading-snug text-zinc-600">
+                  Chefs<br />seleccionados
+                </span>
               </div>
-              <div className="w-px h-8 bg-zinc-100" />
-              <div className="text-center">
-                <div className="font-serif text-2xl font-semibold text-zinc-900">4.9★</div>
-                <div className="text-xs text-zinc-400 tracking-wide mt-0.5">Valoración media</div>
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5 flex-shrink-0 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 3l1.9 5.2L19 9.2l-4 3.6 1.2 5.4L12 15.5 7.8 18.2 9 12.8 5 9.2l5.1-1Z" />
+                </svg>
+                <span className="text-[13px] leading-snug text-zinc-600">
+                  Experiencias<br />personalizadas
+                </span>
               </div>
-              <div className="w-px h-8 bg-zinc-100" />
-              <div className="text-center">
-                <div className="font-serif text-2xl font-semibold text-zinc-900">48h</div>
-                <div className="text-xs text-zinc-400 tracking-wide mt-0.5">Tiempo de respuesta</div>
+              <div className="flex items-center gap-3">
+                <svg className="w-5 h-5 flex-shrink-0 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6Z" />
+                  <path d="M9 12l2 2 4-4" />
+                </svg>
+                <span className="text-[13px] leading-snug text-zinc-600">
+                  Reserva segura<br />y fácil
+                </span>
               </div>
+            </div>
+
+            {/* ── Lanzador del asistente inteligente (centrado en el espacio sobrante) ── */}
+            <div className="flex flex-1 items-center pt-8">
+            <a
+              href="#asistente"
+              className="hero-anim group relative block w-full overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/70 px-5 py-4 shadow-lg shadow-zinc-900/5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-xl hover:shadow-green-500/10"
+              style={{ animationDelay: "560ms" }}
+            >
+              {/* Destello al hover */}
+              <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-accent/10 to-transparent transition-transform duration-[900ms] ease-out group-hover:translate-x-full" />
+
+              <div className="relative flex items-center gap-4">
+                {/* Avatar con chispa de IA */}
+                <span className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-accent/12 ring-1 ring-accent/25">
+                  <ChefHat className="h-5 w-5 text-accent" />
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow ring-1 ring-amber-200">
+                    <Sparkles className="h-3 w-3 text-amber-500" />
+                  </span>
+                </span>
+
+                {/* Texto */}
+                <div className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-amber-700">
+                    Asistente inteligente
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" aria-hidden="true" />
+                  </span>
+                  <p className="mt-0.5 font-serif text-lg leading-tight text-zinc-900">
+                    Encontremos tu chef ideal
+                    <span className="hero-caret ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 bg-accent align-middle" aria-hidden="true" />
+                  </p>
+                  <span className="text-xs text-zinc-500">4 preguntas · sin formularios</span>
+                </div>
+
+                {/* Flecha */}
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white transition-all duration-300 group-hover:bg-accent">
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </div>
+            </a>
             </div>
           </div>
 
-          {/* Right: Illustration */}
-          <div
-            ref={parallaxRef}
-            className="w-full lg:w-7/12 flex justify-center lg:justify-end items-center h-[380px] md:h-[520px] lg:h-[640px] relative"
-          >
-            <svg
-              ref={vectorRef}
-              viewBox="0 0 600 600"
-              className="w-full max-w-[600px] h-full"
+          {/* ── Columna derecha: mapa arriba + experiencias debajo ── */}
+          <div className="flex flex-col gap-8">
+
+            {/* Descubre chefs cerca de ti — radar de descubrimiento */}
+            <div
+              className="hero-anim rounded-3xl border border-zinc-200/80 bg-white/70 p-6 shadow-xl shadow-zinc-900/5 backdrop-blur-xl"
+              style={{ animationDelay: "300ms" }}
             >
-              <defs>
-                <radialGradient id="bgGlow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#FFF8EC" />
-                  <stop offset="100%" stopColor="#F4F4F5" stopOpacity="0" />
-                </radialGradient>
-                <radialGradient id="plateGrad" cx="50%" cy="20%" r="70%">
-                  <stop offset="0%" stopColor="#FFFFFF" />
-                  <stop offset="100%" stopColor="#E8E8EA" />
-                </radialGradient>
-                <linearGradient id="clocheGrad" x1="0%" y1="0%" x2="30%" y2="100%">
-                  <stop offset="0%" stopColor="#3F3F46" />
-                  <stop offset="100%" stopColor="#09090B" />
-                </linearGradient>
-                <radialGradient id="handleGrad" cx="40%" cy="30%" r="60%">
-                  <stop offset="0%" stopColor="#F0B429" />
-                  <stop offset="100%" stopColor="#B7791F" />
-                </radialGradient>
-                <filter id="plateShadow" x="-30%" y="-30%" width="160%" height="160%">
-                  <feDropShadow dx="0" dy="16" stdDeviation="20" floodColor="#000000" floodOpacity="0.10" />
-                </filter>
-                <filter id="starGlow">
-                  <feGaussianBlur stdDeviation="2" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
+              {/* Encabezado */}
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <span className="mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-700">
+                    <span className="h-px w-5 bg-amber-500/70" aria-hidden="true" />
+                    Cerca tuyo
+                  </span>
+                  <h2 className="font-serif text-xl md:text-2xl font-semibold text-zinc-900 tracking-tight">
+                    Descubre chefs cerca de ti
+                  </h2>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
+                  </span>
+                  Activos
+                </span>
+              </div>
 
-              {/* Ambient glow disc */}
-              <circle cx="300" cy="310" r="250" fill="url(#bgGlow)" className="v-circle-bg opacity-0" />
+              {/* Selector de ubicación */}
+              <button
+                type="button"
+                className="group mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:border-amber-300 hover:text-zinc-900"
+              >
+                <MapPin className="h-4 w-4 text-amber-600" />
+                Managua, Nicaragua
+                <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-y-0.5" />
+              </button>
 
-              {/* Outer dashed orbit */}
-              <circle
-                cx="300"
-                cy="300"
-                r="275"
-                fill="none"
-                stroke="#22c55e"
-                strokeWidth="0.8"
-                strokeDasharray="7 13"
-                strokeOpacity="0.5"
-                className="v-orbit v-circle-bg opacity-0"
-              />
+              {/* Radar */}
+              <div className="relative mt-5 h-52 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br from-amber-50/70 via-white to-zinc-50 shadow-inner lg:h-[210px]">
+                {/* Anillos concéntricos */}
+                <svg
+                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                  width="340" height="340" viewBox="0 0 340 340" fill="none" aria-hidden="true"
+                >
+                  {[44, 88, 132, 168].map((r) => (
+                    <circle key={r} cx="170" cy="170" r={r} stroke="#e4e4e7" strokeWidth="1" />
+                  ))}
+                  <line x1="170" y1="2" x2="170" y2="338" stroke="#f4f4f5" strokeWidth="1" />
+                  <line x1="2" y1="170" x2="338" y2="170" stroke="#f4f4f5" strokeWidth="1" />
+                </svg>
 
-              {/* Inner solid thin ring */}
-              <circle
-                cx="300"
-                cy="300"
-                r="210"
-                fill="none"
-                stroke="#22c55e"
-                strokeWidth="0.5"
-                strokeOpacity="0.25"
-                className="v-circle-bg opacity-0"
-              />
-
-              {/* Plate shadow */}
-              <ellipse
-                cx="300"
-                cy="450"
-                rx="175"
-                ry="22"
-                fill="#09090B"
-                fillOpacity="0.07"
-                className="v-plate-shadow opacity-0"
-              />
-
-              {/* Plate rim */}
-              <ellipse
-                cx="300"
-                cy="432"
-                rx="158"
-                ry="20"
-                fill="#DADADD"
-                className="v-plate opacity-0"
-              />
-              {/* Plate surface */}
-              <ellipse
-                cx="300"
-                cy="426"
-                rx="145"
-                ry="17"
-                fill="url(#plateGrad)"
-                filter="url(#plateShadow)"
-                className="v-plate opacity-0"
-              />
-              {/* Plate inner ring detail */}
-              <ellipse
-                cx="300"
-                cy="424"
-                rx="88"
-                ry="10"
-                fill="none"
-                stroke="#D1D1D5"
-                strokeWidth="1"
-                className="v-plate opacity-0"
-              />
-
-              {/* Cloche + floating group */}
-              <g className="v-floating">
-                {/* Cloche body */}
-                <path
-                  d="M152 398 Q152 158 300 140 Q448 158 448 398"
-                  fill="url(#clocheGrad)"
-                  className="v-cloche opacity-0"
-                />
-                {/* Cloche sheen */}
-                <path
-                  d="M195 360 Q205 265 225 220"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeOpacity="0.06"
-                  className="v-cloche opacity-0"
-                />
-                {/* Base rim */}
-                <rect
-                  x="138"
-                  y="395"
-                  width="324"
-                  height="16"
-                  rx="8"
-                  fill="#18181B"
-                  className="v-cloche opacity-0"
-                />
-                {/* Handle stem */}
-                <rect
-                  x="295"
-                  y="152"
-                  width="10"
-                  height="36"
-                  rx="5"
-                  fill="#92400E"
-                  className="v-cloche opacity-0"
-                />
-                {/* Handle sphere */}
-                <circle
-                  cx="300"
-                  cy="148"
-                  r="18"
-                  fill="url(#handleGrad)"
-                  filter="url(#starGlow)"
-                  className="v-cloche opacity-0"
-                />
-                {/* Handle highlight */}
-                <circle
-                  cx="294"
-                  cy="141"
-                  r="5"
-                  fill="white"
-                  fillOpacity="0.45"
-                  className="v-cloche opacity-0"
+                {/* Barrido giratorio */}
+                <div
+                  className="radar-sweep pointer-events-none absolute left-1/2 top-1/2 h-[340px] w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  style={{
+                    background:
+                      "conic-gradient(from 0deg, rgba(217,119,6,0) 0deg, rgba(217,119,6,0.18) 55deg, rgba(217,119,6,0) 95deg)",
+                    animation: "radarSweep 6s linear infinite",
+                  }}
                 />
 
-                {/* Steam wisps */}
-                <path
-                  d="M250 380 Q228 320 258 278"
-                  fill="none"
-                  stroke="#22c55e"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  className="v-steam opacity-0"
-                />
-                <path
-                  d="M300 388 Q330 335 300 292"
-                  fill="none"
-                  stroke="#71717A"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  className="v-steam opacity-0"
-                />
-                <path
-                  d="M350 380 Q348 308 366 268"
-                  fill="none"
-                  stroke="#22c55e"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  className="v-steam opacity-0"
-                />
-              </g>
+                {/* Glow central */}
+                <div className="pointer-events-none absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-200/40 blur-2xl" />
 
-              {/* Decorative stars */}
-              <g className="v-star-float" filter="url(#starGlow)">
-                <path
-                  d="M490 188 L498 155 L506 188 L539 196 L506 204 L498 237 L490 204 L457 196 Z"
-                  fill="#22c55e"
-                  className="v-star opacity-0"
-                />
-                <path
-                  d="M95 202 L101 172 L107 202 L137 208 L107 214 L101 244 L95 214 L65 208 Z"
-                  fill="#18181B"
-                  className="v-star opacity-0"
-                />
-                <path
-                  d="M168 110 L172 90 L176 110 L196 114 L176 118 L172 138 L168 118 L148 114 Z"
-                  fill="#22c55e"
-                  className="v-star opacity-0"
-                />
-              </g>
+                {/* Pines de chef */}
+                {chefPins.map((p, i) => (
+                  <div
+                    key={i}
+                    className="chef-pin absolute -translate-x-1/2 -translate-y-1/2"
+                    style={{ top: p.top, left: p.left }}
+                  >
+                    <span
+                      className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-400/40"
+                      style={{ animation: `radarPing 2.8s ease-out ${p.delay} infinite` }}
+                    />
+                    <span className="relative flex h-7 w-7 items-center justify-center rounded-full border border-amber-400/80 bg-white shadow-[0_4px_12px_rgba(217,119,6,0.25)]">
+                      <ChefHat className="h-3.5 w-3.5 text-amber-600" />
+                    </span>
+                  </div>
+                ))}
 
-              {/* Small dot accents */}
-              <circle cx="520" cy="310" r="5" fill="#22c55e" fillOpacity="0.4" className="v-dot opacity-0" />
-              <circle cx="80" cy="365" r="3.5" fill="#22c55e" fillOpacity="0.35" className="v-dot opacity-0" />
-              <circle cx="460" cy="108" r="4" fill="#18181B" fillOpacity="0.2" className="v-dot opacity-0" />
-              <circle cx="130" cy="440" r="3" fill="#22c55e" fillOpacity="0.3" className="v-dot opacity-0" />
-              <circle cx="490" cy="420" r="2.5" fill="#18181B" fillOpacity="0.15" className="v-dot opacity-0" />
+                {/* Marcador central (tú) */}
+                <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-xl ring-2 ring-amber-500/50">
+                  <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-600">
+                    <ChefHat className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </div>
 
-              {/* Small fork + knife silhouette — far left */}
-              <g className="v-star-float v-star opacity-0" transform="translate(72, 265) rotate(-18)">
-                <rect x="-1.5" y="-28" width="3" height="56" rx="1.5" fill="#22c55e" fillOpacity="0.7" />
-                <rect x="-5" y="-28" width="1.5" height="16" rx="0.75" fill="#22c55e" fillOpacity="0.7" />
-                <rect x="2" y="-28" width="1.5" height="16" rx="0.75" fill="#22c55e" fillOpacity="0.7" />
-              </g>
-            </svg>
+              {/* Pie: stat + CTA */}
+              <div className="mt-5 flex items-center justify-between gap-3">
+                <p className="text-xs text-zinc-500">Chefs verificados en tu zona</p>
+                <Link
+                  href="#chefs"
+                  className="group inline-flex w-fit items-center gap-2 rounded-full border border-zinc-300 bg-transparent px-5 py-2 text-sm font-medium text-zinc-800 transition-colors hover:border-zinc-900 hover:bg-zinc-900 hover:text-white"
+                >
+                  Ver mapa completo
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Experiencias para cada ocasión — carta editorial */}
+            <div className="hero-anim" style={{ animationDelay: "420ms" }}>
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <span className="mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-700">
+                    <span className="h-px w-5 bg-amber-500/70" aria-hidden="true" />
+                    La carta
+                  </span>
+                  <h2 className="font-serif text-xl md:text-2xl font-semibold text-zinc-900 tracking-tight">
+                    Experiencias para cada ocasión
+                  </h2>
+                </div>
+                <Link
+                  href="#chefs"
+                  className="group hidden shrink-0 items-center gap-1.5 text-sm font-semibold text-amber-700 transition-colors hover:text-amber-800 sm:inline-flex"
+                >
+                  Ver todas
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </div>
+
+              <div className="mt-5 grid grid-cols-4 gap-3">
+                {experiences.map((exp, i) => (
+                  <Link
+                    key={exp.title}
+                    href={exp.href}
+                    className="group relative block aspect-[3/4] overflow-hidden rounded-xl ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-zinc-900/25 hover:ring-amber-500/40"
+                  >
+                    <Image
+                      src={exp.image}
+                      alt={exp.title}
+                      fill
+                      sizes="(max-width: 1024px) 25vw, 12vw"
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                    />
+                    {/* Velado para legibilidad */}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+
+                    {/* Índice */}
+                    <span className="absolute left-2.5 top-2 font-serif text-sm italic text-amber-300/90 drop-shadow">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    {/* Flecha al hover */}
+                    <span className="absolute right-2 top-2 text-amber-200 opacity-0 -translate-y-1 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </span>
+
+                    {/* Texto inferior */}
+                    <div className="absolute inset-x-0 bottom-0 p-2.5">
+                      <span className="mb-1.5 block h-px w-5 bg-amber-400 transition-all duration-500 group-hover:w-9" aria-hidden="true" />
+                      <h3 className="font-serif text-[13px] font-semibold leading-tight text-white">
+                        {exp.title}
+                      </h3>
+                      <p className="mt-0.5 max-h-0 overflow-hidden text-[10px] leading-tight text-white/75 opacity-0 transition-all duration-300 group-hover:max-h-10 group-hover:opacity-100">
+                        {exp.subtitle}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
