@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { TERMS_VERSION } from '@/lib/terms'
 
 export async function login(prevState: { error: string } | null, formData: FormData) {
   const supabase = await createClient()
@@ -82,6 +83,12 @@ export async function registerChef(prevState: { error: string } | null, formData
   const secondSurname = formData.get('secondSurname') as string
   const country = formData.get('country') as string
   const phone = formData.get('phone') as string
+  // El checkbox HTML envía 'on' cuando está marcado; ausente si no lo está.
+  const acceptTerms = formData.get('acceptTerms') != null
+
+  if (!acceptTerms) {
+    return { error: 'Debes aceptar los términos y condiciones para registrarte' }
+  }
 
   try {
     // Clear any stale session (e.g. left over from a wizard client signup)
@@ -127,6 +134,7 @@ export async function registerChef(prevState: { error: string } | null, formData
         p_country:        country,
         p_first_surname:  firstSurname,
         p_second_surname: secondSurname,
+        p_terms_version:  TERMS_VERSION,
       })
 
     if (rpcError) {

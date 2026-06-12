@@ -7,6 +7,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { WizardData, ClientExtras } from '@/components/wizard/types'
 import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
 import { sendClientEmails, RequestSummary } from '@/lib/emails/client-emails'
+import { TERMS_VERSION } from '@/lib/terms'
 
 // ─── Mapeos Wizard → DB ───────────────────────────────────────────────────────
 
@@ -179,6 +180,9 @@ export async function registerOrVerifyClient(
     p_email:     email,
     p_first_name: name,
     p_phone:     phone || null,
+    // El cliente acepta los términos al enviar el formulario del wizard
+    // ("Al enviar este formulario, aceptás nuestros Términos").
+    p_terms_version: TERMS_VERSION,
   })
 
   if (rpcError) {

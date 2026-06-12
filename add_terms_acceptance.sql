@@ -1,5 +1,19 @@
--- Drop all previous overloads
-DROP FUNCTION IF EXISTS register_chef(UUID, TEXT, TEXT, TEXT, TEXT);
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Registro de aceptación de Términos y Condiciones
+--
+-- Guarda en public.users la fecha y la versión del documento legal que el
+-- usuario aceptó al registrarse. La aceptación registrada (fecha + versión) es
+-- lo que permite probar el vínculo contractual ante una disputa.
+--
+-- Ejecutar una vez en el SQL editor de Supabase.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- 1. Columnas en users
+ALTER TABLE public.users
+  ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMP WITH TIME ZONE,
+  ADD COLUMN IF NOT EXISTS terms_version     TEXT;
+
+-- 2. register_chef — ahora recibe y guarda la versión de términos aceptada
 DROP FUNCTION IF EXISTS register_chef(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT);
 DROP FUNCTION IF EXISTS register_chef(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT);
 
@@ -96,5 +110,58 @@ BEGIN
   END IF;
 
   RETURN v_user_id;
+END;
+$$;
+
+-- 3. register_client — ahora recibe y guarda la versión de términos aceptada
+DROP FUNCTION IF EXISTS register_client(UUID, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS register_client(UUID, TEXT, TEXT, TEXT, TEXT);
+
+CREATE OR REPLACE FUNCTION register_client(
+  p_user_id       UUID,
+  p_email         TEXT,
+  p_first_name    TEXT,
+  p_phone         TEXT DEFAULT NULL,
+  p_terms_version TEXT DEFAULT NULL
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.users (
+    id, email, first_name, phone, role, terms_version, terms_accepted_at
+  )
+  VALUES (
+    p_user_id, p_email, p_first_name, p_phone, 'client',
+    p_terms_version,
+    CASE WHEN p_terms_version IS NOT NULL THEN now() ELSE NULL END
+  )
+  ON CONFLICT (id) DO UPDATE
+    SET first_name = EXCLUDED.first_name,
+        phone      = COALESCE(EXCLUDED.phone, public.users.phone),
+        role       = CASE
+                       WHEN public.users.role = 'chef' THEN public.users.role
+                       ELSE 'client'
+                     END,
+        terms_version     = COALESCE(EXCLUDED.terms_version, public.users.terms_version),
+        terms_accepted_at = CASE
+                              WHEN EXCLUDED.terms_version IS NOT NULL
+                                THEN now()
+                              ELSE public.users.terms_accepted_at
+                            END;
+
+  UPDATE auth.users
+  SET
+    phone = p_phone,
+    raw_user_meta_data = jsonb_set(
+      COALESCE(raw_user_meta_data, '{}'::jsonb),
+      '{display_name}',
+      to_jsonb(p_first_name)
+    )
+  WHERE id = p_user_id;
+
+  RETURN p_user_id;
 END;
 $$;
