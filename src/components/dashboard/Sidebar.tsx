@@ -6,13 +6,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Home, User, UtensilsCrossed,
-  Settings, LogOut, ChevronDown, Menu, X, ClipboardList, SlidersHorizontal, Zap,
+  Settings, LogOut, ChevronDown, Menu, X, ClipboardList, SlidersHorizontal, Zap, MapPinned,
 } from "lucide-react";
 import { logout } from "@/app/auth/actions";
 
 const NAV = [
   { href: "/dashboard", label: "Inicio", icon: Home },
   { href: "/dashboard/requests", label: "Solicitudes", icon: ClipboardList },
+  { href: "/dashboard/demanda", label: "Demanda", icon: MapPinned },
   {
     label: "Perfil",
     icon: User,

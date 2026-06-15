@@ -291,7 +291,7 @@ export function Hero() {
               <div className="mt-5 flex items-center justify-between gap-3">
                 <p className="text-xs text-zinc-500">Chefs verificados en tu zona</p>
                 <Link
-                  href="#chefs"
+                  href="#mapa"
                   className="group inline-flex w-fit items-center gap-2 rounded-full border border-zinc-300 bg-transparent px-5 py-2 text-sm font-medium text-zinc-800 transition-colors hover:border-zinc-900 hover:bg-zinc-900 hover:text-white"
                 >
                   Ver mapa completo

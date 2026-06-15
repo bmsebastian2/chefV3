@@ -1,0 +1,415 @@
+{
+  "_meta": {
+    "descripcion": "Ciudades de Nicaragua para geolocalizar chefs y demanda sin geocoding pago. Las claves estan normalizadas: minusculas, sin tildes. Usar la misma normalizacion que se aplica a chef_profiles.city y service_requests.city antes de buscar aqui.",
+    "uso": "const c = cities[normalize(chef.city)] ?? cities[aliases[normalize(chef.city)]]",
+    "departmentId": "coincide con properties.id de nicaragua-departamentos.min.geojson"
+  },
+  "cities": {
+    "managua": {
+      "name": "Managua",
+      "department": "Managua",
+      "departmentId": "managua",
+      "lat": 12.1364,
+      "lng": -86.2514
+    },
+    "ciudad sandino": {
+      "name": "Ciudad Sandino",
+      "department": "Managua",
+      "departmentId": "managua",
+      "lat": 12.1589,
+      "lng": -86.3447
+    },
+    "tipitapa": {
+      "name": "Tipitapa",
+      "department": "Managua",
+      "departmentId": "managua",
+      "lat": 12.1969,
+      "lng": -86.097
+    },
+    "ticuantepe": {
+      "name": "Ticuantepe",
+      "department": "Managua",
+      "departmentId": "managua",
+      "lat": 12.0226,
+      "lng": -86.205
+    },
+    "el crucero": {
+      "name": "El Crucero",
+      "department": "Managua",
+      "departmentId": "managua",
+      "lat": 11.9897,
+      "lng": -86.3097
+    },
+    "mateare": {
+      "name": "Mateare",
+      "department": "Managua",
+      "departmentId": "managua",
+      "lat": 12.2353,
+      "lng": -86.4282
+    },
+    "pochomil": {
+      "name": "Pochomil",
+      "department": "Managua",
+      "departmentId": "managua",
+      "lat": 11.7669,
+      "lng": -86.5036
+    },
+
+    "leon": {
+      "name": "León",
+      "department": "León",
+      "departmentId": "leon",
+      "lat": 12.4345,
+      "lng": -86.878
+    },
+    "nagarote": {
+      "name": "Nagarote",
+      "department": "León",
+      "departmentId": "leon",
+      "lat": 12.2659,
+      "lng": -86.5664
+    },
+    "la paz centro": {
+      "name": "La Paz Centro",
+      "department": "León",
+      "departmentId": "leon",
+      "lat": 12.3403,
+      "lng": -86.6753
+    },
+    "telica": {
+      "name": "Telica",
+      "department": "León",
+      "departmentId": "leon",
+      "lat": 12.5223,
+      "lng": -86.8602
+    },
+    "poneloya": {
+      "name": "Poneloya",
+      "department": "León",
+      "departmentId": "leon",
+      "lat": 12.3744,
+      "lng": -87.0294
+    },
+
+    "granada": {
+      "name": "Granada",
+      "department": "Granada",
+      "departmentId": "granada",
+      "lat": 11.9344,
+      "lng": -85.956
+    },
+    "nandaime": {
+      "name": "Nandaime",
+      "department": "Granada",
+      "departmentId": "granada",
+      "lat": 11.7565,
+      "lng": -86.0528
+    },
+
+    "masaya": {
+      "name": "Masaya",
+      "department": "Masaya",
+      "departmentId": "masaya",
+      "lat": 11.9744,
+      "lng": -86.0942
+    },
+    "nindiri": {
+      "name": "Nindirí",
+      "department": "Masaya",
+      "departmentId": "masaya",
+      "lat": 12.0034,
+      "lng": -86.1219
+    },
+    "masatepe": {
+      "name": "Masatepe",
+      "department": "Masaya",
+      "departmentId": "masaya",
+      "lat": 11.9147,
+      "lng": -86.1442
+    },
+    "catarina": {
+      "name": "Catarina",
+      "department": "Masaya",
+      "departmentId": "masaya",
+      "lat": 11.9124,
+      "lng": -86.0734
+    },
+    "san juan de oriente": {
+      "name": "San Juan de Oriente",
+      "department": "Masaya",
+      "departmentId": "masaya",
+      "lat": 11.9067,
+      "lng": -86.0728
+    },
+    "niquinohomo": {
+      "name": "Niquinohomo",
+      "department": "Masaya",
+      "departmentId": "masaya",
+      "lat": 11.9047,
+      "lng": -86.095
+    },
+    "la concepcion": {
+      "name": "La Concepción",
+      "department": "Masaya",
+      "departmentId": "masaya",
+      "lat": 11.9362,
+      "lng": -86.1897
+    },
+
+    "esteli": {
+      "name": "Estelí",
+      "department": "Estelí",
+      "departmentId": "esteli",
+      "lat": 13.092,
+      "lng": -86.3537
+    },
+    "condega": {
+      "name": "Condega",
+      "department": "Estelí",
+      "departmentId": "esteli",
+      "lat": 13.3654,
+      "lng": -86.3989
+    },
+
+    "matagalpa": {
+      "name": "Matagalpa",
+      "department": "Matagalpa",
+      "departmentId": "matagalpa",
+      "lat": 12.9256,
+      "lng": -85.917
+    },
+    "sebaco": {
+      "name": "Sébaco",
+      "department": "Matagalpa",
+      "departmentId": "matagalpa",
+      "lat": 12.8549,
+      "lng": -86.0985
+    },
+    "ciudad dario": {
+      "name": "Ciudad Darío",
+      "department": "Matagalpa",
+      "departmentId": "matagalpa",
+      "lat": 12.7305,
+      "lng": -86.1225
+    },
+
+    "chinandega": {
+      "name": "Chinandega",
+      "department": "Chinandega",
+      "departmentId": "chinandega",
+      "lat": 12.6296,
+      "lng": -87.131
+    },
+    "chichigalpa": {
+      "name": "Chichigalpa",
+      "department": "Chinandega",
+      "departmentId": "chinandega",
+      "lat": 12.5722,
+      "lng": -87.0264
+    },
+    "corinto": {
+      "name": "Corinto",
+      "department": "Chinandega",
+      "departmentId": "chinandega",
+      "lat": 12.4829,
+      "lng": -87.177
+    },
+    "el viejo": {
+      "name": "El Viejo",
+      "department": "Chinandega",
+      "departmentId": "chinandega",
+      "lat": 12.6635,
+      "lng": -87.169
+    },
+
+    "jinotega": {
+      "name": "Jinotega",
+      "department": "Jinotega",
+      "departmentId": "jinotega",
+      "lat": 13.0884,
+      "lng": -85.9994
+    },
+
+    "rivas": {
+      "name": "Rivas",
+      "department": "Rivas",
+      "departmentId": "rivas",
+      "lat": 11.4372,
+      "lng": -85.8264
+    },
+    "san juan del sur": {
+      "name": "San Juan del Sur",
+      "department": "Rivas",
+      "departmentId": "rivas",
+      "lat": 11.2529,
+      "lng": -85.8704
+    },
+    "tola": {
+      "name": "Tola",
+      "department": "Rivas",
+      "departmentId": "rivas",
+      "lat": 11.4394,
+      "lng": -85.9387
+    },
+    "popoyo": {
+      "name": "Popoyo",
+      "department": "Rivas",
+      "departmentId": "rivas",
+      "lat": 11.4486,
+      "lng": -86.1024
+    },
+    "san jorge": {
+      "name": "San Jorge",
+      "department": "Rivas",
+      "departmentId": "rivas",
+      "lat": 11.4539,
+      "lng": -85.8042
+    },
+    "moyogalpa": {
+      "name": "Moyogalpa (Ometepe)",
+      "department": "Rivas",
+      "departmentId": "rivas",
+      "lat": 11.5399,
+      "lng": -85.6986
+    },
+    "altagracia": {
+      "name": "Altagracia (Ometepe)",
+      "department": "Rivas",
+      "departmentId": "rivas",
+      "lat": 11.5664,
+      "lng": -85.5772
+    },
+
+    "jinotepe": {
+      "name": "Jinotepe",
+      "department": "Carazo",
+      "departmentId": "carazo",
+      "lat": 11.8498,
+      "lng": -86.1998
+    },
+    "diriamba": {
+      "name": "Diriamba",
+      "department": "Carazo",
+      "departmentId": "carazo",
+      "lat": 11.8566,
+      "lng": -86.2394
+    },
+    "san marcos": {
+      "name": "San Marcos",
+      "department": "Carazo",
+      "departmentId": "carazo",
+      "lat": 11.9092,
+      "lng": -86.2034
+    },
+
+    "boaco": {
+      "name": "Boaco",
+      "department": "Boaco",
+      "departmentId": "boaco",
+      "lat": 12.4719,
+      "lng": -85.6586
+    },
+    "camoapa": {
+      "name": "Camoapa",
+      "department": "Boaco",
+      "departmentId": "boaco",
+      "lat": 12.3839,
+      "lng": -85.5117
+    },
+
+    "juigalpa": {
+      "name": "Juigalpa",
+      "department": "Chontales",
+      "departmentId": "chontales",
+      "lat": 12.1063,
+      "lng": -85.3645
+    },
+    "santo tomas": {
+      "name": "Santo Tomás",
+      "department": "Chontales",
+      "departmentId": "chontales",
+      "lat": 12.0696,
+      "lng": -85.0907
+    },
+
+    "somoto": {
+      "name": "Somoto",
+      "department": "Madriz",
+      "departmentId": "madriz",
+      "lat": 13.4833,
+      "lng": -86.5833
+    },
+
+    "ocotal": {
+      "name": "Ocotal",
+      "department": "Nueva Segovia",
+      "departmentId": "nueva-segovia",
+      "lat": 13.6326,
+      "lng": -86.4756
+    },
+
+    "san carlos": {
+      "name": "San Carlos",
+      "department": "Río San Juan",
+      "departmentId": "rio-san-juan",
+      "lat": 11.1236,
+      "lng": -84.7779
+    },
+
+    "bluefields": {
+      "name": "Bluefields",
+      "department": "RACCS (Caribe Sur)",
+      "departmentId": "raccs-(caribe-sur)",
+      "lat": 12.0137,
+      "lng": -83.7644
+    },
+    "corn island": {
+      "name": "Corn Island",
+      "department": "RACCS (Caribe Sur)",
+      "departmentId": "raccs-(caribe-sur)",
+      "lat": 12.1734,
+      "lng": -83.041
+    },
+    "nueva guinea": {
+      "name": "Nueva Guinea",
+      "department": "RACCS (Caribe Sur)",
+      "departmentId": "raccs-(caribe-sur)",
+      "lat": 11.6876,
+      "lng": -84.4562
+    },
+    "el rama": {
+      "name": "El Rama",
+      "department": "RACCS (Caribe Sur)",
+      "departmentId": "raccs-(caribe-sur)",
+      "lat": 12.1597,
+      "lng": -84.2189
+    },
+
+    "puerto cabezas": {
+      "name": "Puerto Cabezas (Bilwi)",
+      "department": "RACCN (Caribe Norte)",
+      "departmentId": "raccn-(caribe-norte)",
+      "lat": 14.0351,
+      "lng": -83.3886
+    },
+    "siuna": {
+      "name": "Siuna",
+      "department": "RACCN (Caribe Norte)",
+      "departmentId": "raccn-(caribe-norte)",
+      "lat": 13.7333,
+      "lng": -84.777
+    }
+  },
+  "aliases": {
+    "bilwi": "puerto cabezas",
+    "ometepe": "moyogalpa",
+    "isla de ometepe": "moyogalpa",
+    "la concha": "la concepcion",
+    "sjds": "san juan del sur",
+    "managua centro": "managua",
+    "leon centro": "leon",
+    "great corn island": "corn island",
+    "little corn island": "corn island",
+    "rama": "el rama"
+  }
+}

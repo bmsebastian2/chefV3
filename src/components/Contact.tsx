@@ -6,9 +6,19 @@ import { Loader2, Check, ArrowRight } from "lucide-react";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LIMITS = { name: 80, email: 120, message: 3000 };
 
+const TOPICS = [
+  { value: "pago", label: "Temas de pago" },
+  { value: "tecnico", label: "Soporte técnico" },
+  { value: "general", label: "Funcionamiento general" },
+  { value: "otros", label: "Otros" },
+] as const;
+
+type TopicValue = (typeof TOPICS)[number]["value"];
+
 export function Contact() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [topic, setTopic] = useState<TopicValue | "">("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -18,6 +28,7 @@ export function Contact() {
     name.trim().length <= LIMITS.name &&
     EMAIL_RE.test(email.trim()) &&
     email.trim().length <= LIMITS.email &&
+    topic !== "" &&
     message.trim().length > 0 &&
     message.trim().length <= LIMITS.message;
 
@@ -32,7 +43,7 @@ export function Contact() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message }),
+        body: JSON.stringify({ name, email, topic, message }),
       });
 
       if (!res.ok) {
@@ -44,6 +55,7 @@ export function Contact() {
 
       setName("");
       setEmail("");
+      setTopic("");
       setMessage("");
       setStatus("success");
     } catch {
@@ -128,6 +140,33 @@ export function Contact() {
                   autoComplete="email"
                   className={inputBase}
                 />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <span className="font-sans text-sm font-medium text-zinc-700">
+                  Tipo de consulta
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {TOPICS.map((t) => {
+                    const selected = topic === t.value;
+                    return (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => setTopic(t.value)}
+                        aria-pressed={selected}
+                        className={`font-sans text-sm rounded-xl px-4 py-2.5 ring-1 transition-all duration-200
+                          ${
+                            selected
+                              ? "bg-accent text-white ring-accent shadow-sm shadow-accent/20"
+                              : "bg-white text-zinc-600 ring-zinc-200/80 hover:ring-accent/40 hover:text-zinc-900"
+                          }`}
+                      >
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">

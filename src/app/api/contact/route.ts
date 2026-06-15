@@ -15,6 +15,14 @@ const CONTACT_TO = process.env.RESEND_DEV_EMAIL
 const LIMITS = { name: 80, email: 120, message: 3000 } as const
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+// Tipos de consulta válidos (deben coincidir con el frontend)
+const TOPIC_LABELS: Record<string, string> = {
+  pago: 'Temas de pago',
+  tecnico: 'Soporte técnico',
+  general: 'Funcionamiento general',
+  otros: 'Otros',
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -36,19 +44,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Solicitud inválida.' }, { status: 400 })
   }
 
-  const { name, email, message } = (body ?? {}) as Record<string, unknown>
+  const { name, email, topic, message } = (body ?? {}) as Record<string, unknown>
 
   // Validación server-side — no confiar en el frontend
-  if (typeof name !== 'string' || typeof email !== 'string' || typeof message !== 'string') {
+  if (
+    typeof name !== 'string' ||
+    typeof email !== 'string' ||
+    typeof topic !== 'string' ||
+    typeof message !== 'string'
+  ) {
     return NextResponse.json({ error: 'Campos inválidos.' }, { status: 400 })
   }
 
   const cleanName = name.trim()
   const cleanEmail = email.trim()
   const cleanMessage = message.trim()
+  const topicLabel = TOPIC_LABELS[topic]
 
   if (!cleanName || !cleanEmail || !cleanMessage) {
     return NextResponse.json({ error: 'Todos los campos son obligatorios.' }, { status: 400 })
+  }
+  if (!topicLabel) {
+    return NextResponse.json({ error: 'Elegí un tipo de consulta válido.' }, { status: 400 })
   }
   if (!EMAIL_RE.test(cleanEmail)) {
     return NextResponse.json({ error: 'El email no tiene un formato válido.' }, { status: 400 })
@@ -65,7 +82,8 @@ export async function POST(req: Request) {
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;color:#18181B;">
       <h2 style="margin:0 0 16px;">Nuevo mensaje de contacto</h2>
       <p style="margin:0 0 4px;"><strong>Nombre:</strong> ${escapeHtml(cleanName)}</p>
-      <p style="margin:0 0 16px;"><strong>Email:</strong> ${escapeHtml(cleanEmail)}</p>
+      <p style="margin:0 0 4px;"><strong>Email:</strong> ${escapeHtml(cleanEmail)}</p>
+      <p style="margin:0 0 16px;"><strong>Tipo de consulta:</strong> ${escapeHtml(topicLabel)}</p>
       <p style="margin:0 0 6px;"><strong>Mensaje:</strong></p>
       <p style="margin:0;white-space:pre-wrap;line-height:1.6;">${escapeHtml(cleanMessage)}</p>
     </div>`
@@ -74,7 +92,7 @@ export async function POST(req: Request) {
     from: FROM,
     to: CONTACT_TO,
     replyTo: cleanEmail,
-    subject: `Contacto GetChef — ${cleanName}`,
+    subject: `Contacto GetChef [${topicLabel}] — ${cleanName}`,
     html,
   })
 
