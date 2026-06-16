@@ -4,7 +4,6 @@ import { SaboresEnCasa } from "@/components/SaboresEnCasa";
 import { ChefAssistant } from "@/components/assistant/ChefAssistant";
 import { HowItWorks } from "@/components/HowItWorks";
 import { MenuDeLaNoche } from "@/components/MenuDeLaNoche";
-import { PersonalizaMenu } from "@/components/PersonalizaMenu";
 import { Chefs } from "@/components/Chefs";
 import { NicaraguaChefMapSection } from "@/components/maps/NicaraguaChefMapSection";
 import { Menus } from "@/components/Menus";
@@ -21,7 +20,6 @@ export default function Home() {
       <ChefAssistant />
       <HowItWorks />
       <MenuDeLaNoche />
-      <PersonalizaMenu />
       <Chefs />
       <NicaraguaChefMapSection />
       <Menus />
