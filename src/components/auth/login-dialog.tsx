@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useActionState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
-import { login, loginWithGoogle } from '@/app/auth/actions'
+import { Eye, EyeOff, ArrowLeft, MailCheck } from 'lucide-react'
+import { login, loginWithGoogle, requestPasswordReset } from '@/app/auth/actions'
 import {
   Dialog,
   DialogContent,
@@ -16,105 +16,186 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(() =>
     typeof window !== 'undefined' && window.location.search.includes('login=true')
   )
+  const [view, setView] = useState<'login' | 'forgot'>('login')
   const [showPassword, setShowPassword] = useState(false)
   const [loginState, loginAction, isPending] = useActionState(login, null)
+  const [resetState, resetAction, isResetting] = useActionState(requestPasswordReset, null)
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o)
+        if (!o) setView('login') // al cerrar, volver siempre a la vista de login
+      }}
+    >
       <DialogTrigger asChild>
         {trigger ?? <Button className="h-8 px-4 text-base bg-white text-zinc-900 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 shadow-sm rounded-md transition-all" variant="ghost">Acceder</Button>}
       </DialogTrigger>
  <DialogContent className="fixed top-1/2 left-1/2 z-[9999] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl p-10 bg-white shadow-lg">
-       
+
        {/* Botón de cierre */}
     <DialogClose asChild>
       <button className="absolute right-4 top-4 text-zinc-500 hover:text-zinc-700">
         ✕
       </button>
     </DialogClose>
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-medium text-accent">Accedé a tu cuenta</h2>
-          <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-            Si sos cliente, gestioná tu solicitud.<br />
-            Si sos Chef, gestioná tus servicios, platos y menús.
-          </p>
-        </div>
 
-        <form className="space-y-3" action={loginAction}>
+        {view === 'login' ? (
+          <>
+            {/* Header */}
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-medium text-accent">Accedé a tu cuenta</h2>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                Si sos cliente, gestioná tu solicitud.<br />
+                Si sos Chef, gestioná tus servicios, platos y menús.
+              </p>
+            </div>
 
-          {/* Email */}
-          <Input
-            name="email"
-            type="email"
-            autoComplete="username"
-            placeholder="Email *"
-            required
-            className="rounded-full px-5 h-12 bg-muted border-0"
-          />
+            <form className="space-y-3" action={loginAction}>
 
-          {/* Password */}
-          <div className="relative">
-            <Input
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              placeholder="Contraseña *"
-              required
-              className="rounded-full px-5 h-12 bg-muted border-0 pr-12"
-            />
+              {/* Email */}
+              <Input
+                name="email"
+                type="email"
+                autoComplete="username"
+                placeholder="Email *"
+                required
+                className="rounded-full px-5 h-12 bg-muted border-0"
+              />
+
+              {/* Password */}
+              <div className="relative">
+                <Input
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="Contraseña *"
+                  required
+                  className="rounded-full px-5 h-12 bg-muted border-0 pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              {/* Error */}
+              {loginState?.error && (
+                <p className="text-sm text-red-500 text-center">{loginState.error}</p>
+              )}
+
+              {/* Submit */}
+              <div className="flex justify-center">
+                <Button
+                  type="submit"
+                  disabled={isPending}
+                  className="w-full h-12 rounded-2xl bg-accent hover:bg-accent/90 text-zinc-900 font-bold text-base disabled:opacity-50 shadow-[0_6px_18px_rgba(34,197,94,0.25)] transition-all"
+                >
+                  {isPending ? <span className="animate-pulse">Accediendo...</span> : 'Acceder'}
+                </Button>
+              </div>
+
+            </form>
+
+            {/* Forgot password */}
+            <p className="text-center text-sm mt-3">
+              <button
+                type="button"
+                onClick={() => setView('forgot')}
+                className="underline text-foreground hover:text-accent"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </p>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-4">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-xs text-muted-foreground">O continuar con</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            {/* Google */}
+            <div className="flex justify-center gap-3">
+              <form action={loginWithGoogle}>
+                <button
+                  type="submit"
+                  className="w-16 h-16 rounded-2xl border border-border flex items-center justify-center hover:bg-muted transition"
+                >
+                  <GoogleIcon />
+                </button>
+              </form>
+            </div>
+          </>
+        ) : (
+          /* ── Vista: recuperar contraseña ─────────────────────────────── */
+          <>
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+              onClick={() => setView('login')}
+              className="absolute left-4 top-4 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-800 transition-colors"
             >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              <ArrowLeft className="h-4 w-4" />
+              Volver
             </button>
-          </div>
 
-          {/* Error */}
-          {loginState?.error && (
-            <p className="text-sm text-red-500 text-center">{loginState.error}</p>
-          )}
+            {resetState?.success ? (
+              <div className="text-center pt-2">
+                <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
+                  <MailCheck className="h-7 w-7 text-accent" />
+                </div>
+                <h2 className="text-xl font-medium text-accent mb-2">Revisá tu email</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Si existe una cuenta con ese correo, te enviamos un enlace para
+                  restablecer tu contraseña. Revisá tu bandeja de entrada y el spam.
+                </p>
+                <Button
+                  type="button"
+                  onClick={() => setView('login')}
+                  className="mt-6 w-full h-12 rounded-2xl bg-accent hover:bg-accent/90 text-zinc-900 font-bold text-base transition-all"
+                >
+                  Volver al inicio de sesión
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-medium text-accent">Recuperá tu contraseña</h2>
+                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                    Ingresá tu email y te enviaremos un enlace para crear una nueva contraseña.
+                  </p>
+                </div>
 
-          {/* Submit */}
-          <div className="flex justify-center">
-            <Button
-              type="submit"
-              disabled={isPending}
-              className="w-full h-12 rounded-2xl bg-accent hover:bg-accent/90 text-zinc-900 font-bold text-base disabled:opacity-50 shadow-[0_6px_18px_rgba(34,197,94,0.25)] transition-all"
-            >
-              {isPending ? <span className="animate-pulse">Accediendo...</span> : 'Acceder'}
-            </Button>
-          </div>
+                <form className="space-y-3" action={resetAction}>
+                  <Input
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="Email *"
+                    required
+                    className="rounded-full px-5 h-12 bg-muted border-0"
+                  />
 
-        </form>
+                  {resetState?.error && (
+                    <p className="text-sm text-red-500 text-center">{resetState.error}</p>
+                  )}
 
-        {/* Forgot password */}
-        <p className="text-center text-sm mt-3">
-          <button className="underline text-foreground hover:text-accent">
-            ¿Olvidaste tu contraseña?
-          </button>
-        </p>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-muted-foreground">O continuar con</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-
-        {/* Google */}
-        <div className="flex justify-center gap-3">
-          <form action={loginWithGoogle}>
-            <button
-              type="submit"
-              className="w-16 h-16 rounded-2xl border border-border flex items-center justify-center hover:bg-muted transition"
-            >
-              <GoogleIcon />
-            </button>
-          </form>
-        </div>
+                  <Button
+                    type="submit"
+                    disabled={isResetting}
+                    className="w-full h-12 rounded-2xl bg-accent hover:bg-accent/90 text-zinc-900 font-bold text-base disabled:opacity-50 shadow-[0_6px_18px_rgba(34,197,94,0.25)] transition-all"
+                  >
+                    {isResetting ? <span className="animate-pulse">Enviando…</span> : 'Enviar enlace'}
+                  </Button>
+                </form>
+              </>
+            )}
+          </>
+        )}
 
       </DialogContent>
     </Dialog>

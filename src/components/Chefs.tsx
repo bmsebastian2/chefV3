@@ -130,13 +130,13 @@ export function Chefs() {
               Chefs profesionales seleccionados, cocinando alta cocina en la comodidad de tu hogar.
             </p>
           </div>
-          <button
-            type="button"
+          <Link
+            href="#chefs"
             className="group flex cursor-pointer items-center gap-2 whitespace-nowrap border-none bg-transparent p-0 text-sm font-medium text-zinc-500 transition-colors duration-200 hover:text-accent"
           >
             Ver todos los chefs
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-          </button>
+          </Link>
         </div>
 
         {/* Cards grid */}

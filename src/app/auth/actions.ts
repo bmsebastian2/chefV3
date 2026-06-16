@@ -73,6 +73,29 @@ export async function changePassword(
   return { error: '', success: true }
 }
 
+export async function requestPasswordReset(
+  prevState: { error: string; success: boolean } | null,
+  formData: FormData
+): Promise<{ error: string; success: boolean }> {
+  const supabase = await createClient()
+
+  const email = (formData.get('email') as string)?.trim()
+  if (!email) {
+    return { error: 'Ingresá tu email.', success: false }
+  }
+
+  // El enlace del email vuelve por /auth/callback, que intercambia el code y
+  // redirige a /reset-password gracias al parámetro `next`.
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/reset-password`,
+  })
+
+  if (error) return { error: error.message, success: false }
+
+  // Supabase responde OK aunque el email no exista (evita enumeración de usuarios).
+  return { error: '', success: true }
+}
+
 export async function registerChef(prevState: { error: string } | null, formData: FormData) {
   const supabase = await createClient()
 

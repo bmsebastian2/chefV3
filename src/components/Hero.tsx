@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ChefHat, MapPin, ChevronDown, ArrowRight, Sparkles } from "lucide-react";
+import { ChefHat, MapPin, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Posiciones de los chefs en el radar (en %)
@@ -250,15 +250,11 @@ export function Hero() {
                 </span>
               </div>
 
-              {/* Selector de ubicación */}
-              <button
-                type="button"
-                className="group mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:border-amber-300 hover:text-zinc-900"
-              >
+              {/* Ubicación */}
+              <span className="mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700">
                 <MapPin className="h-4 w-4 text-amber-600" />
                 Managua, Nicaragua
-                <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-hover:translate-y-0.5" />
-              </button>
+              </span>
 
               {/* Radar */}
               <div className="relative mt-5 h-52 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br from-amber-50/70 via-white to-zinc-50 shadow-inner lg:h-[210px]">

@@ -67,5 +67,14 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/client-dashboard`)
+  // `next` permite redirigir a un destino interno (ej. /reset-password en el
+  // flujo de recuperación de contraseña). Solo se aceptan rutas internas para
+  // evitar open-redirects.
+  const nextParam = searchParams.get('next')
+  const safeNext =
+    nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
+      ? nextParam
+      : null
+
+  return NextResponse.redirect(`${origin}${safeNext ?? '/client-dashboard'}`)
 }

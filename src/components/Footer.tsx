@@ -19,7 +19,7 @@ export function Footer() {
             <ul className="space-y-3 font-sans text-sm">
               <li><Link href="#experiencia" className="hover:text-accent transition-colors">La Experiencia</Link></li>
               <li><Link href="#chefs" className="hover:text-accent transition-colors">Nuestros Chefs</Link></li>
-              <li><Link href="#" className="hover:text-accent transition-colors">Regala una Cena</Link></li>
+              <li><Link href="/wizard" className="hover:text-accent transition-colors">Regala una Cena</Link></li>
             </ul>
           </div>
 
@@ -28,7 +28,7 @@ export function Footer() {
             <ul className="space-y-3 font-sans text-sm">
               <li><Link href="/sobre-nosotros" className="hover:text-accent transition-colors">Sobre Nosotros</Link></li>
               <li><Link href="/chef-registration" className="hover:text-accent transition-colors">Sé un Chef en GetChef</Link></li>
-              <li><Link href="#" className="hover:text-accent transition-colors">Preguntas Frecuentes</Link></li>
+              <li><Link href="/preguntas-frecuentes" className="hover:text-accent transition-colors">Preguntas Frecuentes</Link></li>
               <li><Link href="/#contacto" className="hover:text-accent transition-colors">Contacto</Link></li>
             </ul>
           </div>
