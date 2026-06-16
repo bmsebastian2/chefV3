@@ -36,7 +36,7 @@ export default function TerminosPage() {
           </p>
           <p className="text-muted-foreground leading-relaxed mb-4">
             La Plataforma es operada por{" "}
-            <strong className="text-zinc-700">Horacio José Bollo</strong> (en adelante,
+            <strong className="text-zinc-700">Horacio José Bollo, documento 6.304.901-5</strong> (en adelante,
             &laquo;el Operador&raquo;), con domicilio en{" "}
             <span className="text-zinc-700">Montevideo, Uruguay</span> y correo electrónico
             de contacto{" "}
@@ -392,7 +392,7 @@ export default function TerminosPage() {
             efectuadas al correo electrónico registrado en la cuenta del usuario.
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            El responsable de la Plataforma es Horacio José Bollo, con domicilio en{" "}
+            El responsable de la Plataforma es Horacio José Bollo, documento 6.304.901-5 con domicilio en{" "}
             <span className="text-zinc-700">Montevideo, Uruguay</span>.
           </p>
         </section>

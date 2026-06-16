@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ChefHat, MapPin, ChevronDown, ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
+import { ChefHat, MapPin, ChevronDown, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Posiciones de los chefs en el radar (en %)
@@ -10,13 +10,6 @@ const chefPins = [
   { top: "62%", left: "28%", delay: "1s" },
   { top: "66%", left: "60%", delay: ".7s" },
   { top: "46%", left: "80%", delay: "1.3s" },
-];
-
-const experiences = [
-  { title: "Cena romántica", subtitle: "Momentos inolvidables", image: "/Lomito.png", href: "/wizard" },
-  { title: "Eventos especiales", subtitle: "Celebraciones únicas", image: "/milhoja.png", href: "/wizard" },
-  { title: "Chef semanal", subtitle: "Tu chef toda la semana", image: "/pan%20brioche.png", href: "/wizard" },
-  { title: "Eventos corporativos", subtitle: "Impresiona a tu equipo", image: "/hero.webp", href: "/wizard" },
 ];
 
 export function Hero() {
@@ -156,8 +149,47 @@ export function Hero() {
               </div>
             </div>
 
-            {/* ── Lanzador del asistente inteligente (centrado en el espacio sobrante) ── */}
-            <div className="flex flex-1 items-center pt-8">
+          
+          </div>
+
+          {/* ── Columna derecha: mapa arriba + experiencias debajo ── */}
+          <div className="flex flex-col gap-8">
+
+            {/* Descubre chefs cerca de ti — radar de descubrimiento */}
+             {/* Banner gastronómico — comunica el servicio de chef/comida */}
+            <Link
+              href="/wizard"
+              className="hero-anim group relative mt-10 block overflow-hidden rounded-2xl shadow-lg shadow-zinc-900/10 ring-1 ring-black/5"
+              style={{ animationDelay: "560ms" }}
+            >
+              <div className="relative h-44 w-full sm:h-48">
+                <Image
+                  src="/banner-chef.png"
+                  alt="Chef privado emplatando un plato nicaragüense de autor en una mesa de madera"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover object-right transition-transform duration-700 ease-out group-hover:scale-105"
+                />
+                {/* Velado para legibilidad del texto */}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-zinc-900/90 via-zinc-900/45 to-transparent" />
+
+                {/* Contenido */}
+                <div className="absolute inset-0 flex flex-col justify-center gap-1.5 p-5">
+                  <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-300">
+                    <ChefHat className="h-3.5 w-3.5" />
+                    Catering & cenas privadas
+                  </span>
+                  <h2 className="font-serif text-xl font-semibold leading-tight text-white sm:text-2xl">
+                    Comida de chef, en tu mesa
+                  </h2>
+                  <span className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-white/90">
+                    Ver experiencias
+                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                  </span>
+                </div>
+              </div>
+            </Link>
             <a
               href="#asistente"
               className="hero-anim group relative block w-full overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/70 px-5 py-4 shadow-lg shadow-zinc-900/5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-xl hover:shadow-green-500/10"
@@ -194,13 +226,6 @@ export function Hero() {
                 </span>
               </div>
             </a>
-            </div>
-          </div>
-
-          {/* ── Columna derecha: mapa arriba + experiencias debajo ── */}
-          <div className="flex flex-col gap-8">
-
-            {/* Descubre chefs cerca de ti — radar de descubrimiento */}
             <div
               className="hero-anim rounded-3xl border border-zinc-200/80 bg-white/70 p-6 shadow-xl shadow-zinc-900/5 backdrop-blur-xl"
               style={{ animationDelay: "300ms" }}
@@ -299,68 +324,10 @@ export function Hero() {
                 </Link>
               </div>
             </div>
-
-            {/* Experiencias para cada ocasión — carta editorial */}
-            <div className="hero-anim" style={{ animationDelay: "420ms" }}>
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <span className="mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-700">
-                    <span className="h-px w-5 bg-amber-500/70" aria-hidden="true" />
-                    La carta
-                  </span>
-                  <h2 className="font-serif text-xl md:text-2xl font-semibold text-zinc-900 tracking-tight">
-                    Experiencias para cada ocasión
-                  </h2>
-                </div>
-                <Link
-                  href="#chefs"
-                  className="group hidden shrink-0 items-center gap-1.5 text-sm font-semibold text-amber-700 transition-colors hover:text-amber-800 sm:inline-flex"
-                >
-                  Ver todas
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </div>
-
-              <div className="mt-5 grid grid-cols-4 gap-3">
-                {experiences.map((exp, i) => (
-                  <Link
-                    key={exp.title}
-                    href={exp.href}
-                    className="group relative block aspect-[3/4] overflow-hidden rounded-xl ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-zinc-900/25 hover:ring-amber-500/40"
-                  >
-                    <Image
-                      src={exp.image}
-                      alt={exp.title}
-                      fill
-                      sizes="(max-width: 1024px) 25vw, 12vw"
-                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                    />
-                    {/* Velado para legibilidad */}
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-
-                    {/* Índice */}
-                    <span className="absolute left-2.5 top-2 font-serif text-sm italic text-amber-300/90 drop-shadow">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    {/* Flecha al hover */}
-                    <span className="absolute right-2 top-2 text-amber-200 opacity-0 -translate-y-1 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </span>
-
-                    {/* Texto inferior */}
-                    <div className="absolute inset-x-0 bottom-0 p-2.5">
-                      <span className="mb-1.5 block h-px w-5 bg-amber-400 transition-all duration-500 group-hover:w-9" aria-hidden="true" />
-                      <h3 className="font-serif text-[13px] font-semibold leading-tight text-white">
-                        {exp.title}
-                      </h3>
-                      <p className="mt-0.5 max-h-0 overflow-hidden text-[10px] leading-tight text-white/75 opacity-0 transition-all duration-300 group-hover:max-h-10 group-hover:opacity-100">
-                        {exp.subtitle}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                 <div className="flex flex-1 items-center pt-8">
+            
             </div>
+          
           </div>
         </div>
       </div>

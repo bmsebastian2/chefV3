@@ -1,7 +1,9 @@
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
+import { SaboresEnCasa } from "@/components/SaboresEnCasa";
 import { ChefAssistant } from "@/components/assistant/ChefAssistant";
 import { HowItWorks } from "@/components/HowItWorks";
+import { MenuDeLaNoche } from "@/components/MenuDeLaNoche";
 import { PersonalizaMenu } from "@/components/PersonalizaMenu";
 import { Chefs } from "@/components/Chefs";
 import { NicaraguaChefMapSection } from "@/components/maps/NicaraguaChefMapSection";
@@ -15,8 +17,10 @@ export default function Home() {
     <main className="flex min-h-screen flex-col bg-background selection:bg-accent selection:text-zinc-900 overflow-x-hidden">
       <Header />
       <Hero />
+      <SaboresEnCasa />
       <ChefAssistant />
       <HowItWorks />
+      <MenuDeLaNoche />
       <PersonalizaMenu />
       <Chefs />
       <NicaraguaChefMapSection />

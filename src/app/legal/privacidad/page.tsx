@@ -28,7 +28,7 @@ export default function PrivacidadPage() {
           <p className="text-muted-foreground leading-relaxed mb-4">
             El responsable del tratamiento de los datos personales recogidos a través de
             GetChef (<span className="text-zinc-700">getcheftoday.com</span>) es{" "}
-            <strong className="text-zinc-700">Horacio José Bollo</strong> (en adelante,
+            <strong className="text-zinc-700">Horacio José Bollo </strong> (en adelante,
             &laquo;el Operador&raquo;), con domicilio en{" "}
             <span className="text-zinc-700">Montevideo, Uruguay</span> y correo de contacto{" "}
             <a href="mailto:getchef.com@gmail.com" className="text-accent hover:underline">
