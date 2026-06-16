@@ -1282,32 +1282,27 @@ export function StepBudgetTier({ data, updateData, nextStep }: StepProps) {
 }
 
 // ── StepBudgetMultiple ────────────────────────────────────────────────────────
-const BUDGET_MULTIPLE_OPTIONS = [
-  {
-    value:   "casual"    as const,
-    label:   "Casual",
-    desc:    "Crear vínculos en torno a la buena comida.",
-    range:   "$27.213 - $31.295",
-  },
-  {
-    value:   "gourmet"   as const,
-    label:   "Gourmet",
-    desc:    "Menús brillantes para impresionar a tus invitados.",
-    range:   "$31.295 - $35.989",
-  },
-  {
-    value:   "exclusive" as const,
-    label:   "Selección exclusiva",
-    desc:    "Lo mejor de lo mejor para tu evento.",
-    range:   "$35.989 - $45.354",
-  },
-] as const;
+// El servicio múltiple captura los comensales como número (guestsAdults/Teens/Kids),
+// mientras que getBasePrice (tipo 1) trabaja con brackets. Este puente convierte el
+// total de comensales al mismo bracket, para reusar getBudgetOptions como única
+// fuente de verdad y que ambos servicios no vuelvan a desincronizarse.
+function guestsRangeKey(count: number): string {
+  if (count <= 2)  return "2";
+  if (count <= 6)  return "3-6";
+  if (count <= 12) return "7-12";
+  return "13+";
+}
 
 export function StepBudgetMultiple({ data, updateData, nextStep }: StepProps) {
+  const totalGuests = (data.guestsAdults ?? 0) + (data.guestsTeens ?? 0) + (data.guestsKids ?? 0);
+  const budgetOptions = getBudgetOptions(guestsRangeKey(totalGuests));
   return (
     <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
+      <p className="text-center text-zinc-500 text-sm mb-2">
+        Los precios varían según la experiencia del chef y la complejidad del menú. ¡Elige el que más te convenga!
+      </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        {BUDGET_MULTIPLE_OPTIONS.map(({ value, label, desc, range }) => {
+        {budgetOptions.map(({ value, label, desc, range }) => {
           const active = data.budgetTier === value;
           return (
             <button
@@ -1328,7 +1323,7 @@ export function StepBudgetMultiple({ data, updateData, nextStep }: StepProps) {
                   ? "bg-accent/15 text-accent border-accent/30"
                   : "bg-zinc-50 text-zinc-600 border-zinc-200"
               }`}>
-                {range} servicio de Chef
+                {range} por persona
               </span>
             </button>
           );
@@ -1336,7 +1331,6 @@ export function StepBudgetMultiple({ data, updateData, nextStep }: StepProps) {
       </div>
       <div className="space-y-1.5 text-xs text-zinc-400 max-w-2xl mx-auto w-full">
         <p>* Este precio no incluye el coste de materias primas, que serán abonados directamente al presentar los tickets de compra.</p>
-        <p>** Precios desde $4.535 por persona y servicio.</p>
       </div>
     </div>
   );
