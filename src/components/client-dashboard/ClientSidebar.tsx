@@ -49,14 +49,14 @@ export function ClientSidebar() {
           {supportOpen && (
             <div className="ml-7 mt-1 space-y-0.5">
               <Link
-                href="/soporte"
+                href="/preguntas-frecuentes"
                 onClick={() => setMobileOpen(false)}
                 className="block px-3 py-2 rounded-md text-sm text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
               >
                 Centro de ayuda
               </Link>
               <Link
-                href="/contacto"
+                href="/#contacto"
                 onClick={() => setMobileOpen(false)}
                 className="block px-3 py-2 rounded-md text-sm text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
               >
