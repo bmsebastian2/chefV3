@@ -3,31 +3,81 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, UtensilsCrossed } from "lucide-react";
+import { ArrowRight, UtensilsCrossed, X } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 /**
  * Banner gastronómico — mosaico editorial asimétrico.
  *
- * ASSETS PENDIENTES → dejar caer en /public con estos nombres exactos
- * (deben ser platos DISTINTOS a los de la sección Menus):
- *   - banner-firma.webp    → protagonista vertical  (3:4, ~1200×1600)
- *   - banner-mesa.webp     → apaisada superior       (4:3, ~1600×1200)
- *   - banner-postre.webp   → cuadrada inferior izq.  (1:1, ~1000×1000)
- *   - banner-entrada.webp  → cuadrada inferior der.  (1:1, ~1000×1000)
- * Mientras no existan, cada celda muestra un placeholder con el nombre del plato.
+ * Cada tarjeta abre un detalle (modal) con el mismo diseño y comportamiento
+ * que la sección "Cada ocasión requiere un menú diferente" (Menus.tsx).
+ *
+ * ASSETS → en /public con estos nombres exactos:
+ *   - Rissotto.jpg → protagonista vertical
+ *   - Chef.jpg / Chef.png → apaisada superior
+ *   - Coulant.jpg → cuadrada inferior izq.
+ *   - Ceviche.jpg → cuadrada inferior der.
+ * Si una foto falla, la celda muestra un placeholder con el nombre del plato.
+ *
+ * Datos estáticos locales — reemplazar textos/precios por los reales cuando estén.
  */
-const dishes = [
-  { name: "Risotto de hongos", note: "trufa negra y parmesano 24 meses", img: "/Rissotto.jpg" },
-  { name: "Mesa de autor", note: "selección del chef", img: "/Chef.png" },
-  { name: "Coulant de chocolate", note: "helado de vainilla bourbon", img: "/Coulant.jpg" },
-  { name: "Ceviche nikkei", note: "leche de tigre y cítricos", img: "/Ceviche.jpg" },
-];
+type Dish = {
+  name: string;
+  note: string;
+  img: string;
+  categoria: string;
+  descripcionLarga: string;
+  ingredientes: string[];
+  alergenos: string[];
+};
 
-type Dish = (typeof dishes)[number];
+const dishes: Dish[] = [
+  {
+    name: "Risotto de hongos",
+    note: "trufa negra y parmesano 24 meses",
+    img: "/Rissotto.jpg",
+    categoria: "Principal",
+    descripcionLarga:
+      "Arroz carnaroli mantecado al momento con una selección de hongos salteados, lascas de parmesano curado 24 meses y un aroma final de trufa negra.",
+    ingredientes: ["Arroz carnaroli", "Hongos de temporada", "Parmesano 24 meses", "Trufa negra", "Mantequilla", "Caldo de verduras"],
+    alergenos: ["Lácteos", "Sulfitos"],
+  },
+  {
+    name: "Mesa de autor",
+    note: "selección del chef",
+    img: "/Chef.png",
+    categoria: "Experiencia",
+    descripcionLarga:
+      "Un menú degustación diseñado en vivo por el chef según el mercado del día. Una secuencia de bocados de autor pensada para sorprender a tus invitados de principio a fin.",
+    ingredientes: ["Producto fresco del día", "Selección del chef", "Maridaje sugerido"],
+    alergenos: ["Consultar según menú"],
+  },
+  {
+    name: "Coulant de chocolate",
+    note: "helado de vainilla bourbon",
+    img: "/Coulant.jpg",
+    categoria: "Postre",
+    descripcionLarga:
+      "Bizcocho tibio de chocolate con corazón fundente que se derrama al primer corte, acompañado de un helado de vainilla bourbon que equilibra su intensidad.",
+    ingredientes: ["Chocolate negro 70%", "Mantequilla", "Huevo", "Harina", "Vainilla bourbon", "Nata"],
+    alergenos: ["Gluten", "Huevo", "Lácteos"],
+  },
+  {
+    name: "Ceviche nikkei",
+    note: "leche de tigre y cítricos",
+    img: "/Ceviche.jpg",
+    categoria: "Entrante",
+    descripcionLarga:
+      "Pescado fresco marinado en una leche de tigre nikkei de cítricos y soja, con el punto justo de ají y un toque de jengibre que despierta el paladar.",
+    ingredientes: ["Pescado blanco fresco", "Lima", "Soja", "Ají limo", "Jengibre", "Cebolla morada", "Cilantro"],
+    alergenos: ["Pescado", "Soja"],
+  },
+];
 
 export function SaboresEnCasa() {
   const sectionRef = useRef<HTMLElement>(null);
   const [revealed, setRevealed] = useState(false);
+  const [selected, setSelected] = useState<Dish | null>(null);
 
   useEffect(() => {
     const el = sectionRef.current;
@@ -49,6 +99,22 @@ export function SaboresEnCasa() {
     return () => io.disconnect();
   }, []);
 
+  // Cierre con Escape + bloqueo de scroll del body mientras el detalle está abierto
+  // (el Dialog base solo maneja click-fuera, no estas dos cosas).
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelected(null);
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [selected]);
+
   // Entrada (fade + slide) con stagger por índice.
   // prefers-reduced-motion: las variantes motion-safe evitan ocultar el contenido
   // y motion-reduce elimina la transición → aparición directa.
@@ -59,6 +125,17 @@ export function SaboresEnCasa() {
 
   return (
     <section ref={sectionRef} className="relative overflow-hidden bg-white py-24">
+      {/* Animaciones del detalle (respetan prefers-reduced-motion) */}
+      <style>{`
+        @keyframes menuPanelIn {
+          from { opacity: 0; transform: translateY(10px) scale(.97); }
+          to   { opacity: 1; transform: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .menu-detail-panel { animation: none !important; }
+        }
+      `}</style>
+
       {/* Glow cálido sutil */}
       <div className="pointer-events-none absolute -right-32 -top-24 h-[420px] w-[420px] rounded-full bg-amber-100/40 blur-3xl" aria-hidden="true" />
 
@@ -89,20 +166,21 @@ export function SaboresEnCasa() {
 
           {/* ── Mosaico (desktop) ── */}
           <div className="hidden lg:col-span-8 lg:grid lg:h-[460px] lg:grid-cols-3 lg:grid-rows-2 lg:gap-3">
-            <DishCard dish={dishes[0]} priority className={`col-start-1 row-span-2 row-start-1 ${animCls}`} style={animStyle(1)} />
-            <DishCard dish={dishes[1]} className={`col-span-2 col-start-2 row-start-1 ${animCls}`} style={animStyle(2)} />
-            <DishCard dish={dishes[2]} className={`col-start-2 row-start-2 ${animCls}`} style={animStyle(3)} />
-            <DishCard dish={dishes[3]} className={`col-start-3 row-start-2 ${animCls}`} style={animStyle(4)} />
+            <DishCard dish={dishes[0]} priority onSelect={setSelected} className={`col-start-1 row-span-2 row-start-1 ${animCls}`} style={animStyle(1)} />
+            <DishCard dish={dishes[1]} onSelect={setSelected} className={`col-span-2 col-start-2 row-start-1 ${animCls}`} style={animStyle(2)} />
+            <DishCard dish={dishes[2]} onSelect={setSelected} className={`col-start-2 row-start-2 ${animCls}`} style={animStyle(3)} />
+            <DishCard dish={dishes[3]} onSelect={setSelected} className={`col-start-3 row-start-2 ${animCls}`} style={animStyle(4)} />
           </div>
 
           {/* ── Mosaico (mobile): protagonista + tira con scroll-snap ── */}
           <div className="lg:hidden">
-            <DishCard dish={dishes[0]} priority className={`aspect-[4/3] ${animCls}`} style={animStyle(1)} />
+            <DishCard dish={dishes[0]} priority onSelect={setSelected} className={`aspect-[4/3] ${animCls}`} style={animStyle(1)} />
             <div className="-mx-6 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {dishes.slice(1).map((dish, i) => (
                 <DishCard
                   key={dish.img}
                   dish={dish}
+                  onSelect={setSelected}
                   className={`aspect-[4/3] w-[72%] shrink-0 snap-start ${animCls}`}
                   style={animStyle(i + 2)}
                 />
@@ -111,6 +189,95 @@ export function SaboresEnCasa() {
           </div>
         </div>
       </div>
+
+      {/* Detalle de receta — reutiliza el Dialog del sistema */}
+      <Dialog open={!!selected} onOpenChange={(o) => { if (!o) setSelected(null); }}>
+        {selected && (
+          <DialogContent className="menu-detail-panel max-w-3xl overflow-hidden p-0 motion-safe:animate-[menuPanelIn_0.3s_ease-out]">
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              aria-label="Cerrar detalle"
+              className="absolute right-4 top-4 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-zinc-600 shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-zinc-900"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2">
+              {/* Foto */}
+              <div className="relative aspect-[4/5] md:aspect-auto md:min-h-[440px]">
+                <Image
+                  src={selected.img}
+                  alt={selected.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 384px"
+                  className="object-cover"
+                />
+              </div>
+
+              {/* Info */}
+              <div className="flex flex-col p-7">
+                <span className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-700">
+                  <span className="h-px w-5 bg-amber-500/70" aria-hidden="true" />
+                  {selected.categoria}
+                </span>
+                <h3 className="font-serif text-3xl font-semibold leading-tight text-zinc-900">
+                  {selected.name}
+                </h3>
+                <p className="mt-3 font-sans text-sm leading-relaxed text-zinc-500">
+                  {selected.descripcionLarga}
+                </p>
+
+                {/* Ingredientes */}
+                <div className="mt-6">
+                  <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
+                    Ingredientes
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selected.ingredientes.map((ing) => (
+                      <span
+                        key={ing}
+                        className="rounded-full bg-secondary px-2.5 py-1 text-xs text-zinc-700"
+                      >
+                        {ing}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Alérgenos */}
+                <div className="mt-5">
+                  <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
+                    Alérgenos
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selected.alergenos.map((al) => (
+                      <span
+                        key={al}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/60 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700"
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+                        {al}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pie: CTA */}
+                <div className="mt-auto flex pt-7">
+                  <Link
+                    href="/wizard"
+                    className="group/cta inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-green-400/25 transition-all hover:bg-green-600 hover:shadow-green-400/40"
+                  >
+                    Diseñar mi menú
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
     </section>
   );
 }
@@ -120,17 +287,22 @@ function DishCard({
   className = "",
   style,
   priority = false,
+  onSelect,
 }: {
   dish: Dish;
   className?: string;
   style?: React.CSSProperties;
   priority?: boolean;
+  onSelect: (dish: Dish) => void;
 }) {
   const [failed, setFailed] = useState(false);
 
   return (
-    <div
-      className={`group relative overflow-hidden rounded-2xl ring-1 ring-black/5 ${className}`}
+    <button
+      type="button"
+      onClick={() => onSelect(dish)}
+      aria-label={`Ver detalle de ${dish.name}`}
+      className={`group relative block w-full overflow-hidden rounded-2xl text-left outline-none ring-1 ring-black/5 transition-shadow duration-300 hover:shadow-xl hover:shadow-amber-900/[0.08] focus-visible:ring-2 focus-visible:ring-accent ${className}`}
       style={style}
     >
       {failed ? (
@@ -167,6 +339,6 @@ function DishCard({
           </div>
         </>
       )}
-    </div>
+    </button>
   );
 }

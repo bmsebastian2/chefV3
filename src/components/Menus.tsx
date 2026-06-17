@@ -19,7 +19,6 @@ type MenuItem = {
   descripcionLarga: string;
   ingredientes: string[];
   alergenos: string[];
-  precioDesde: string;
 };
 
 // Datos estáticos locales — reemplazar textos/precios por los reales cuando estén.
@@ -33,7 +32,6 @@ const menuItems: MenuItem[] = [
       "Lomo de atún rojo sellado al instante, sobre un ajo blanco de coco sedoso y rematado con migas crujientes que aportan contraste y textura.",
     ingredientes: ["Atún rojo", "Leche de coco", "Almendra", "Pan crujiente", "Aceite de oliva virgen"],
     alergenos: ["Pescado", "Frutos secos", "Gluten"],
-    precioDesde: "Desde C$890 / persona",
   },
   {
     name: "Lomo de Ciervo",
@@ -44,7 +42,6 @@ const menuItems: MenuItem[] = [
       "Lomo de ciervo cocinado en su punto, napado con una reducción de frutos rojos y acompañado de setas de temporada salteadas al momento.",
     ingredientes: ["Lomo de ciervo", "Frutos rojos", "Setas de temporada", "Mantequilla", "Vino tinto"],
     alergenos: ["Lácteos", "Sulfitos"],
-    precioDesde: "Desde C$1.450 / persona",
   },
   {
     name: "Milhoja Caramelizada",
@@ -55,7 +52,6 @@ const menuItems: MenuItem[] = [
       "Capas de hojaldre caramelizado entre foie de pato, manzana verde ácida y cebolla confitada lentamente para un bocado dulce y untuoso.",
     ingredientes: ["Foie de pato", "Hojaldre", "Manzana verde", "Cebolla", "Azúcar moreno"],
     alergenos: ["Gluten", "Huevo", "Lácteos"],
-    precioDesde: "Desde C$1.180 / persona",
   },
   {
     name: "Torrija de Pan Brioche",
@@ -66,7 +62,6 @@ const menuItems: MenuItem[] = [
       "Torrija de brioche caramelizada por fuera y cremosa por dentro, bañada en crema inglesa de vainilla y servida con su propio helado.",
     ingredientes: ["Brioche", "Vainilla bourbon", "Nata", "Yema de huevo", "Azúcar"],
     alergenos: ["Gluten", "Huevo", "Lácteos"],
-    precioDesde: "Desde C$640 / persona",
   },
 ];
 
@@ -180,8 +175,7 @@ export function Menus() {
                 <p className="mt-1 line-clamp-2 font-sans text-sm leading-snug text-zinc-500">
                   {item.desc}
                 </p>
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium text-zinc-400">{item.precioDesde}</span>
+                <div className="mt-3 flex items-center gap-2">
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent">
                     Ver plato
                     <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
@@ -277,12 +271,11 @@ export function Menus() {
                   </div>
                 </div>
 
-                {/* Pie: precio + CTA */}
-                <div className="mt-auto flex flex-col gap-3 pt-7 sm:flex-row sm:items-center sm:justify-between">
-                  <span className="font-serif text-base text-zinc-900">{selected.precioDesde}</span>
+                {/* Pie: CTA */}
+                <div className="mt-auto flex pt-7">
                   <Link
                     href="/wizard"
-                    className="group/cta inline-flex items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-green-400/25 transition-all hover:bg-green-600 hover:shadow-green-400/40"
+                    className="group/cta inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-green-400/25 transition-all hover:bg-green-600 hover:shadow-green-400/40"
                   >
                     Diseñar mi menú
                     <ArrowRight className="h-4 w-4 transition-transform group-hover/cta:translate-x-0.5" />
