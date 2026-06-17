@@ -17,10 +17,10 @@ import { ArrowRight, UtensilsCrossed } from "lucide-react";
  * Mientras no existan, cada celda muestra un placeholder con el nombre del plato.
  */
 const dishes = [
-  { name: "Risotto de hongos", note: "trufa negra y parmesano 24 meses", img: "/banner-firma.webp" },
-  { name: "Mesa de autor", note: "selección del chef", img: "/banner-mesa.webp" },
-  { name: "Coulant de chocolate", note: "helado de vainilla bourbon", img: "/banner-postre.webp" },
-  { name: "Ceviche nikkei", note: "leche de tigre y cítricos", img: "/banner-entrada.webp" },
+  { name: "Risotto de hongos", note: "trufa negra y parmesano 24 meses", img: "/Rissotto.jpg" },
+  { name: "Mesa de autor", note: "selección del chef", img: "/Chef.png" },
+  { name: "Coulant de chocolate", note: "helado de vainilla bourbon", img: "/Coulant.jpg" },
+  { name: "Ceviche nikkei", note: "leche de tigre y cítricos", img: "/Ceviche.jpg" },
 ];
 
 type Dish = (typeof dishes)[number];
