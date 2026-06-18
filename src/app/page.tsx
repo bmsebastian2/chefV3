@@ -12,6 +12,11 @@ import { About } from "@/components/About";
 import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
 
+// La landing es estática con revalidación (ISR): se genera una vez y se sirve
+// desde caché casi instantáneo, en vez de esperar a Supabase en cada request.
+// Los chefs destacados se refrescan cada 5 min (o bajo demanda vía revalidatePath('/')).
+export const revalidate = 300;
+
 // Fila cruda del query (chef_profiles + join a users).
 type ChefProfileRow = {
   id: string;

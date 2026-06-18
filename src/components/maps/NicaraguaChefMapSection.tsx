@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { NicaraguaChefMap, type ChefMarker } from './NicaraguaChefMap'
 
 /**
@@ -6,9 +6,13 @@ import { NicaraguaChefMap, type ChefMarker } from './NicaraguaChefMap'
  * activos. Server component — hace el fetch vía la RPC SECURITY DEFINER
  * `get_active_chefs_for_map` (evita el problema de RLS al leer chef_profiles
  * con el cliente anónimo) y delega la interactividad al client component.
+ *
+ * Usa el admin client (sin cookies) en vez del client de sesión: estos datos
+ * son públicos y no dependen del usuario, así la home puede renderizarse como
+ * estática/ISR en lugar de forzar render dinámico en cada request.
  */
 export async function NicaraguaChefMapSection() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { data, error } = await supabase.rpc('get_active_chefs_for_map')
 
   if (error) {
