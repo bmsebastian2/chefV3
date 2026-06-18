@@ -1,14 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Star, ArrowRight, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import Image from "next/image";
 import Link from "next/link";
-
-gsap.registerPlugin(ScrollTrigger);
 
 // Shape público de un chef para la card. Preparado para la futura tabla de
 // reviews: `rating` ya es un agregado { average, count } — cuando exista la
@@ -123,28 +119,34 @@ function RatingLine({
 export function Chefs({ chefs }: { chefs: ChefCard[] }) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<ChefCard | null>(null);
+  const [revealed, setRevealed] = useState(false);
 
+  // Reveal al entrar en viewport (equivale al ScrollTrigger start "top 75%"),
+  // sin el forced reflow de ScrollTrigger ni el peso de GSAP.
   useEffect(() => {
-    if (!sectionRef.current) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".chef-card",
-        { opacity: 0, y: 50 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          stagger: 0.18,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 75%",
-          },
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setRevealed(true);
+            io.disconnect();
+            break;
+          }
         }
-      );
-    }, sectionRef);
-    return () => ctx.revert();
+      },
+      { rootMargin: "0px 0px -25% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
+
+  // Entrada de las cards: opacity + y:50, dur 0.9, stagger 0.18.
+  // Va en un wrapper para no pisar la transición de hover del <button> interno.
+  const cardCls = `transition-all duration-[900ms] ease-out motion-reduce:transition-none ${
+    revealed ? "opacity-100 translate-y-0" : "motion-safe:opacity-0 motion-safe:translate-y-[50px]"
+  }`;
 
   // Cierre con Escape + bloqueo de scroll del body mientras el detalle está abierto
   // (el Dialog base solo maneja click-fuera, no estas dos cosas).
@@ -204,15 +206,15 @@ export function Chefs({ chefs }: { chefs: ChefCard[] }) {
 
         {/* Cards grid */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {chefs.map((chef) => {
+          {chefs.map((chef, idx) => {
             const location = locationLabel(chef.city, chef.country);
             return (
+            <div key={chef.id} className={cardCls} style={{ transitionDelay: `${idx * 180}ms` }}>
             <button
-              key={chef.id}
               type="button"
               onClick={() => setSelected(chef)}
               aria-label={`Ver perfil de ${chef.name}`}
-              className="chef-card group flex flex-col text-left opacity-0 outline-none transition-transform duration-300 ease-out hover:-translate-y-1 focus-visible:-translate-y-1"
+              className="group flex w-full flex-col text-left outline-none transition-transform duration-300 ease-out hover:-translate-y-1 focus-visible:-translate-y-1"
             >
               {/* Imagen */}
               <div className="relative aspect-[4/5] overflow-hidden rounded-2xl ring-1 ring-black/5 transition-shadow duration-300 group-hover:shadow-xl group-hover:shadow-amber-900/[0.08] group-focus-visible:ring-2 group-focus-visible:ring-accent">
@@ -265,6 +267,7 @@ export function Chefs({ chefs }: { chefs: ChefCard[] }) {
                 </div>
               </div>
             </button>
+            </div>
             );
           })}
         </div>

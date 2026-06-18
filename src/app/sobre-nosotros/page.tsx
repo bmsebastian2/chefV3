@@ -2,14 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowRight } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const values = [
   {
@@ -33,36 +29,44 @@ const values = [
 export default function SobreNosotrosPage() {
   const rootRef = useRef<HTMLElement>(null);
 
+  // Reveal por elemento al entrar en viewport (equivale a ScrollTrigger.batch
+  // start "top 88%"), sin el forced reflow de ScrollTrigger ni el peso de GSAP.
+  // El stagger surge naturalmente porque cada .reveal cruza el umbral por separado.
   useEffect(() => {
-    if (!rootRef.current) return;
+    const root = rootRef.current;
+    if (!root) return;
+    const els = root.querySelectorAll<HTMLElement>(".reveal");
 
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) {
-      gsap.set(".reveal", { opacity: 1, y: 0 });
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      els.forEach((el) => el.classList.add("is-visible"));
       return;
     }
 
-    const ctx = gsap.context(() => {
-      gsap.set(".reveal", { opacity: 0, y: 28 });
-      ScrollTrigger.batch(".reveal", {
-        start: "top 88%",
-        onEnter: (els) =>
-          gsap.to(els, {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            stagger: 0.12,
-            ease: "power2.out",
-            overwrite: true,
-          }),
-      });
-    }, rootRef);
-
-    return () => ctx.revert();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-visible");
+            io.unobserve(e.target);
+          }
+        }
+      },
+      { rootMargin: "0px 0px -12% 0px" }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
   }, []);
 
   return (
     <main ref={rootRef} className="flex min-h-screen flex-col bg-background overflow-x-hidden">
+      {/* Reveal al entrar en viewport (reemplaza GSAP/ScrollTrigger). */}
+      <style>{`
+        .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
+        .reveal.is-visible { opacity: 1; transform: none; }
+        @media (prefers-reduced-motion: reduce) {
+          .reveal { opacity: 1; transform: none; transition: none; }
+        }
+      `}</style>
       <Header />
 
       {/* ① Apertura editorial */}

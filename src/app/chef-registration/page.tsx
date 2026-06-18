@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useActionState } from "react";
 import Link from "next/link";
 import { Header } from "@/components/Header";
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { registerChef } from "@/app/auth/actions";
 import { Country } from "country-state-city";
-import { gsap } from "gsap";
 
 interface FormData {
   firstName: string;
@@ -38,33 +37,6 @@ export default function ChefRegistrationPage() {
   });
   const [emailError, setEmailError] = useState("");
   const [formError, setFormError] = useState("");
-
-  const pageRef = useRef<HTMLElement>(null);
-  const leftPanelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      if (leftPanelRef.current) {
-        gsap.fromTo(
-          leftPanelRef.current,
-          { x: -48, opacity: 0 },
-          { x: 0, opacity: 1, duration: 1.05, ease: "power3.out" }
-        );
-      }
-      gsap.fromTo(
-        ".reg-header",
-        { y: -18, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.72, ease: "power2.out", delay: 0.2 }
-      );
-      gsap.fromTo(
-        ".reg-field",
-        { x: 22, opacity: 0 },
-        { x: 0, opacity: 1, duration: 0.6, stagger: 0.065, ease: "power2.out", delay: 0.38 }
-      );
-    }, pageRef);
-
-    return () => ctx.revert();
-  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -174,15 +146,33 @@ export default function ChefRegistrationPage() {
 
   /* ── Main page ── */
   return (
-    <main ref={pageRef} className="flex min-h-screen flex-col bg-[#FAFAFA]">
+    <main className="flex min-h-screen flex-col bg-[#FAFAFA]">
+      {/* Animación de entrada al montar (reemplaza GSAP; auto-ejecuta en CSS). */}
+      <style>{`
+        @keyframes regLeftIn { from { opacity: 0; transform: translateX(-48px); } to { opacity: 1; transform: none; } }
+        @keyframes regHeaderIn { from { opacity: 0; transform: translateY(-18px); } to { opacity: 1; transform: none; } }
+        @keyframes regFieldIn { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: none; } }
+        .reg-left { animation: regLeftIn 1.05s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .reg-header { animation: regHeaderIn 0.72s ease-out 0.2s both; }
+        .reg-field { animation: regFieldIn 0.6s ease-out 0.38s both; }
+        .reg-field:nth-of-type(2) { animation-delay: 0.445s; }
+        .reg-field:nth-of-type(3) { animation-delay: 0.51s; }
+        .reg-field:nth-of-type(4) { animation-delay: 0.575s; }
+        .reg-field:nth-of-type(5) { animation-delay: 0.64s; }
+        .reg-field:nth-of-type(6) { animation-delay: 0.705s; }
+        .reg-field:nth-of-type(7) { animation-delay: 0.77s; }
+        .reg-field:nth-of-type(8) { animation-delay: 0.835s; }
+        @media (prefers-reduced-motion: reduce) {
+          .reg-left, .reg-header, .reg-field { animation: none; opacity: 1; transform: none; }
+        }
+      `}</style>
       <Header />
 
       <div className="flex-1 flex flex-col lg:flex-row pt-20">
 
         {/* ════ LEFT PANEL — dark branding ════ */}
         <div
-          ref={leftPanelRef}
-          className="hidden lg:flex lg:flex-col lg:w-[42%] xl:w-[40%] bg-[#0C0C0C] relative overflow-hidden"
+          className="reg-left hidden lg:flex lg:flex-col lg:w-[42%] xl:w-[40%] bg-[#0C0C0C] relative overflow-hidden"
           style={{ minHeight: "calc(100vh - 80px)" }}
         >
           {/* Grain */}
@@ -306,7 +296,7 @@ export default function ChefRegistrationPage() {
           <div className="flex-1 w-full max-w-xl lg:max-w-2xl xl:max-w-xl mx-auto px-8 sm:px-10 lg:px-14 xl:px-16 py-12 lg:py-16">
 
             {/* Header */}
-            <div className="reg-header opacity-0 mb-10">
+            <div className="reg-header mb-10">
               <h2 className="font-serif text-[1.85rem] lg:text-[2rem] font-semibold text-zinc-900 tracking-tight mb-2">
                 Crea tu cuenta
               </h2>
@@ -323,13 +313,13 @@ export default function ChefRegistrationPage() {
 
             <form action={formAction} onSubmit={handleSubmit}>
               {formError && (
-                <div className="reg-field opacity-0 mb-7 pl-4 py-3 border-l-2 border-red-400 bg-red-50/60">
+                <div className="reg-field mb-7 pl-4 py-3 border-l-2 border-red-400 bg-red-50/60">
                   <p className="text-red-700 text-xs font-sans">{formError}</p>
                 </div>
               )}
 
               {/* Nombre + Primer apellido */}
-              <div className="reg-field opacity-0 grid grid-cols-1 sm:grid-cols-2 gap-x-8 mb-7">
+              <div className="reg-field grid grid-cols-1 sm:grid-cols-2 gap-x-8 mb-7">
                 <div>
                   <label htmlFor="firstName" className={labelCls}>
                     Nombre <span className="text-[#22c55e]">*</span>
@@ -363,7 +353,7 @@ export default function ChefRegistrationPage() {
               </div>
 
               {/* Segundo apellido */}
-              <div className="reg-field opacity-0 mb-7">
+              <div className="reg-field mb-7">
                 <label htmlFor="secondSurname" className={labelCls}>
                   Segundo apellido
                 </label>
@@ -379,7 +369,7 @@ export default function ChefRegistrationPage() {
               </div>
 
               {/* País + Teléfono */}
-              <div className="reg-field opacity-0 grid grid-cols-1 sm:grid-cols-2 gap-x-8 mb-7">
+              <div className="reg-field grid grid-cols-1 sm:grid-cols-2 gap-x-8 mb-7">
                 <div>
                   <label htmlFor="country" className={labelCls}>
                     País <span className="text-[#22c55e]">*</span>
@@ -437,7 +427,7 @@ export default function ChefRegistrationPage() {
               </div>
 
               {/* Email + Confirmar */}
-              <div className="reg-field opacity-0 grid grid-cols-1 sm:grid-cols-2 gap-x-8 mb-7">
+              <div className="reg-field grid grid-cols-1 sm:grid-cols-2 gap-x-8 mb-7">
                 <div>
                   <label htmlFor="email" className={labelCls}>
                     Email <span className="text-[#22c55e]">*</span>
@@ -478,7 +468,7 @@ export default function ChefRegistrationPage() {
               </div>
 
               {/* Contraseña */}
-              <div className="reg-field opacity-0 mb-8">
+              <div className="reg-field mb-8">
                 <label htmlFor="password" className={labelCls}>
                   Contraseña <span className="text-[#22c55e]">*</span>
                 </label>
@@ -496,7 +486,7 @@ export default function ChefRegistrationPage() {
               </div>
 
               {/* Términos */}
-              <div className="reg-field opacity-0 mb-9 flex items-start gap-3.5">
+              <div className="reg-field mb-9 flex items-start gap-3.5">
                 <div className="relative flex-shrink-0 mt-0.5">
                   <input
                     id="acceptTerms"
@@ -550,7 +540,7 @@ export default function ChefRegistrationPage() {
               </div>
 
               {/* Submit */}
-              <div className="reg-field opacity-0">
+              <div className="reg-field">
                 <Button
                   type="submit"
                   disabled={!isFormValid() || isPending}
