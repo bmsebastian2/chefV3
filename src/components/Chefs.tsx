@@ -10,37 +10,61 @@ import Link from "next/link";
 
 gsap.registerPlugin(ScrollTrigger);
 
-type Chef = {
+// Shape público de un chef para la card. Preparado para la futura tabla de
+// reviews: `rating` ya es un agregado { average, count } — cuando exista la
+// tabla solo cambia la fuente del query, no este componente.
+export type ChefCard = {
+  id: string;
   name: string;
-  rating: number;
-  reviews: number;
-  specialty: string;
-  img: string;
+  tagline: string | null;
+  city: string | null;
+  country: string | null;
+  experienceYears: number | null;
+  isPro: boolean;
+  imageUrl: string | null;
+  rating: { average: number; count: number };
 };
 
-const chefs: Chef[] = [
-  {
-    name: "Chef Javier Aranda",
-    rating: 4.9,
-    reviews: 120,
-    specialty: "Cocina de Autor",
-    img: "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&q=80&w=600&grayscale=true",
-  },
-  {
-    name: "Chef Elena Arzak",
-    rating: 5.0,
-    reviews: 340,
-    specialty: "Alta Cocina Vasca",
-    img: "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&q=80&w=600&grayscale=true",
-  },
-  {
-    name: "Chef Diego Guerrero",
-    rating: 4.8,
-    reviews: 95,
-    specialty: "Cocina Creativa",
-    img: "https://images.unsplash.com/photo-1581349485608-9469926a8e5e?auto=format&fit=crop&q=80&w=600&grayscale=true",
-  },
-];
+function locationLabel(city: string | null, country: string | null): string | null {
+  const parts = [city, country].filter(Boolean);
+  return parts.length ? parts.join(", ") : null;
+}
+
+function initialOf(name: string): string {
+  return name.trim().charAt(0).toUpperCase() || "C";
+}
+
+// Foto del chef con fallback elegante cuando no hay imagen (chef sin foto subida).
+function ChefPhoto({
+  src,
+  name,
+  sizes,
+  imgClassName = "",
+}: {
+  src: string | null;
+  name: string;
+  sizes: string;
+  imgClassName?: string;
+}) {
+  if (src) {
+    return (
+      <Image
+        src={src}
+        alt={name}
+        fill
+        sizes={sizes}
+        className={`object-cover ${imgClassName}`}
+      />
+    );
+  }
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-zinc-100">
+      <span className="font-serif text-5xl font-semibold text-zinc-300">
+        {initialOf(name)}
+      </span>
+    </div>
+  );
+}
 
 function Stars({ rating, className = "" }: { rating: number; className?: string }) {
   return (
@@ -57,9 +81,48 @@ function Stars({ rating, className = "" }: { rating: number; className?: string 
   );
 }
 
-export function Chefs() {
+// Línea de rating con tres estados, lista para la futura tabla de reviews:
+// - count > 0  → estrellas + "4.9 · 12 reseñas"
+// - solo average (sin reseñas aún) → estrellas + "4.9 · Nuevo"
+// - sin datos  → chip "Chef nuevo"
+function RatingLine({
+  rating,
+  size = "sm",
+}: {
+  rating: ChefCard["rating"];
+  size?: "sm" | "md";
+}) {
+  const textClass = size === "md" ? "text-sm" : "text-xs";
+  if (rating.count > 0) {
+    return (
+      <span className="flex items-center gap-2">
+        <Stars rating={rating.average} />
+        <span className={`${textClass} font-medium text-zinc-500`}>
+          {rating.average.toFixed(1)} · {rating.count} reseñas
+        </span>
+      </span>
+    );
+  }
+  if (rating.average > 0) {
+    return (
+      <span className="flex items-center gap-2">
+        <Stars rating={rating.average} />
+        <span className={`${textClass} font-medium text-zinc-500`}>
+          {rating.average.toFixed(1)} · Nuevo
+        </span>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex w-fit items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700">
+      Chef nuevo
+    </span>
+  );
+}
+
+export function Chefs({ chefs }: { chefs: ChefCard[] }) {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [selected, setSelected] = useState<Chef | null>(null);
+  const [selected, setSelected] = useState<ChefCard | null>(null);
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -141,9 +204,11 @@ export function Chefs() {
 
         {/* Cards grid */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {chefs.map((chef, idx) => (
+          {chefs.map((chef) => {
+            const location = locationLabel(chef.city, chef.country);
+            return (
             <button
-              key={idx}
+              key={chef.id}
               type="button"
               onClick={() => setSelected(chef)}
               aria-label={`Ver perfil de ${chef.name}`}
@@ -151,17 +216,23 @@ export function Chefs() {
             >
               {/* Imagen */}
               <div className="relative aspect-[4/5] overflow-hidden rounded-2xl ring-1 ring-black/5 transition-shadow duration-300 group-hover:shadow-xl group-hover:shadow-amber-900/[0.08] group-focus-visible:ring-2 group-focus-visible:ring-accent">
-                <Image
-                  src={chef.img}
-                  alt={chef.name}
-                  fill
+                <ChefPhoto
+                  src={chef.imageUrl}
+                  name={chef.name}
                   sizes="(max-width: 768px) 100vw, 33vw"
-                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  imgClassName="transition-transform duration-700 ease-out group-hover:scale-105"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-                <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-700 backdrop-blur-sm">
-                  {chef.specialty}
-                </span>
+                {location && (
+                  <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-700 backdrop-blur-sm">
+                    {location}
+                  </span>
+                )}
+                {chef.isPro && (
+                  <span className="absolute right-4 top-4 rounded-full bg-accent px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-sm">
+                    Pro
+                  </span>
+                )}
               </div>
 
               {/* Ficha */}
@@ -173,12 +244,19 @@ export function Chefs() {
                 <h3 className="font-serif text-xl font-semibold leading-tight text-zinc-900">
                   {chef.name}
                 </h3>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <Stars rating={chef.rating} />
-                  <span className="text-xs font-medium text-zinc-500">
-                    {chef.rating} · {chef.reviews} reseñas
-                  </span>
+                {chef.tagline && (
+                  <p className="mt-1 line-clamp-1 font-sans text-sm font-light text-zinc-500">
+                    {chef.tagline}
+                  </p>
+                )}
+                <div className="mt-1.5">
+                  <RatingLine rating={chef.rating} />
                 </div>
+                {chef.experienceYears != null && chef.experienceYears > 0 && (
+                  <p className="mt-2 text-xs text-zinc-400">
+                    {chef.experienceYears} años de experiencia
+                  </p>
+                )}
                 <div className="mt-3 flex items-center justify-end">
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent">
                     Ver perfil
@@ -187,7 +265,8 @@ export function Chefs() {
                 </div>
               </div>
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -207,35 +286,38 @@ export function Chefs() {
             <div className="grid grid-cols-1 md:grid-cols-2">
               {/* Foto */}
               <div className="relative aspect-[4/5] md:aspect-auto md:min-h-[440px]">
-                <Image
-                  src={selected.img}
-                  alt={selected.name}
-                  fill
+                <ChefPhoto
+                  src={selected.imageUrl}
+                  name={selected.name}
                   sizes="(max-width: 768px) 100vw, 384px"
-                  className="object-cover"
                 />
               </div>
 
               {/* Info */}
               <div className="flex flex-col p-7">
-                <span className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-700">
-                  <span className="h-px w-5 bg-amber-500/70" aria-hidden="true" />
-                  {selected.specialty}
-                </span>
+                {locationLabel(selected.city, selected.country) && (
+                  <span className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-700">
+                    <span className="h-px w-5 bg-amber-500/70" aria-hidden="true" />
+                    {locationLabel(selected.city, selected.country)}
+                  </span>
+                )}
                 <h3 className="font-serif text-3xl font-semibold leading-tight text-zinc-900">
                   {selected.name}
                 </h3>
 
-                <div className="mt-3 flex items-center gap-2">
-                  <Stars rating={selected.rating} />
-                  <span className="text-sm font-medium text-zinc-500">
-                    {selected.rating} · {selected.reviews} reseñas
-                  </span>
+                <div className="mt-3">
+                  <RatingLine rating={selected.rating} size="md" />
                 </div>
 
+                {selected.experienceYears != null && selected.experienceYears > 0 && (
+                  <p className="mt-2 text-sm text-zinc-400">
+                    {selected.experienceYears} años de experiencia
+                  </p>
+                )}
+
                 <p className="mt-4 font-sans text-sm leading-relaxed text-zinc-500">
-                  Cocina {selected.specialty.toLowerCase()} preparada en tu propio hogar, frente a ti
-                  y a tus invitados.
+                  {selected.tagline ??
+                    "Alta cocina preparada en tu propio hogar, frente a ti y a tus invitados."}
                 </p>
 
                 {/* Pie: CTA */}
