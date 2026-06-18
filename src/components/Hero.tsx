@@ -1,3 +1,4 @@
+import ReactDOM from "react-dom";
 import Link from "next/link";
 import { ChefHat, MapPin, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,12 @@ const chefPins = [
 ];
 
 export function Hero() {
+  // El poster del <video> de abajo es el candidato a LCP, pero el preload scanner
+  // del navegador no lo descubre mirando el HTML (tiene que parsear el <video>
+  // primero). Lo precargamos explícito con prioridad alta para que la imagen LCP
+  // sea descubrible de inmediato y no quede detrás en la cola de descargas.
+  ReactDOM.preload("/banner-chef.webp", { as: "image", fetchPriority: "high" });
+
   return (
     <section className="relative overflow-hidden bg-[#FAFAFA]">
       {/* Animaciones CSS puras del hero (respetan prefers-reduced-motion) */}
