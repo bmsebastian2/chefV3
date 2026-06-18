@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect, useRef, Fragment } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useEffect, useRef, useState, Fragment } from "react";
 import { PencilLine, MailOpen, MessageSquareText, CalendarCheck, UtensilsCrossed } from "lucide-react";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const steps = [
   { icon: PencilLine, title: "Personaliza tu solicitud", desc: "Elige fecha, preferencias y alergias." },
@@ -17,48 +13,45 @@ const steps = [
 
 export function HowItWorks() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const [revealed, setRevealed] = useState(false);
 
+  // Reveal al entrar en viewport (equivale al ScrollTrigger start "top 70%"),
+  // sin el forced reflow de ScrollTrigger ni el peso de GSAP.
   useEffect(() => {
-    if (!sectionRef.current) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".step-number",
-        { opacity: 0, y: -20 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.6,
-          stagger: 0.12,
-          ease: "power2.out",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 70%" },
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setRevealed(true);
+            io.disconnect();
+            break;
+          }
         }
-      );
-      gsap.fromTo(
-        ".step-card",
-        { opacity: 0, y: 32 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.7,
-          stagger: 0.12,
-          ease: "power2.out",
-          delay: 0.2,
-          scrollTrigger: { trigger: sectionRef.current, start: "top 70%" },
-        }
-      );
-      gsap.fromTo(
-        ".connector-line",
-        { scaleX: 0 },
-        {
-          scaleX: 1,
-          duration: 1.2,
-          ease: "power2.out",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 70%" },
-        }
-      );
-    }, sectionRef);
-    return () => ctx.revert();
+      },
+      { rootMargin: "0px 0px -30% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
+
+  // Animaciones de entrada (solo opacity/transform → compositadas, sin reflow).
+  // Respetan prefers-reduced-motion: con motion-reduce el contenido aparece directo.
+  // step-number: y:-20, dur 0.6, stagger 0.12
+  const numberCls = `transition-all duration-[600ms] ease-out motion-reduce:transition-none ${
+    revealed ? "opacity-100 translate-y-0" : "motion-safe:opacity-0 motion-safe:-translate-y-5"
+  }`;
+  // step-card: y:32, dur 0.7, delay 0.2, stagger 0.12
+  const cardCls = `transition-all duration-700 ease-out motion-reduce:transition-none ${
+    revealed ? "opacity-100 translate-y-0" : "motion-safe:opacity-0 motion-safe:translate-y-8"
+  }`;
+  // connector-line: scaleX 0→1, dur 1.2
+  const connectorCls = `origin-left transition-transform duration-[1200ms] ease-out motion-reduce:transition-none ${
+    revealed ? "scale-x-100" : "motion-safe:scale-x-0"
+  }`;
+  const numberStyle = (i: number) => ({ transitionDelay: `${i * 120}ms` });
+  const cardStyle = (i: number) => ({ transitionDelay: `${200 + i * 120}ms` });
 
   return (
     <section id="experiencia" ref={sectionRef} className="py-28 bg-white">
@@ -83,10 +76,10 @@ export function HowItWorks() {
             {steps.map((step, i) => (
               <Fragment key={i}>
                 <div className="flex flex-col items-center gap-3 flex-shrink-0">
-                  <div className="step-number opacity-0 text-xs font-black tracking-[0.2em] text-accent/60 font-sans">
+                  <div className={`text-xs font-black tracking-[0.2em] text-accent/60 font-sans ${numberCls}`} style={numberStyle(i)}>
                     {String(i + 1).padStart(2, "0")}
                   </div>
-                  <div className="step-card opacity-0 w-[72px] h-[72px] rounded-full bg-zinc-50 border-2 border-zinc-100 flex items-center justify-center shadow-[0_0_0_6px_white] hover:border-accent/30 hover:bg-accent/5 transition-colors duration-300 group">
+                  <div className={`w-[72px] h-[72px] rounded-full bg-zinc-50 border-2 border-zinc-100 flex items-center justify-center shadow-[0_0_0_6px_white] hover:border-accent/30 hover:bg-accent/5 transition-colors duration-300 group ${cardCls}`} style={cardStyle(i)}>
                     <step.icon
                       className="w-7 h-7 text-accent group-hover:scale-110 transition-transform duration-200"
                       strokeWidth={1.5}
@@ -96,7 +89,7 @@ export function HowItWorks() {
                 {i < steps.length - 1 && (
                   <div className="flex-1 mx-3 h-px overflow-hidden">
                     <div
-                      className="connector-line h-full origin-left"
+                      className={`h-full ${connectorCls}`}
                       style={{
                         background: "linear-gradient(to right, #22c55e40, #22c55e, #22c55e40)",
                       }}
@@ -110,7 +103,7 @@ export function HowItWorks() {
           {/* Text labels row */}
           <div className="grid grid-cols-5 gap-6">
             {steps.map((step, i) => (
-              <div key={i} className="step-card opacity-0 text-center px-2">
+              <div key={i} className={`text-center px-2 ${cardCls}`} style={cardStyle(i)}>
                 <h3 className="font-serif text-lg font-medium text-zinc-900 mb-2 leading-snug">
                   {step.title}
                 </h3>
@@ -123,7 +116,7 @@ export function HowItWorks() {
         {/* Mobile: vertical list */}
         <div className="md:hidden flex flex-col gap-0">
           {steps.map((step, i) => (
-            <div key={i} className="step-card opacity-0 flex gap-6 relative">
+            <div key={i} className={`flex gap-6 relative ${cardCls}`} style={cardStyle(i)}>
               {/* Vertical connector */}
               {i < steps.length - 1 && (
                 <div className="absolute left-[35px] top-[72px] bottom-0 w-px bg-gradient-to-b from-zinc-200 to-transparent" />

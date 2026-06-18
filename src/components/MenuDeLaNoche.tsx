@@ -1,12 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowRight } from "lucide-react";
-
-gsap.registerPlugin(ScrollTrigger);
 
 // Menú degustación de muestra — lo que un chef compone para ti en casa
 const tastingMenu = [
@@ -17,30 +13,45 @@ const tastingMenu = [
 
 export function MenuDeLaNoche() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const [revealed, setRevealed] = useState(false);
 
+  // Reveal al entrar en viewport (equivale al ScrollTrigger start "top 70%"),
+  // sin el forced reflow de ScrollTrigger ni el peso de GSAP.
   useEffect(() => {
-    if (!sectionRef.current) return;
-    const ctx = gsap.context(() => {
-      const trigger = { trigger: sectionRef.current, start: "top 70%" };
-
-      gsap.fromTo(
-        ".menu-intro > *",
-        { opacity: 0, y: 24 },
-        { opacity: 1, y: 0, duration: 0.7, stagger: 0.12, ease: "power2.out", scrollTrigger: trigger }
-      );
-      gsap.fromTo(
-        ".menu-card",
-        { opacity: 0, y: 32 },
-        { opacity: 1, y: 0, duration: 0.8, ease: "power2.out", delay: 0.15, scrollTrigger: trigger }
-      );
-      gsap.fromTo(
-        ".menu-dish",
-        { opacity: 0, x: -16 },
-        { opacity: 1, x: 0, duration: 0.6, stagger: 0.12, ease: "power2.out", delay: 0.45, scrollTrigger: trigger }
-      );
-    }, sectionRef);
-    return () => ctx.revert();
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setRevealed(true);
+            io.disconnect();
+            break;
+          }
+        }
+      },
+      { rootMargin: "0px 0px -30% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
+
+  // Animaciones de entrada (solo opacity/transform, sin reflow; respetan reduced-motion).
+  // menu-intro: y:24, dur 0.7, stagger 0.12
+  const introCls = `transition-all duration-700 ease-out motion-reduce:transition-none ${
+    revealed ? "opacity-100 translate-y-0" : "motion-safe:opacity-0 motion-safe:translate-y-6"
+  }`;
+  // menu-card: y:32, dur 0.8, delay 0.15
+  const cardCls = `transition-all duration-[800ms] ease-out motion-reduce:transition-none ${
+    revealed ? "opacity-100 translate-y-0" : "motion-safe:opacity-0 motion-safe:translate-y-8"
+  }`;
+  // menu-dish: x:-16, dur 0.6, stagger 0.12, delay 0.45
+  const dishCls = `transition-all duration-[600ms] ease-out motion-reduce:transition-none ${
+    revealed ? "opacity-100 translate-x-0" : "motion-safe:opacity-0 motion-safe:-translate-x-4"
+  }`;
+  const introStyle = (i: number) => ({ transitionDelay: `${i * 120}ms` });
+  const cardStyle = { transitionDelay: "150ms" };
+  const dishStyle = (i: number) => ({ transitionDelay: `${450 + i * 120}ms` });
 
   return (
     <section id="menu-noche" ref={sectionRef} className="relative overflow-hidden bg-[#FAFAFA] py-28">
@@ -67,21 +78,21 @@ export function MenuDeLaNoche() {
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
 
           {/* ── Columna de intro ── */}
-          <div className="menu-intro">
-            <span className="mb-5 inline-block rounded-full border border-accent/25 bg-accent/5 px-4 py-1 text-[10px] font-black uppercase tracking-[0.25em] text-accent opacity-0">
+          <div>
+            <span className={`mb-5 inline-block rounded-full border border-accent/25 bg-accent/5 px-4 py-1 text-[10px] font-black uppercase tracking-[0.25em] text-accent ${introCls}`} style={introStyle(0)}>
               La experiencia
             </span>
-            <h2 className="mb-4 font-serif text-4xl font-semibold text-zinc-900 opacity-0 md:text-5xl">
+            <h2 className={`mb-4 font-serif text-4xl font-semibold text-zinc-900 md:text-5xl ${introCls}`} style={introStyle(1)}>
               Un menú pensado solo para ti
             </h2>
-            <p className="max-w-md font-sans text-lg leading-relaxed text-zinc-500 opacity-0">
+            <p className={`max-w-md font-sans text-lg leading-relaxed text-zinc-500 ${introCls}`} style={introStyle(2)}>
               No eliges de una carta fija: tu chef diseña cada plato según tu ocasión,
               tus gustos y tus alergias, y lo cocina en tu propia cocina.
             </p>
           </div>
 
           {/* ── Tarjeta del menú degustación ── */}
-          <div className="menu-card relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-white p-6 opacity-0 shadow-xl shadow-amber-900/[0.06]">
+          <div className={`relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/40 to-white p-6 shadow-xl shadow-amber-900/[0.06] ${cardCls}`} style={cardStyle}>
             {/* Glow cálido de fondo */}
             <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-amber-200/30 blur-3xl" aria-hidden="true" />
 
@@ -115,10 +126,11 @@ export function MenuDeLaNoche() {
 
             {/* Platos */}
             <ul className="relative mt-4">
-              {tastingMenu.map((m) => (
+              {tastingMenu.map((m, i) => (
                 <li
                   key={m.course}
-                  className="menu-dish flex items-baseline gap-3 border-t border-amber-100 py-2.5 opacity-0 first:border-t-0 first:pt-1"
+                  className={`flex items-baseline gap-3 border-t border-amber-100 py-2.5 first:border-t-0 first:pt-1 ${dishCls}`}
+                  style={dishStyle(i)}
                 >
                   <span className="w-5 flex-shrink-0 font-serif text-base italic text-amber-500/90">
                     {m.course}

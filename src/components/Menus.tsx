@@ -1,15 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, X } from "lucide-react";
-
-gsap.registerPlugin(ScrollTrigger);
 
 type MenuItem = {
   name: string;
@@ -68,28 +64,34 @@ const menuItems: MenuItem[] = [
 export function Menus() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<MenuItem | null>(null);
+  const [revealed, setRevealed] = useState(false);
 
+  // Reveal al entrar en viewport (equivale al ScrollTrigger start "top 60%"),
+  // sin el forced reflow de ScrollTrigger ni el peso de GSAP.
   useEffect(() => {
-    if (!sectionRef.current) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".menu-item",
-        { opacity: 0, scale: 0.95 },
-        {
-          opacity: 1,
-          scale: 1,
-          duration: 0.8,
-          stagger: 0.1,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 60%",
-          },
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            setRevealed(true);
+            io.disconnect();
+            break;
+          }
         }
-      );
-    }, sectionRef);
-    return () => ctx.revert();
+      },
+      { rootMargin: "0px 0px -40% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
+
+  // Entrada de las tarjetas: opacity + scale 0.95, dur 0.8, stagger 0.1.
+  // Va en un wrapper para no pisar la transición de hover del <button> interno.
+  const cardCls = `transition-all duration-[800ms] ease-out motion-reduce:transition-none ${
+    revealed ? "opacity-100 scale-100" : "motion-safe:opacity-0 motion-safe:scale-95"
+  }`;
 
   // Cierre con Escape + bloqueo de scroll del body mientras el detalle está abierto
   // (el Dialog base solo maneja click-fuera, no estas dos cosas).
@@ -141,12 +143,12 @@ export function Menus() {
 
         <div className="mb-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {menuItems.map((item, idx) => (
+            <div key={idx} className={cardCls} style={{ transitionDelay: `${idx * 100}ms` }}>
             <button
-              key={idx}
               type="button"
               onClick={() => setSelected(item)}
               aria-label={`Ver detalle de ${item.name}`}
-              className="menu-item group flex flex-col text-left opacity-0 outline-none transition-transform duration-300 ease-out hover:-translate-y-1 focus-visible:-translate-y-1"
+              className="group flex w-full flex-col text-left outline-none transition-transform duration-300 ease-out hover:-translate-y-1 focus-visible:-translate-y-1"
             >
               {/* Imagen */}
               <div className="relative aspect-[4/5] overflow-hidden rounded-2xl ring-1 ring-black/5 transition-shadow duration-300 group-hover:shadow-xl group-hover:shadow-amber-900/[0.08] group-focus-visible:ring-2 group-focus-visible:ring-accent">
@@ -183,6 +185,7 @@ export function Menus() {
                 </div>
               </div>
             </button>
+            </div>
           ))}
         </div>
 
