@@ -1,4 +1,4 @@
-const CACHE = "getchef-v2";
+const CACHE = "getchef-v3";
 const OFFLINE_URL = "/offline";
 const PRECACHE = [OFFLINE_URL, "/", "/manifest.webmanifest", "/icon-192x192.png"];
 
@@ -41,7 +41,9 @@ self.addEventListener("fetch", (event) => {
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
         return fetch(event.request).then((response) => {
-          if (response.ok) {
+          // Solo cacheamos respuestas completas (200). Las parciales (206,
+          // p. ej. videos con range requests) no se pueden guardar en Cache.
+          if (response.status === 200) {
             const clone = response.clone();
             caches.open(CACHE).then((cache) => cache.put(event.request, clone));
           }
