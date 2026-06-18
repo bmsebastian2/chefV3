@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  experimental: {
+    inlineCss: true,
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
