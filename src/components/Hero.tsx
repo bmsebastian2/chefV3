@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ChefHat, MapPin, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -163,13 +162,15 @@ export function Hero() {
               style={{ animationDelay: "560ms" }}
             >
               <div className="relative h-44 w-full sm:h-48">
-                <Image
-                  src="/banner-chef.png"
-                  alt="Chef privado emplatando un plato nicaragüense de autor en una mesa de madera"
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover object-right transition-transform duration-700 ease-out group-hover:scale-105"
+                <video
+                  src="/Cocina%20en%20vivo.mp4"
+                  poster="/banner-chef.png"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  aria-label="Chef cocinando en vivo un plato nicaragüense de autor"
+                  className="absolute inset-0 h-full w-full object-cover object-right transition-transform duration-700 ease-out group-hover:scale-105"
                 />
                 {/* Velado para legibilidad del texto */}
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-zinc-900/90 via-zinc-900/45 to-transparent" />
