@@ -164,7 +164,7 @@ export function Hero() {
               <div className="relative h-44 w-full sm:h-48">
                 <video
                   src="/Cocina%20en%20vivo.mp4"
-                  poster="/banner-chef.png"
+                  poster="/banner-chef.webp"
                   autoPlay
                   loop
                   muted

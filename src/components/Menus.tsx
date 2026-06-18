@@ -26,7 +26,7 @@ const menuItems: MenuItem[] = [
   {
     name: "Tataki de Atún Rojo",
     desc: "Ajo blanco de coco y migas crujientes",
-    img: "/tataki de atun rojo.png",
+    img: "/tataki de atun rojo.webp",
     categoria: "Entrante",
     descripcionLarga:
       "Lomo de atún rojo sellado al instante, sobre un ajo blanco de coco sedoso y rematado con migas crujientes que aportan contraste y textura.",
@@ -36,7 +36,7 @@ const menuItems: MenuItem[] = [
   {
     name: "Lomo de Ciervo",
     desc: "Salsa de frutos rojos y setas salteadas",
-    img: "/Lomito.png",
+    img: "/Lomito.webp",
     categoria: "Principal",
     descripcionLarga:
       "Lomo de ciervo cocinado en su punto, napado con una reducción de frutos rojos y acompañado de setas de temporada salteadas al momento.",
@@ -46,7 +46,7 @@ const menuItems: MenuItem[] = [
   {
     name: "Milhoja Caramelizada",
     desc: "Foie de pato, manzana verde y cebolla confitada",
-    img: "/milhoja.png",
+    img: "/milhoja.webp",
     categoria: "Principal",
     descripcionLarga:
       "Capas de hojaldre caramelizado entre foie de pato, manzana verde ácida y cebolla confitada lentamente para un bocado dulce y untuoso.",
@@ -56,7 +56,7 @@ const menuItems: MenuItem[] = [
   {
     name: "Torrija de Pan Brioche",
     desc: "Crema inglesa y su helado",
-    img: "/pan brioche.png",
+    img: "/pan brioche.webp",
     categoria: "Postre",
     descripcionLarga:
       "Torrija de brioche caramelizada por fuera y cremosa por dentro, bañada en crema inglesa de vainilla y servida con su propio helado.",

@@ -35,7 +35,7 @@ const dishes: Dish[] = [
   {
     name: "Risotto de hongos",
     note: "trufa negra y parmesano 24 meses",
-    img: "/Rissotto.jpg",
+    img: "/Rissotto.webp",
     categoria: "Principal",
     descripcionLarga:
       "Arroz carnaroli mantecado al momento con una selección de hongos salteados, lascas de parmesano curado 24 meses y un aroma final de trufa negra.",
@@ -45,7 +45,7 @@ const dishes: Dish[] = [
   {
     name: "Mesa de autor",
     note: "selección del chef",
-    img: "/Chef.png",
+    img: "/Chef.webp",
     categoria: "Experiencia",
     descripcionLarga:
       "Un menú degustación diseñado en vivo por el chef según el mercado del día. Una secuencia de bocados de autor pensada para sorprender a tus invitados de principio a fin.",
@@ -65,7 +65,7 @@ const dishes: Dish[] = [
   {
     name: "Ceviche nikkei",
     note: "leche de tigre y cítricos",
-    img: "/Ceviche.jpg",
+    img: "/Ceviche.webp",
     categoria: "Entrante",
     descripcionLarga:
       "Pescado fresco marinado en una leche de tigre nikkei de cítricos y soja, con el punto justo de ají y un toque de jengibre que despierta el paladar.",
