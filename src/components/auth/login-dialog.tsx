@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { useActionState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, ArrowLeft, MailCheck } from 'lucide-react'
 import { login, loginWithGoogle, requestPasswordReset } from '@/app/auth/actions'
+import { createClient } from '@/utils/supabase/clients'
 import {
   Dialog,
   DialogContent,
@@ -13,24 +15,64 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
+  const router = useRouter()
   const [open, setOpen] = useState(() =>
     typeof window !== 'undefined' && window.location.search.includes('login=true')
   )
   const [view, setView] = useState<'login' | 'forgot'>('login')
   const [showPassword, setShowPassword] = useState(false)
+  const [checking, setChecking] = useState(false)
   const [loginState, loginAction, isPending] = useActionState(login, null)
   const [resetState, resetAction, isResetting] = useActionState(requestPasswordReset, null)
+
+  // Antes de mostrar el formulario, verificar si ya hay sesión activa.
+  // Si la hay, redirigir al dashboard según el rol en vez de abrir el modal.
+  async function handleOpenChange(o: boolean) {
+    if (!o) {
+      setOpen(false)
+      setView('login') // al cerrar, volver siempre a la vista de login
+      return
+    }
+
+    setChecking(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (userData?.role === 'chef') {
+          router.push('/dashboard')
+          return
+        }
+        if (userData?.role === 'client') {
+          router.push('/client-dashboard')
+          return
+        }
+        // Rol desconocido/null → continuar al formulario de login.
+      }
+
+      setOpen(true)
+    } catch {
+      // Ante cualquier error de verificación, abrir el formulario igualmente.
+      setOpen(true)
+    } finally {
+      setChecking(false)
+    }
+  }
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(o) => {
-        setOpen(o)
-        if (!o) setView('login') // al cerrar, volver siempre a la vista de login
-      }}
+      onOpenChange={handleOpenChange}
     >
       <DialogTrigger asChild>
-        {trigger ?? <Button className="h-8 px-4 text-base bg-white text-zinc-900 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 shadow-sm rounded-md transition-all" variant="ghost">Acceder</Button>}
+        {trigger ?? <Button disabled={checking} className="h-8 px-4 text-base bg-white text-zinc-900 border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 shadow-sm rounded-md transition-all disabled:opacity-70" variant="ghost">{checking ? 'Verificando…' : 'Acceder'}</Button>}
       </DialogTrigger>
  <DialogContent className="fixed top-1/2 left-1/2 z-[9999] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-3xl p-10 bg-white shadow-lg">
 
