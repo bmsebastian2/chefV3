@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { logout } from "@/app/auth/actions";
+import { NombreForm } from "@/components/dashboard/NombreForm";
 import { KeyRound, User, MapPin, LogOut, ChevronRight, Mail } from "lucide-react";
 
 export default async function ConfiguracionPage() {
@@ -13,11 +14,10 @@ export default async function ConfiguracionPage() {
 
   const { data: userData } = await supabase
     .from("users")
-    .select("first_name, role")
+    .select("first_name, first_surname, second_surname, role")
     .eq("id", user.id)
     .maybeSingle();
 
-  const displayName = userData?.first_name || user.email?.split("@")[0] || "Chef";
   const roleLabel = userData?.role === "chef" ? "Chef" : userData?.role === "client" ? "Cliente" : "—";
 
   return (
@@ -35,10 +35,18 @@ export default async function ConfiguracionPage() {
           Cuenta
         </h2>
         <div className="rounded-2xl border border-zinc-100 bg-white shadow-sm divide-y divide-zinc-100">
-          <div className="flex items-center gap-3 p-4">
-            <User className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-            <span className="text-sm text-zinc-500 w-24 flex-shrink-0">Nombre</span>
-            <span className="text-sm font-medium text-zinc-900 truncate">{displayName}</span>
+          <div className="flex items-start gap-3 p-4">
+            <User className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-1.5" />
+            <span className="text-sm text-zinc-500 w-24 flex-shrink-0 mt-2.5">Nombre</span>
+            <div className="flex-1 min-w-0">
+              <NombreForm
+                initialData={{
+                  first_name: userData?.first_name ?? null,
+                  first_surname: userData?.first_surname ?? null,
+                  second_surname: userData?.second_surname ?? null,
+                }}
+              />
+            </div>
           </div>
           <div className="flex items-center gap-3 p-4">
             <Mail className="w-4 h-4 text-zinc-400 flex-shrink-0" />
