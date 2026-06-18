@@ -35,8 +35,7 @@ export function ScrollToTopButton() {
       type="button"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Volver arriba"
-      aria-hidden={!visible}
-      tabIndex={visible ? 0 : -1}
+      inert={!visible}
       className={`group fixed z-40 flex h-14 w-14 items-center justify-center rounded-full border border-border bg-white text-foreground shadow-[0_8px_30px_-6px_rgba(24,24,27,0.18)] outline-none ring-accent/40 transition-all duration-300 ease-out hover:scale-110 hover:border-accent/40 focus-visible:ring-4 active:scale-95 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-[calc(1rem+env(safe-area-inset-right))] ${
         visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
       }`}
