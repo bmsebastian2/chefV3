@@ -204,12 +204,22 @@ export function Chefs({ chefs }: { chefs: ChefCard[] }) {
           </Link>
         </div>
 
-        {/* Cards grid */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {/* Cards: carrusel horizontal con scroll-snap en mobile (corta el scroll
+            vertical largo), grilla de 3 en desktop. El cambio es solo de layout
+            vía breakpoints md: — el diseño de cada card no se toca. */}
+        <div
+          role="region"
+          aria-label="Chefs destacados"
+          className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:snap-none md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0"
+        >
           {chefs.map((chef, idx) => {
             const location = locationLabel(chef.city, chef.country);
             return (
-            <div key={chef.id} className={cardCls} style={{ transitionDelay: `${idx * 180}ms` }}>
+            <div
+              key={chef.id}
+              className={`w-[85%] shrink-0 snap-start sm:w-[55%] md:w-auto md:shrink-0 ${cardCls}`}
+              style={{ transitionDelay: `${idx * 180}ms` }}
+            >
             <button
               type="button"
               onClick={() => setSelected(chef)}
