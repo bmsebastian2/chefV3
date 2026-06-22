@@ -116,5 +116,13 @@
   }
   html {
     @apply font-sans;
+    /* Scroll suave para anclas internas (ej. "Ver mapa completo" → #mapa). */
+    scroll-behavior: smooth;
+  }
+  /* Respetar a quienes piden menos movimiento: scroll instantáneo. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 }
