@@ -286,7 +286,7 @@ export function Chefs({ chefs }: { chefs: ChefCard[] }) {
       {/* Detalle del chef — reutiliza el Dialog del sistema */}
       <Dialog open={!!selected} onOpenChange={(o) => { if (!o) setSelected(null); }}>
         {selected && (
-          <DialogContent className="chef-detail-panel max-w-3xl overflow-hidden p-0 motion-safe:animate-[chefPanelIn_0.3s_ease-out]">
+          <DialogContent className="chef-detail-panel max-h-[90vh] max-w-3xl overflow-y-auto p-0 motion-safe:animate-[chefPanelIn_0.3s_ease-out] md:max-h-none md:overflow-hidden">
             <button
               type="button"
               onClick={() => setSelected(null)}
@@ -297,8 +297,8 @@ export function Chefs({ chefs }: { chefs: ChefCard[] }) {
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2">
-              {/* Foto */}
-              <div className="relative aspect-[4/5] md:aspect-auto md:min-h-[440px]">
+              {/* Foto — más baja en mobile para que el modal no quede larguísimo */}
+              <div className="relative aspect-[16/10] md:aspect-auto md:min-h-[440px]">
                 <ChefPhoto
                   src={selected.imageUrl}
                   name={selected.name}
@@ -307,14 +307,14 @@ export function Chefs({ chefs }: { chefs: ChefCard[] }) {
               </div>
 
               {/* Info */}
-              <div className="flex flex-col p-7">
+              <div className="flex flex-col p-6 md:p-7">
                 {locationLabel(selected.city, selected.country) && (
                   <span className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-700">
                     <span className="h-px w-5 bg-amber-500/70" aria-hidden="true" />
                     {locationLabel(selected.city, selected.country)}
                   </span>
                 )}
-                <h3 className="font-serif text-3xl font-semibold leading-tight text-zinc-900">
+                <h3 className="font-serif text-2xl font-semibold leading-tight text-zinc-900 md:text-3xl">
                   {selected.name}
                 </h3>
 
