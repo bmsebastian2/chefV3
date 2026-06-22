@@ -10,7 +10,7 @@ export function Footer() {
               GetChef
             </Link>
             <p className="font-sans text-sm text-zinc-500 max-w-sm leading-relaxed">
-              Conectando la élite culinaria con los paladares más exigentes. Su concierge digital personal.
+              Conectando la élite culinaria con los paladares más exigentes.
             </p>
           </div>
           

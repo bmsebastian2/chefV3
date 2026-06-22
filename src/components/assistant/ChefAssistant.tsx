@@ -193,7 +193,7 @@ export function ChefAssistant() {
           <span className="mb-4 inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.3em] text-amber-700">
             <span className="h-px w-8 bg-amber-500/50" />
             <Sparkles className="h-3.5 w-3.5" />
-            Tu concierge gastronómico
+            ASISTENTE gastronómico
             <span className="h-px w-8 bg-amber-500/50" />
           </span>
           <h2 className="font-serif text-4xl font-semibold leading-[1.05] tracking-tight text-zinc-900 md:text-5xl">
