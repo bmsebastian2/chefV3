@@ -1,5 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { BackLink } from './BackLink'
 import { ProposalCard } from './ProposalCard'
 
@@ -50,9 +51,11 @@ export default async function ProposalsListPage({ params }: { params: Promise<{ 
       : Promise.resolve({ data: [] as { chef_id: string; url: string }[] }),
   ])
 
+  // Names live in `users` rows that RLS hides from the client user → read via admin
+  const admin = createAdminClient()
   const userIds = (chefProfiles ?? []).map((cp) => cp.user_id)
   const { data: users } = userIds.length > 0
-    ? await supabase.from('users').select('id, first_name, first_surname').in('id', userIds)
+    ? await admin.from('users').select('id, first_name, first_surname').in('id', userIds)
     : { data: [] as { id: string; first_name: string | null; first_surname: string | null }[] }
 
   // chef_profile_id → user_id

@@ -37,7 +37,15 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
     setChecking(true)
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error } = await supabase.auth.getUser()
+
+      // Token de refresco inválido/ausente (cookie obsoleta): limpiar la sesión
+      // local para detener los reintentos de auto-refresh y abrir el formulario.
+      if (error) {
+        await supabase.auth.signOut({ scope: 'local' })
+        setOpen(true)
+        return
+      }
 
       if (user) {
         const { data: userData } = await supabase
