@@ -141,9 +141,20 @@ export function Menus() {
           </p>
         </div>
 
-        <div className="mb-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Cards: carrusel horizontal con scroll-snap en mobile (corta el scroll
+            vertical largo), grilla desde sm. Mismo patrón que la sección de chefs;
+            el reset a grilla ocurre en sm porque Menus ya muestra 2 columnas ahí. */}
+        <div
+          role="region"
+          aria-label="Menús destacados"
+          className="mb-16 -mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:gap-6 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4"
+        >
           {menuItems.map((item, idx) => (
-            <div key={idx} className={cardCls} style={{ transitionDelay: `${idx * 100}ms` }}>
+            <div
+              key={idx}
+              className={`w-[85%] shrink-0 snap-start sm:w-auto sm:shrink-0 ${cardCls}`}
+              style={{ transitionDelay: `${idx * 100}ms` }}
+            >
             <button
               type="button"
               onClick={() => setSelected(item)}
@@ -204,7 +215,7 @@ export function Menus() {
       {/* Detalle de receta — reutiliza el Dialog del sistema */}
       <Dialog open={!!selected} onOpenChange={(o) => { if (!o) setSelected(null); }}>
         {selected && (
-          <DialogContent className="menu-detail-panel max-w-3xl overflow-hidden p-0 motion-safe:animate-[menuPanelIn_0.3s_ease-out]">
+          <DialogContent className="menu-detail-panel max-h-[90vh] max-w-3xl overflow-y-auto p-0 motion-safe:animate-[menuPanelIn_0.3s_ease-out] md:max-h-none md:overflow-hidden">
             <button
               type="button"
               onClick={() => setSelected(null)}
@@ -215,8 +226,8 @@ export function Menus() {
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-2">
-              {/* Foto */}
-              <div className="relative aspect-[4/5] md:aspect-auto md:min-h-[440px]">
+              {/* Foto — más baja en mobile para que el modal no quede larguísimo */}
+              <div className="relative aspect-[16/10] md:aspect-auto md:min-h-[440px]">
                 <Image
                   src={selected.img}
                   alt={selected.name}
@@ -227,12 +238,12 @@ export function Menus() {
               </div>
 
               {/* Info */}
-              <div className="flex flex-col p-7">
+              <div className="flex flex-col p-6 md:p-7">
                 <span className="mb-3 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-700">
                   <span className="h-px w-5 bg-amber-500/70" aria-hidden="true" />
                   {selected.categoria}
                 </span>
-                <h3 className="font-serif text-3xl font-semibold leading-tight text-zinc-900">
+                <h3 className="font-serif text-2xl font-semibold leading-tight text-zinc-900 md:text-3xl">
                   {selected.name}
                 </h3>
                 <p className="mt-3 font-sans text-sm leading-relaxed text-zinc-500">
