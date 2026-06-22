@@ -58,6 +58,9 @@ $$;
 REVOKE ALL    ON FUNCTION get_active_chefs_for_map() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION get_active_chefs_for_map() TO anon;
 GRANT EXECUTE ON FUNCTION get_active_chefs_for_map() TO authenticated;
+-- La home usa el admin client (service-role) para poder renderizarse estática/ISR.
+-- Sin este GRANT el RPC devuelve "permission denied" y el mapa queda sin chefs.
+GRANT EXECUTE ON FUNCTION get_active_chefs_for_map() TO service_role;
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
