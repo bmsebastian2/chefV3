@@ -102,7 +102,7 @@ export function PaymentView({ requestId, proposalId, total }: Props) {
       const res = await fetch("/api/dlocalgo/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: total, currency: "UYU", proposalId, requestId }),
+        body: JSON.stringify({ amount: total, currency: "USD", proposalId, requestId }),
       })
       let data: { redirect_url?: string; error?: string } = {}
       try {
@@ -183,7 +183,7 @@ export function PaymentView({ requestId, proposalId, total }: Props) {
                     <span className="text-xs text-zinc-500">Total</span>
                     <span className="font-serif text-xl font-bold text-zinc-900">{fmt(total)}</span>
                   </div>
-                  <p className="text-[10px] text-zinc-400 text-right mt-0.5">UYU</p>
+                  <p className="text-[10px] text-zinc-400 text-right mt-0.5">USD</p>
                 </div>
 
                 <div className="p-5">
@@ -249,7 +249,7 @@ export function PaymentView({ requestId, proposalId, total }: Props) {
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">Total</p>
             <p className="font-serif text-lg font-bold text-zinc-900 leading-none mt-0.5">
-              {fmt(total)} UYU
+              {fmt(total)} USD
             </p>
           </div>
           <button
