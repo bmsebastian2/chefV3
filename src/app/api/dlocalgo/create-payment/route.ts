@@ -55,22 +55,11 @@ export async function POST(req: Request) {
       console.warn('⚠️ create-payment: appUrl apunta a localhost — webhook y URLs de retorno no funcionarán en producción. Configurá NEXT_PUBLIC_APP_URL en Vercel.');
     }
 
-    // dLocalGo bloquea (deshabilita) los campos del payer que recibe pre-cargados.
-    // Si mandamos un nombre placeholder, el cliente no puede editarlo. Traemos el
-    // nombre real; si no lo tenemos, omitimos `name` para que el campo quede editable.
-    const { data: profile } = await supabase
-      .from('users')
-      .select('first_name, first_surname')
-      .eq('id', user.id)
-      .single();
-
-    const payerName = [profile?.first_name, profile?.first_surname]
-      .filter(Boolean)
-      .join(' ')
-      .trim()
-      || (user.user_metadata?.full_name as string | undefined)?.trim()
-      || '';
-
+    // NO mandamos `payer.name`: dLocalGo pre-carga Y bloquea ese campo, y si el
+    // titular real de la tarjeta es distinto al usuario logueado (nombre del payer
+    // ≠ nombre del titular) el antifraude lo marca como alto riesgo. Omitiéndolo,
+    // el campo queda editable y el titular escribe su propio nombre (que coincide
+    // con la tarjeta). El email sí lo dejamos pre-cargado.
     const result = await dlocalgoRequest('/payments', {
       amount: amountNumber,
       currency,
@@ -80,7 +69,6 @@ export async function POST(req: Request) {
       back_url: `${appUrl}/client-dashboard/${requestId}/proposals/${proposalId}/payment`,
       notification_url: `${appUrl}/api/dlocalgo/webhook`,
       payer: {
-        ...(payerName ? { name: payerName } : {}),
         email: user.email,
       },
       metadata: {
