@@ -165,7 +165,7 @@ export function Hero() {
              {/* Banner gastronómico — comunica el servicio de chef/comida */}
             <Link
               href="/wizard"
-              className="hero-anim group relative mt-10 block overflow-hidden rounded-2xl shadow-lg shadow-zinc-900/10 ring-1 ring-black/5"
+              className="hero-anim group relative mt-10 block overflow-hidden rounded-2xl shadow-lg shadow-zinc-900/10 ring-1 ring-black/5 transition-[transform,box-shadow] duration-500 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-900/15 hover:ring-amber-300/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               style={{ animationDelay: "560ms" }}
             >
               <div className="relative h-56 w-full sm:h-72">
@@ -179,8 +179,19 @@ export function Hero() {
                   aria-label="Chef cocinando en vivo un plato nicaragüense de autor"
                   className="absolute inset-0 h-full w-full object-cover object-right transition-transform duration-700 ease-out group-hover:scale-105"
                 />
-                {/* Velado para legibilidad del texto */}
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-zinc-900/90 via-zinc-900/45 to-transparent" />
+                {/* Velado para legibilidad del texto — se aclara un punto al hover (la señal cobra vida) */}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-zinc-900/90 via-zinc-900/45 to-transparent transition-opacity duration-500 group-hover:opacity-85" />
+
+                {/* Visor de cámara — encuadra la toma en vivo al pasar el cursor */}
+                <div
+                  className="pointer-events-none absolute inset-3 z-10 opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 motion-reduce:transition-none"
+                  aria-hidden="true"
+                >
+                  <span className="absolute left-0 top-0 h-6 w-6 -translate-x-1.5 -translate-y-1.5 rounded-tl-md border-l-2 border-t-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
+                  <span className="absolute right-0 top-0 h-6 w-6 translate-x-1.5 -translate-y-1.5 rounded-tr-md border-r-2 border-t-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
+                  <span className="absolute bottom-0 left-0 h-6 w-6 -translate-x-1.5 translate-y-1.5 rounded-bl-md border-b-2 border-l-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
+                  <span className="absolute bottom-0 right-0 h-6 w-6 translate-x-1.5 translate-y-1.5 rounded-br-md border-b-2 border-r-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
+                </div>
 
                 {/* Contenido */}
                 <div className="absolute inset-0 flex flex-col justify-center gap-1.5 p-5">
