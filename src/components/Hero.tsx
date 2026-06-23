@@ -168,7 +168,7 @@ export function Hero() {
               className="hero-anim group relative mt-10 block overflow-hidden rounded-2xl shadow-lg shadow-zinc-900/10 ring-1 ring-black/5"
               style={{ animationDelay: "560ms" }}
             >
-              <div className="relative h-44 w-full sm:h-48">
+              <div className="relative h-56 w-full sm:h-72">
                 <video
                   src="/Cocina%20en%20vivo.mp4"
                   poster="/banner-chef.webp"
