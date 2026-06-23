@@ -9,6 +9,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { sendMessage, getMessages } from "@/app/dashboard/requests/[id]/actions";
+import { formatPrice } from "@/lib/format";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -82,9 +83,6 @@ function formatDate(d: string) {
 }
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
-}
-function fmt(n: number) {
-  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 function initials(name: string) {
   return name.split(" ").filter(Boolean).map(w => w[0]).join("").toUpperCase().slice(0, 2) || "?";
@@ -168,7 +166,7 @@ function InfoPanel({ request, proposal, dateStr, guestStr }: {
             {proposal.price_per_person && (
               <div style={{ marginBottom: 10 }}>
                 <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 22, fontWeight: 700, color: "#1c1c1c" }}>
-                  ${fmt(proposal.price_per_person)}
+                  {formatPrice(proposal.price_per_person)}
                 </span>
                 <span style={{ fontSize: 12, color: "#6b7280", marginLeft: 4 }}>/persona</span>
               </div>

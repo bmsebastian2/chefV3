@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { logout } from '@/app/auth/actions'
 import { BackLink } from './proposals/BackLink'
+import { formatPrice, formatPriceRange } from '@/lib/format'
 import {
   LogOut, ArrowLeft, CalendarDays, MapPin,
   Users, Utensils, DollarSign, FileText, AlertCircle,
@@ -224,10 +225,10 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
           <Section title="Presupuesto estimado" icon={<DollarSign className="w-4 h-4" />}>
             <p className="text-lg font-semibold text-zinc-900">
               {request.budget_min && request.budget_max
-                ? `$${Number(request.budget_min).toLocaleString('es-AR')} – $${Number(request.budget_max).toLocaleString('es-AR')}`
+                ? formatPriceRange(Number(request.budget_min), Number(request.budget_max))
                 : request.budget_min
-                ? `Desde $${Number(request.budget_min).toLocaleString('es-AR')}`
-                : `Hasta $${Number(request.budget_max).toLocaleString('es-AR')}`}
+                ? `Desde ${formatPrice(Number(request.budget_min))}`
+                : `Hasta ${formatPrice(Number(request.budget_max))}`}
             </p>
           </Section>
         )}

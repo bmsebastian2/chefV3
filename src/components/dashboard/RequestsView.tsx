@@ -13,6 +13,7 @@ import {
   DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { submitProposal } from "@/app/dashboard/requests/actions";
+import { formatPrice, formatPriceRange } from "@/lib/format";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -190,15 +191,11 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function fmt(n: number) {
-  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
 function formatBudget(min: number | null, max: number | null) {
   if (!min && !max) return null;
-  if (min && max) return `$${fmt(min)} – $${fmt(max)}`;
-  if (max) return `hasta $${fmt(max)}`;
-  return `desde $${fmt(min!)}`;
+  if (min && max) return formatPriceRange(min, max);
+  if (max) return `hasta ${formatPrice(max)}`;
+  return `desde ${formatPrice(min!)}`;
 }
 
 function DetailRow({ icon, value }: { icon: React.ReactNode; value: string }) {
@@ -383,7 +380,7 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess,
                   {label}{isActive && guestCount !== null ? ` (${guestCount})` : ""}
                 </span>
                 <span className={`font-semibold text-xs ${isActive ? "text-accent" : "text-zinc-900"}`}>
-                  ${fmt(price)}
+                  {formatPrice(price)}
                 </span>
               </div>
             ) : null;

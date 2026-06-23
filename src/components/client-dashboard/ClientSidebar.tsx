@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingBag, HelpCircle, LogOut, ChevronDown, Menu, X } from "lucide-react";
+import { ShoppingBag, HelpCircle, Settings, LogOut, ChevronDown, Menu, X } from "lucide-react";
 import { logout } from "@/app/auth/actions";
 
 export function ClientSidebar() {
@@ -65,6 +65,20 @@ export function ClientSidebar() {
             </div>
           )}
         </div>
+
+        {/* Configuración */}
+        <Link
+          href="/client-dashboard/configuracion"
+          onClick={() => setMobileOpen(false)}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+            pathname.startsWith("/client-dashboard/configuracion")
+              ? "bg-accent/10 text-accent"
+              : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+          }`}
+        >
+          <Settings className="w-4 h-4 flex-shrink-0" />
+          Configuración
+        </Link>
       </nav>
 
       {/* Footer: Salir */}

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Loader2, Plus, Minus, ShieldCheck } from "lucide-react"
+import { formatPrice } from "@/lib/format"
 
 type PaymentMethod = "card" | "paypal" | "googlepay"
 
@@ -10,10 +11,6 @@ type Props = {
   requestId:   string
   proposalId:  string
   total:       number
-}
-
-function fmt(n: number) {
-  return n.toLocaleString("es-UY")
 }
 
 const FAQ_ITEMS = [
@@ -181,9 +178,8 @@ export function PaymentView({ requestId, proposalId, total }: Props) {
                   </div>
                   <div className="flex justify-between items-baseline">
                     <span className="text-xs text-zinc-500">Total</span>
-                    <span className="font-serif text-xl font-bold text-zinc-900">{fmt(total)}</span>
+                    <span className="font-serif text-xl font-bold text-zinc-900">{formatPrice(total)}</span>
                   </div>
-                  <p className="text-[10px] text-zinc-400 text-right mt-0.5">USD</p>
                 </div>
 
                 <div className="p-5">
@@ -249,7 +245,7 @@ export function PaymentView({ requestId, proposalId, total }: Props) {
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">Total</p>
             <p className="font-serif text-lg font-bold text-zinc-900 leading-none mt-0.5">
-              {fmt(total)} USD
+              {formatPrice(total)}
             </p>
           </div>
           <button

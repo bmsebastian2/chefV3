@@ -10,10 +10,6 @@ function authHeaders() {
 }
 
 export async function dlocalgoRequest(path: string, body: object) {
-  // DEBUG — remove before production
-  console.log('[dlocalgo] POST', `${BASE_URL}${path}`);
-  console.log('[dlocalgo] API_KEY:', API_KEY?.slice(0, 6) + '...');
-
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
     headers: authHeaders(),
@@ -21,7 +17,9 @@ export async function dlocalgoRequest(path: string, body: object) {
   });
 
   const text = await res.text();
-  console.log('[dlocalgo] status:', res.status, '| body:', text);
+  if (!res.ok) {
+    console.error('[dlocalgo] error', res.status, text.slice(0, 300));
+  }
 
   try {
     return JSON.parse(text);

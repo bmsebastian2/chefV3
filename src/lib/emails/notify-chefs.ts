@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/utils/supabase/admin'
 import { resend } from '@/lib/resend'
+import { formatPriceRange } from '@/lib/format'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   'Servicio Único',
@@ -109,7 +110,7 @@ function buildEmailHtml(chef: string, req: RequestData): string {
       ? '☀️ Comida'
       : req.event_time ?? undefined
   const budget = req.budget_min && req.budget_max
-    ? `$${req.budget_min.toLocaleString('es-UY')} – $${req.budget_max.toLocaleString('es-UY')}`
+    ? formatPriceRange(req.budget_min, req.budget_max)
     : undefined
 
   const wd = req.weeklyDetails

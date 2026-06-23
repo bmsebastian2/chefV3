@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { ChefHat, Plus, ArrowRight, Calendar, MapPin, Users, Utensils } from 'lucide-react'
 import { CancelButton } from './CancelButtonClient'
 import { ProposalsLink } from './ProposalsLink'
+import { formatPrice, formatPriceRange } from '@/lib/format'
 
 export default async function ClientDashboardPage() {
   const supabase = await createClient()
@@ -224,9 +225,9 @@ export default async function ClientDashboardPage() {
 
               const budget =
                 req.budget_min && req.budget_max
-                  ? `$${Number(req.budget_min).toLocaleString('es-AR')} – $${Number(req.budget_max).toLocaleString('es-AR')}`
+                  ? formatPriceRange(Number(req.budget_min), Number(req.budget_max))
                   : req.budget_min
-                  ? `Desde $${Number(req.budget_min).toLocaleString('es-AR')}`
+                  ? `Desde ${formatPrice(Number(req.budget_min))}`
                   : null
 
               const formattedDate = req.event_date_start

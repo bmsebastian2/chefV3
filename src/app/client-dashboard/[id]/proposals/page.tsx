@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { BackLink } from './BackLink'
 import { ProposalCard } from './ProposalCard'
+import { formatPrice } from '@/lib/format'
 
 const SERVICE_LABELS: Record<string, string> = {
   single:   'Servicio único',
@@ -102,7 +103,7 @@ export default async function ProposalsListPage({ params }: { params: Promise<{ 
                   chefName={chefName}
                   priceText={
                     proposal.price_per_person
-                      ? `$${Number(proposal.price_per_person).toLocaleString('es-AR')} / persona`
+                      ? `${formatPrice(Number(proposal.price_per_person))} / persona`
                       : 'Precio a consultar'
                   }
                 />

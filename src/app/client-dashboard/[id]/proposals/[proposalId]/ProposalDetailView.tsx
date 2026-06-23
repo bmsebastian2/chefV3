@@ -9,6 +9,7 @@ import {
   Star, CheckCircle2, XCircle, Loader2,
 } from "lucide-react"
 import { rejectProposal, sendClientMessage, getMessages } from "./actions"
+import { formatPrice } from "@/lib/format"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -62,10 +63,6 @@ type Props = {
 type Tab = "propuesta" | "mensajes" | "chef" | "ejemplos"
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-
-function fmt(n: number) {
-  return n.toLocaleString("es-AR")
-}
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })
@@ -146,7 +143,7 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
           <div>
             <p className="text-xs text-zinc-500">Menú</p>
             <p className="text-base font-bold text-zinc-900">
-              {price_per_person ? `$${fmt(price_per_person)}` : "A consultar"}
+              {price_per_person ? formatPrice(price_per_person) : "A consultar"}
               {price_per_person && (
                 <span className="text-xs font-normal text-zinc-400"> / persona</span>
               )}
@@ -176,7 +173,7 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
           <div className="flex items-baseline justify-between mb-5">
             <span className="text-sm text-zinc-500">Menú</span>
             <span className="text-2xl font-bold text-zinc-900">
-              {price_per_person ? `$${fmt(price_per_person)}` : "A consultar"}
+              {price_per_person ? formatPrice(price_per_person) : "A consultar"}
               {price_per_person && (
                 <span className="text-sm font-normal text-zinc-400"> / persona</span>
               )}
@@ -593,7 +590,7 @@ export function ProposalDetailView({
                         </p>
                         {op.price_per_person != null && (
                           <p className="text-xs text-zinc-500">
-                            ${fmt(op.price_per_person)} / persona
+                            {formatPrice(op.price_per_person)} / persona
                           </p>
                         )}
                       </div>

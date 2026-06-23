@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ChevronDown, ShieldCheck } from "lucide-react"
+import { formatPrice } from "@/lib/format"
 
 type Props = {
   requestId:   string
@@ -18,10 +19,6 @@ type Props = {
     dateStr:        string
   }
   maxGuests: number
-}
-
-function fmt(n: number) {
-  return n.toLocaleString("es-UY")
 }
 
 // ── Guest dropdown ────────────────────────────────────────────────────────────
@@ -174,7 +171,7 @@ export function BookingView({ requestId, proposalId, chef, menu, maxGuests }: Pr
                       <p className="text-sm font-semibold text-zinc-800">{menu.cuisineType}</p>
                     )}
                     <p className="text-sm text-zinc-700">
-                      <span className="font-bold text-zinc-900">{fmt(menu.pricePerPerson)} UYU</span>
+                      <span className="font-bold text-zinc-900">{formatPrice(menu.pricePerPerson)}</span>
                       <span className="text-zinc-400"> / persona</span>
                     </p>
                   </div>
@@ -231,16 +228,13 @@ export function BookingView({ requestId, proposalId, chef, menu, maxGuests }: Pr
                 <div className="flex justify-between items-baseline">
                   <span className="text-xs text-zinc-500">
                     {typeof guests === "number" && guests > 0
-                      ? `${guests} × ${fmt(menu.pricePerPerson)} UYU`
+                      ? `${guests} × ${formatPrice(menu.pricePerPerson)}`
                       : "Total"}
                   </span>
                   <span className="font-serif text-xl font-bold text-zinc-900">
-                    {total !== null ? `${fmt(total)}` : "—"}
+                    {total !== null ? formatPrice(total) : "—"}
                   </span>
                 </div>
-                {total !== null && (
-                  <p className="text-[10px] text-zinc-400 text-right mt-0.5">UYU</p>
-                )}
               </div>
               <div className="p-5">
                 <button
@@ -270,7 +264,7 @@ export function BookingView({ requestId, proposalId, chef, menu, maxGuests }: Pr
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">Total</p>
             <p className="font-serif text-lg font-bold text-zinc-900 leading-none mt-0.5">
-              {total !== null ? `${fmt(total)} UYU` : "—"}
+              {total !== null ? formatPrice(total) : "—"}
             </p>
             {typeof guests === "number" && guests > 0 && (
               <p className="text-[11px] text-zinc-400 mt-0.5">
