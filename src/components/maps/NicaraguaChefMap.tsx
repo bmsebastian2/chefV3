@@ -349,28 +349,72 @@ function MiniCard({
   profileHref?: (chefId: string) => string
   onClose: () => void
 }) {
+  const isMobile = useIsMobile()
+  const reducedMotion = usePrefersReducedMotion()
+  // Animación de entrada del bottom-sheet: arranca abajo y sube tras el mount.
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
+  const header = (
+    <div className="mb-2 flex items-center justify-between">
+      <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+        <MapPin className="h-3.5 w-3.5" />
+        {city.name}
+      </span>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Cerrar"
+        className="rounded-full p-0.5 text-zinc-400 hover:text-zinc-700"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  )
+
+  // ── Mobile: hoja que sube desde abajo, con backdrop ──
+  if (isMobile) {
+    return (
+      <>
+        <div
+          className="fixed inset-0 z-20 bg-zinc-900/20 backdrop-blur-[1px]"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+        <div
+          className={[
+            'fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-zinc-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-2xl',
+            reducedMotion ? '' : 'transition-transform duration-300 ease-out',
+            shown ? 'translate-y-0' : 'translate-y-full',
+          ].join(' ')}
+          role="dialog"
+          aria-label={`Chefs en ${city.name}`}
+        >
+          <div className="mx-auto mb-2 h-1 w-9 rounded-full bg-zinc-200" aria-hidden="true" />
+          {header}
+          <div className="max-h-[45vh] space-y-2 overflow-y-auto">
+            {chefs.map((chef) => (
+              <ChefRow key={chef.id} chef={chef} profileHref={profileHref} compact />
+            ))}
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  // ── Desktop: popup anclado al marcador (sin cambios) ──
   return (
     <div
-      className="absolute z-20 w-52 max-w-[calc(100vw-1.5rem)] -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl sm:w-64 sm:p-3"
+      className="absolute z-20 w-64 -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white p-3 shadow-xl"
       style={{ left: x, top: y + 18 }}
       role="dialog"
       aria-label={`Chefs en ${city.name}`}
     >
-      <div className="mb-2 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 sm:text-[11px]">
-          <MapPin className="h-3.5 w-3.5" />
-          {city.name}
-        </span>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Cerrar"
-          className="rounded-full p-0.5 text-zinc-400 hover:text-zinc-700"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-      <div className="max-h-44 space-y-2 overflow-y-auto sm:max-h-56">
+      {header}
+      <div className="max-h-56 space-y-2 overflow-y-auto">
         {chefs.map((chef) => (
           <ChefRow key={chef.id} chef={chef} profileHref={profileHref} compact />
         ))}
@@ -510,6 +554,20 @@ function ChefList({
         </div>
       )}
     </div>
+  )
+}
+
+// ── Hook: viewport mobile (< 640px, breakpoint sm de Tailwind) ───────────────
+
+function useIsMobile(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia('(max-width: 639px)')
+      mq.addEventListener('change', onChange)
+      return () => mq.removeEventListener('change', onChange)
+    },
+    () => window.matchMedia('(max-width: 639px)').matches,
+    () => false // snapshot de servidor: asumimos desktop (el overlay solo aparece tras click)
   )
 }
 
