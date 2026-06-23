@@ -351,13 +351,13 @@ function MiniCard({
 }) {
   return (
     <div
-      className="absolute z-20 w-64 -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white p-3 shadow-xl"
+      className="absolute z-20 w-52 max-w-[calc(100vw-1.5rem)] -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl sm:w-64 sm:p-3"
       style={{ left: x, top: y + 18 }}
       role="dialog"
       aria-label={`Chefs en ${city.name}`}
     >
       <div className="mb-2 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+        <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 sm:text-[11px]">
           <MapPin className="h-3.5 w-3.5" />
           {city.name}
         </span>
@@ -370,7 +370,7 @@ function MiniCard({
           <X className="h-4 w-4" />
         </button>
       </div>
-      <div className="max-h-56 space-y-2 overflow-y-auto">
+      <div className="max-h-44 space-y-2 overflow-y-auto sm:max-h-56">
         {chefs.map((chef) => (
           <ChefRow key={chef.id} chef={chef} profileHref={profileHref} compact />
         ))}
@@ -395,9 +395,17 @@ function ChefRow({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-3 rounded-xl border border-zinc-100 bg-white p-2.5 transition-colors hover:border-emerald-200 hover:bg-emerald-50/40"
+      className={[
+        'group flex items-center gap-3 rounded-xl border border-zinc-100 bg-white transition-colors hover:border-emerald-200 hover:bg-emerald-50/40',
+        compact ? 'p-2 sm:p-2.5' : 'p-2.5',
+      ].join(' ')}
     >
-      <span className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-100 text-zinc-400">
+      <span
+        className={[
+          'relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-100 text-zinc-400',
+          compact ? 'h-8 w-8 sm:h-10 sm:w-10' : 'h-10 w-10',
+        ].join(' ')}
+      >
         {chef.photo_url ? (
           <Image src={chef.photo_url} alt={name} fill sizes="40px" className="object-cover" />
         ) : (
@@ -407,7 +415,9 @@ function ChefRow({
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-semibold text-zinc-900">{name}</span>
         {chef.tagline && (
-          <span className="block truncate text-xs text-zinc-500">{chef.tagline}</span>
+          <span className={['truncate text-xs text-zinc-500', compact ? 'hidden sm:block' : 'block'].join(' ')}>
+            {chef.tagline}
+          </span>
         )}
         <span className="mt-0.5 flex items-center gap-2 text-[11px] text-zinc-400">
           {typeof chef.rating_avg === 'number' && chef.rating_avg > 0 && (
@@ -416,7 +426,9 @@ function ChefRow({
               {chef.rating_avg.toFixed(1)}
             </span>
           )}
-          {chef.city && <span className="truncate">{chef.city}</span>}
+          {chef.city && (
+            <span className={['truncate', compact ? 'hidden sm:inline' : ''].join(' ')}>{chef.city}</span>
+          )}
         </span>
       </span>
       {!compact && (
