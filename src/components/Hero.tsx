@@ -105,10 +105,49 @@ export function Hero() {
               <Link href="/wizard" className="w-full sm:w-auto">
                 <Button
                   size="lg"
-                  className="group/cta w-full sm:w-auto bg-accent text-white border-none h-12 px-8 text-base font-medium shadow-xl shadow-green-400/25 rounded-full hover:bg-green-600 hover:shadow-green-400/40 transition-all duration-200"
+                  className="group/cta relative w-full sm:w-auto overflow-hidden rounded-full border-none bg-accent text-white h-12 px-8 text-base font-medium shadow-xl shadow-green-500/25 ring-1 ring-inset ring-white/10 transition-all duration-300 ease-out hover:bg-green-600 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-green-500/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
                 >
-                  Solicitar un chef
-                  <span className="ml-2 transition-transform duration-200 group-hover/cta:translate-x-1">→</span>
+                  {/* Brillo superior — acabado pulido y tactil */}
+                  <span
+                    className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent"
+                    aria-hidden="true"
+                  />
+                  {/* Sheen diagonal — destello de pulido que cruza el pill al hover */}
+                  <span
+                    className="pointer-events-none absolute inset-0 -translate-x-[120%] -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover/cta:translate-x-[120%] motion-reduce:hidden"
+                    aria-hidden="true"
+                  />
+                  <span className="relative z-10 flex items-center">
+                    Solicitar un chef
+                    {/* Cloche de servicio — la tapa se levanta y revela un destello al hover */}
+                    <span className="relative ml-2.5 inline-flex h-6 w-6 items-center justify-center">
+                      <svg
+                        className="absolute left-1/2 top-0 size-3 -translate-x-1/2 translate-y-1 text-amber-200 opacity-0 transition-all duration-300 ease-out group-hover/cta:-translate-y-0.5 group-hover/cta:opacity-100 motion-reduce:hidden"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 2l1.4 4L17 7.4l-3.6 1.4L12 13l-1.4-4.2L7 7.4l3.6-1.4z" />
+                      </svg>
+                      <svg
+                        className="relative size-[22px]"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M4 19h16" />
+                        <g className="transition-transform duration-300 ease-out group-hover/cta:-translate-y-[3px] motion-reduce:transition-none">
+                          <path d="M5 19a7 7 0 0 1 14 0" />
+                          <path d="M12 9v3" />
+                          <circle cx="12" cy="8" r="1.1" fill="currentColor" stroke="none" />
+                        </g>
+                      </svg>
+                    </span>
+                  </span>
                 </Button>
               </Link>
               <Link
@@ -122,38 +161,83 @@ export function Hero() {
               </Link>
             </div>
 
-            {/* ── Trust indicators ── */}
-            <div
-              className="hero-anim mt-10 flex flex-wrap items-start gap-x-8 gap-y-5 border-t border-zinc-100 pt-7"
+            {/* ── Sellos de confianza ── */}
+            <ul
+              className="hero-anim mt-10 grid grid-cols-1 divide-y divide-zinc-100 border-t border-zinc-100 pt-7 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:divide-zinc-200/60"
               style={{ animationDelay: "480ms" }}
             >
-              <div className="flex items-center gap-3">
-                <svg className="w-5 h-5 flex-shrink-0 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M7 21h10M8 21V11M16 21V11" />
-                  <path d="M6 11a4 4 0 0 1-1-7.9A4.5 4.5 0 0 1 12 2a4.5 4.5 0 0 1 7 1.1A4 4 0 0 1 18 11Z" />
-                </svg>
-                <span className="text-[13px] leading-snug text-zinc-600">
-                  Chefs<br />seleccionados
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <svg className="w-5 h-5 flex-shrink-0 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 3l1.9 5.2L19 9.2l-4 3.6 1.2 5.4L12 15.5 7.8 18.2 9 12.8 5 9.2l5.1-1Z" />
-                </svg>
-                <span className="text-[13px] leading-snug text-zinc-600">
-                  Experiencias<br />personalizadas
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <svg className="w-5 h-5 flex-shrink-0 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6Z" />
-                  <path d="M9 12l2 2 4-4" />
-                </svg>
-                <span className="text-[13px] leading-snug text-zinc-600">
-                  Reserva segura<br />y fácil
-                </span>
-              </div>
-            </div>
+              <li className="py-1.5 sm:px-4 sm:py-0 sm:first:pl-0 sm:last:pr-0">
+                <details className="group/seal">
+                  <summary className="flex cursor-pointer list-none items-start gap-3 rounded-xl py-2 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/60 [&::-webkit-details-marker]:hidden">
+                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-50 to-amber-100/50 shadow-sm shadow-amber-900/[0.04] ring-1 ring-amber-200/70 transition-colors duration-300 group-hover/seal:ring-amber-300">
+                      <svg className="h-[18px] w-[18px] text-amber-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M7 21h10M8 21V11M16 21V11" />
+                        <path d="M6 11a4 4 0 0 1-1-7.9A4.5 4.5 0 0 1 12 2a4.5 4.5 0 0 1 7 1.1A4 4 0 0 1 18 11Z" />
+                      </svg>
+                    </span>
+                    <span className="min-w-0 leading-tight">
+                      <span className="block text-[13px] font-medium text-zinc-800">Chefs seleccionados</span>
+                      <span className="flex items-center gap-1.5 text-[11px] tracking-wide text-zinc-400">
+                        Verificados uno a uno
+                        <svg className="h-3 w-3 flex-shrink-0 text-zinc-300 transition-transform duration-300 group-open/seal:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </span>
+                    </span>
+                  </summary>
+                  <p className="pl-[3.25rem] pr-1 pb-2 text-[12px] leading-relaxed text-zinc-500">
+                    Validamos identidad, experiencia y referencias de cada chef antes de aceptarlo.
+                  </p>
+                </details>
+              </li>
+              <li className="py-1.5 sm:px-4 sm:py-0 sm:first:pl-0 sm:last:pr-0">
+                <details className="group/seal">
+                  <summary className="flex cursor-pointer list-none items-start gap-3 rounded-xl py-2 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/60 [&::-webkit-details-marker]:hidden">
+                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-50 to-amber-100/50 shadow-sm shadow-amber-900/[0.04] ring-1 ring-amber-200/70 transition-colors duration-300 group-hover/seal:ring-amber-300">
+                      <svg className="h-[18px] w-[18px] text-amber-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M12 3l1.9 5.2L19 9.2l-4 3.6 1.2 5.4L12 15.5 7.8 18.2 9 12.8 5 9.2l5.1-1Z" />
+                      </svg>
+                    </span>
+                    <span className="min-w-0 leading-tight">
+                      <span className="block text-[13px] font-medium text-zinc-800">Experiencias personalizadas</span>
+                      <span className="flex items-center gap-1.5 text-[11px] tracking-wide text-zinc-400">
+                        Hechas a tu medida
+                        <svg className="h-3 w-3 flex-shrink-0 text-zinc-300 transition-transform duration-300 group-open/seal:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </span>
+                    </span>
+                  </summary>
+                  <p className="pl-[3.25rem] pr-1 pb-2 text-[12px] leading-relaxed text-zinc-500">
+                    Acordás menú, tiempos y detalles del servicio según tu evento y tus gustos.
+                  </p>
+                </details>
+              </li>
+              <li className="py-1.5 sm:px-4 sm:py-0 sm:first:pl-0 sm:last:pr-0">
+                <details className="group/seal">
+                  <summary className="flex cursor-pointer list-none items-start gap-3 rounded-xl py-2 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/60 [&::-webkit-details-marker]:hidden">
+                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-50 to-amber-100/50 shadow-sm shadow-amber-900/[0.04] ring-1 ring-amber-200/70 transition-colors duration-300 group-hover/seal:ring-amber-300">
+                      <svg className="h-[18px] w-[18px] text-amber-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6Z" />
+                        <path d="M9 12l2 2 4-4" />
+                      </svg>
+                    </span>
+                    <span className="min-w-0 leading-tight">
+                      <span className="block text-[13px] font-medium text-zinc-800">Reserva segura</span>
+                      <span className="flex items-center gap-1.5 text-[11px] tracking-wide text-zinc-400">
+                        Simple y protegida
+                        <svg className="h-3 w-3 flex-shrink-0 text-zinc-300 transition-transform duration-300 group-open/seal:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </span>
+                    </span>
+                  </summary>
+                  <p className="pl-[3.25rem] pr-1 pb-2 text-[12px] leading-relaxed text-zinc-500">
+                    Reservás en minutos y tu pago queda protegido hasta confirmar el servicio.
+                  </p>
+                </details>
+              </li>
+            </ul>
 
           
           </div>
