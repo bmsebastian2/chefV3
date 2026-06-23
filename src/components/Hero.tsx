@@ -105,7 +105,7 @@ export function Hero() {
               <Link href="/wizard" className="w-full sm:w-auto">
                 <Button
                   size="lg"
-                  className="group/cta relative w-full sm:w-auto overflow-hidden rounded-full border-none bg-accent text-white h-12 px-8 text-base font-medium shadow-xl shadow-green-500/25 ring-1 ring-inset ring-white/10 transition-all duration-300 ease-out hover:bg-green-600 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-green-500/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                  className="group/cta relative w-full sm:w-auto overflow-hidden rounded-full border-none bg-accent text-white h-12 px-8 text-base font-medium shadow-xl shadow-green-500/25 ring-1 ring-inset ring-white/10 transform-gpu transition-all duration-300 ease-out hover:bg-green-600 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-green-500/40"
                 >
                   {/* Brillo superior — acabado pulido y tactil */}
                   <span
@@ -114,7 +114,7 @@ export function Hero() {
                   />
                   {/* Sheen diagonal — destello de pulido que cruza el pill al hover */}
                   <span
-                    className="pointer-events-none absolute inset-0 -translate-x-[120%] -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 ease-out group-hover/cta:translate-x-[120%] motion-reduce:hidden"
+                    className="pointer-events-none absolute inset-0 -translate-x-[120%] -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent transform-gpu will-change-transform transition-transform duration-700 ease-out group-hover/cta:translate-x-[120%]"
                     aria-hidden="true"
                   />
                   <span className="relative z-10 flex items-center">
@@ -122,7 +122,7 @@ export function Hero() {
                     {/* Cloche de servicio — la tapa se levanta y revela un destello al hover */}
                     <span className="relative ml-2.5 inline-flex h-6 w-6 items-center justify-center">
                       <svg
-                        className="absolute left-1/2 top-0 size-3 -translate-x-1/2 translate-y-1 text-amber-200 opacity-0 transition-all duration-300 ease-out group-hover/cta:-translate-y-0.5 group-hover/cta:opacity-100 motion-reduce:hidden"
+                        className="absolute left-1/2 top-0 size-3 -translate-x-1/2 translate-y-1 text-amber-200 opacity-0 transform-gpu transition-all duration-300 ease-out group-hover/cta:-translate-y-0.5 group-hover/cta:opacity-100"
                         viewBox="0 0 24 24"
                         fill="currentColor"
                         aria-hidden="true"
@@ -140,7 +140,7 @@ export function Hero() {
                         aria-hidden="true"
                       >
                         <path d="M4 19h16" />
-                        <g className="transition-transform duration-300 ease-out group-hover/cta:-translate-y-[3px] motion-reduce:transition-none">
+                        <g className="transform-gpu will-change-transform transition-transform duration-300 ease-out group-hover/cta:-translate-y-[3px]">
                           <path d="M5 19a7 7 0 0 1 14 0" />
                           <path d="M12 9v3" />
                           <circle cx="12" cy="8" r="1.1" fill="currentColor" stroke="none" />
