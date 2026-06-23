@@ -1,169 +1,89 @@
-Paso 2 — Crear el helper con la firma HMAC
-dLocalGo usa autenticación HMAC-SHA256. Tenés que concatenar x-login + x-date + requestBody y hashear con tu secret key para generar la firma que va en el header Authorization. dLocal Docs
-Crea lib/dlocalgo.ts:
-tsimport crypto from 'crypto';
+# Integración dLocalGo — GetChef
 
-const API_KEY = process.env.DLOCALGO_API_KEY!;
-const SECRET_KEY = process.env.DLOCALGO_SECRET_KEY!;
-const BASE_URL = 'https://api.dlocalgo.com/v1'; // producción
-// sandbox: 'https://api.sandbox.dlocalgo.com/v1'
+> ⚠️ Este documento describe la **implementación real** del código. Una versión
+> anterior documentaba un esquema HMAC-SHA256 que **no se usa**: dLocalGo se
+> autentica con un token Bearer, no con firma HMAC (eso es la API de *dLocal*,
+> otro producto).
 
-function generateSignature(body: string, date: string): string {
-  const data = API_KEY + date + body;
-  return crypto.createHmac('sha256', SECRET_KEY).update(data).digest('hex');
-}
+## Autenticación
 
-export async function dlocalgoRequest(path: string, body: object) {
-  const date = new Date().toISOString();
-  const bodyStr = JSON.stringify(body);
-  const signature = generateSignature(bodyStr, date);
+dLocalGo usa un header Bearer con `apiKey:secretKey` — ver [`src/lib/dlocalgo.ts`](src/lib/dlocalgo.ts):
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Date': date,
-      'X-Login': API_KEY,
-      'X-Trans-Key': SECRET_KEY,
-      'X-Version': '2.1',
-      'Authorization': `V2-HMAC-SHA256, Signature: ${signature}`,
-    },
-    body: bodyStr,
-  });
+```ts
+Authorization: `Bearer ${DLOCALGO_API_KEY}:${DLOCALGO_SECRET_KEY}`
+```
 
-  return res.json();
-}
+No hay firma por-campo ni HMAC. Las credenciales viajan en el header sobre TLS.
 
-Paso 3 — API Route: crear el pago
-Crea app/api/dlocalgo/create-payment/route.ts:
-tsimport { dlocalgoRequest } from '@/lib/dlocalgo';
-import { createClient } from '@/utils/supabase/server';
-import { NextResponse } from 'next/server';
+## Variables de entorno
 
-export async function POST(req: Request) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  const { amount, currency = 'USD', description = 'Pago' } = await req.json();
+| Variable | Uso |
+|---|---|
+| `DLOCALGO_API_KEY` | Token público de la cuenta dLocalGo |
+| `DLOCALGO_SECRET_KEY` | Secret de la cuenta — **nunca exponer al browser** |
+| `DLOCALGO_BASE_URL` | **Único switch prod/sandbox** (ver abajo) |
+| `NEXT_PUBLIC_APP_URL` | Base para `success_url` / `back_url` / `notification_url`. **Debe ser el dominio de prod en Vercel** |
 
-  const result = await dlocalgoRequest('/payments', {
-    amount,
-    currency,
-    country_code: 'UY', // o 'NI' para Nicaragua
-    description,
-    success_url: `${process.env.NEXT_PUBLIC_URL}/success`,
-    back_url: `${process.env.NEXT_PUBLIC_URL}/cancel`,
-    notification_url: `${process.env.NEXT_PUBLIC_URL}/api/dlocalgo/webhook`,
-    payer: {
-      name: user?.user_metadata?.full_name ?? 'Cliente',
-      email: user?.email,
-    },
-    metadata: {
-      user_id: user?.id,
-    },
-  });
+> `DLOCALGO_SANDBOX` **no se lee en ningún lado** — variable muerta. Para cambiar
+> de entorno usá `DLOCALGO_BASE_URL`. Conviene eliminarla del `.env` y no
+> agregarla en Vercel para no confundir.
 
-  if (!result.redirect_url) {
-    return NextResponse.json({ error: 'Error creando pago' }, { status: 500 });
-  }
+### Switch prod / sandbox
 
-  // Guardar pago pendiente en Supabase
-  await supabase.from('payments').insert({
-    user_id: user?.id,
-    dlocalgo_payment_id: result.id,
-    amount,
-    currency,
-    status: 'pending',
-  });
+```
+prod    → DLOCALGO_BASE_URL=https://api.dlocalgo.com/v1     (cobro real)
+sandbox → DLOCALGO_BASE_URL=https://api-sbx.dlocalgo.com/v1
+```
 
-  return NextResponse.json({ redirect_url: result.redirect_url });
-}
+## Flujo
 
-Paso 4 — Frontend: redirigir al checkout
-El flujo de dLocalGo es redirect — el usuario va a la página de pago de dLocalGo y vuelve a tu app. No hay botón embebido como PayPal.
-tsx// components/CheckoutButton.tsx
-'use client';
+```
+Cliente confirma → POST /api/dlocalgo/create-payment
+                 → dLocalGo devuelve redirect_url
+                 → Cliente paga en la página de dLocalGo
+                 → dLocalGo hace POST a notification_url con { payment_id }
+                 → webhook re-consulta el estado real a la API y actualiza Supabase
+                 → Cliente vuelve a success_url
+```
 
-export function CheckoutButton({ amount }: { amount: number }) {
-  async function handlePay() {
-    const res = await fetch('/api/dlocalgo/create-payment', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount, currency: 'USD' }),
-    });
-    const { redirect_url } = await res.json();
-    if (redirect_url) {
-      window.location.href = redirect_url; // redirige al checkout de dLocalGo
-    }
-  }
+### 1. Crear el pago — [`create-payment/route.ts`](src/app/api/dlocalgo/create-payment/route.ts)
 
-  return (
-    <button onClick={handlePay}>
-      Pagar con dLocalGo
-    </button>
-  );
-}
+- Verifica que el usuario esté autenticado y sea dueño del `service_request`.
+- Valida que `amount` sea un número finito > 0 **antes** de enviarlo (evita el bug
+  histórico de `"USD-"` con monto vacío).
+- Envía `amount`, `currency: 'USD'`, `country_code: 'UY'`, las 3 URLs y `metadata`.
+- `notification_url` se manda **por pago** (no hace falta registrarla en el panel).
+- Inserta una fila `pending` en `payments` con el `dlocalgo_payment_id`.
 
-Paso 5 — Webhook (notificaciones de pago)
-Cuando el estado del pago cambia, dLocalGo hace un POST a tu notification_url con un payment_id en el body, que podés usar para consultar el estado del pago. Medium
-Crea app/api/dlocalgo/webhook/route.ts:
-tsimport { dlocalgoRequest } from '@/lib/dlocalgo';
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+> ⚠️ **Monto de prueba activo:** el cobro está fijado en `2 USD` (marcado con
+> `TODO_PROD`). Antes del cobro real hay que volver a `realAmount` **y**
+> recalcular el total en el servidor desde `proposal.price_per_person × guests`
+> (no confiar en el `amount` que manda el cliente).
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+### 2. Webhook — [`webhook/route.ts`](src/app/api/dlocalgo/webhook/route.ts)
 
-export async function POST(req: Request) {
-  const body = await req.json();
-  const { payment_id } = body;
+- El webhook **no está firmado**. La seguridad viene de **re-consultar** el pago a
+  la API con nuestras credenciales (`dlocalgoGetPayment`): no se confía en el body.
+- Si la verificación falla, devuelve 5xx para que dLocalGo reintente (no pisa el
+  registro).
+- Mapea estados de dLocalGo → internos:
 
-  // Consultar el estado real del pago a la API
-  const payment = await dlocalgoRequest(`/payments/${payment_id}`, {});
+  | dLocalGo | interno |
+  |---|---|
+  | `PAID` | `completed` (fondos retenidos en escrow) |
+  | `PENDING` | `pending` |
+  | `REJECTED` | `failed` |
+  | `EXPIRED` | `expired` |
+  | `CANCELLED` | `cancelled` |
 
-  const statusMap: Record<string, string> = {
-    PAID: 'completed',
-    REJECTED: 'failed',
-    EXPIRED: 'expired',
-    CANCELLED: 'cancelled',
-  };
+- En `PAID` marca además `proposals.status = 'accepted'`.
+- **No** toca `service_requests`: el dinero queda retenido por la empresa hasta que
+  el chef completa el servicio y el cliente da el OK (liberación manual posterior).
 
-  await supabase
-    .from('payments')
-    .update({ status: statusMap[payment.status] ?? payment.status })
-    .eq('dlocalgo_payment_id', payment_id);
+## Tabla `payments`
 
-  return NextResponse.json({ received: true });
-}
-
-Paso 6 — Tabla en Supabase
-sqlcreate table payments (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users not null,
-  dlocalgo_payment_id text unique,
-  amount numeric,
-  currency text default 'USD',
-  status text default 'pending', -- pending, completed, failed, expired
-  created_at timestamptz default now()
-);
-
-alter table payments enable row level security;
-
-create policy "Users ven sus pagos"
-  on payments for select
-  using (auth.uid() = user_id);
-
-Paso 7 — Probar en sandbox
-Cambiá la URL base en lib/dlocalgo.ts a sandbox:
-tsconst BASE_URL = 'https://api.sandbox.dlocalgo.com/v1';
-Y usá las credenciales de tu cuenta sandbox de dLocalGo (las encontrás en el mismo panel de Integrations, con un toggle Sandbox/Production).
-
-Resumen del flujo
-Usuario hace clic → /api/dlocalgo/create-payment
-                  → dLocalGo devuelve redirect_url
-                  → Usuario paga en página de dLocalGo
-                  → dLocalGo notifica tu webhook con payment_id
-                  → Verificás estado → guardás en Supabase
-                  → Usuario llega a tu success_url
+```
+id, user_id, dlocalgo_payment_id (unique), proposal_id, request_id,
+amount, currency (default 'USD'), status (pending|completed|failed|expired|cancelled),
+created_at
+```

@@ -1,5 +1,10 @@
 const API_KEY = process.env.DLOCALGO_API_KEY!;
 const SECRET_KEY = process.env.DLOCALGO_SECRET_KEY!;
+
+// ÚNICO switch entre prod y sandbox: DLOCALGO_BASE_URL.
+//   prod    → https://api.dlocalgo.com/v1   (cobro real)
+//   sandbox → https://api-sbx.dlocalgo.com/v1
+// NOTA: la env `DLOCALGO_SANDBOX` NO se usa en ningún lado — no confiar en ella.
 const BASE_URL = process.env.DLOCALGO_BASE_URL ?? 'https://api.dlocalgo.com/v1';
 
 function authHeaders() {

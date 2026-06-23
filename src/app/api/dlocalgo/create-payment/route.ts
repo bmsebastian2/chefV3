@@ -39,7 +39,19 @@ export async function POST(req: Request) {
       .single();
     if (!request) return NextResponse.json({ error: 'Solicitud no encontrada' }, { status: 403 });
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    // Base URL para success/back/notification. dLocalGo recibe la notification_url
+    // por pago, así que si esto queda en localhost el webhook NUNCA llega en prod.
+    // Fallback a NEXT_PUBLIC_URL (seteada a prod) y strip del "/" final para no
+    // generar "//api/...". Mismo patrón que client-emails.ts / wizard/actions.ts.
+    const appUrl = (
+      process.env.NEXT_PUBLIC_APP_URL ??
+      process.env.NEXT_PUBLIC_URL ??
+      'http://localhost:3000'
+    ).replace(/\/$/, '');
+
+    if (appUrl.includes('localhost')) {
+      console.warn('⚠️ create-payment: appUrl apunta a localhost — webhook y URLs de retorno no funcionarán en producción. Configurá NEXT_PUBLIC_APP_URL en Vercel.');
+    }
 
     // dLocalGo bloquea (deshabilita) los campos del payer que recibe pre-cargados.
     // Si mandamos un nombre placeholder, el cliente no puede editarlo. Traemos el
