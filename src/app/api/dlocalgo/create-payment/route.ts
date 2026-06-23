@@ -14,11 +14,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Parámetros faltantes' }, { status: 400 });
     }
 
-    // ⚠️ MONTO FIJO DE PRUEBA ($2) ACTIVO EN PRODUCCIÓN — quitar al pasar a cobro real.
-    console.warn("⚠️ create-payment: monto fijo de prueba ($2 USD) activo.");
+    // ⚠️ MONTO FIJO DE PRUEBA ($20) ACTIVO EN PRODUCCIÓN — quitar al pasar a cobro real.
+    // Se subió de $2 a $20 porque dLocalGo rechazaba el micro-monto por riesgo
+    // (errorCode 818 "Rejected due to high risk" = heurística de card-testing).
+    console.warn("⚠️ create-payment: monto fijo de prueba ($20 USD) activo.");
     // TODO_PROD: ⚠️ MONTO DE PRUEBA — cambiar a `realAmount` antes de cobro real
     // const amount = realAmount; const currency = _currency ?? 'USD';
-    const amount = 2; const currency = 'USD'; // solo para testing
+    const amount = 20; const currency = 'USD'; // solo para testing
     // FIN_TODO_PROD ⚠️
 
     // ── Guarda: el monto debe ser un número finito y > 0 antes de enviarse ──
