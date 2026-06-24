@@ -10,7 +10,8 @@ type PaymentMethod = "card" | "paypal" | "googlepay"
 type Props = {
   requestId:   string
   proposalId:  string
-  total:       number
+  total:       number   // solo para mostrar; el monto real lo recalcula el servidor
+  guests:      number
 }
 
 const FAQ_ITEMS = [
@@ -79,7 +80,7 @@ const METHODS: { id: PaymentMethod; label: string; Icon: React.FC }[] = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function PaymentView({ requestId, proposalId, total }: Props) {
+export function PaymentView({ requestId, proposalId, total, guests }: Props) {
   const router = useRouter()
   const [method, setMethod]   = useState<PaymentMethod>("card")
   const [isPaying, startTransition] = useTransition()
@@ -96,10 +97,12 @@ export function PaymentView({ requestId, proposalId, total }: Props) {
     }
     startTransition(async () => {
       setError(null)
+      // No mandamos el monto: el servidor lo recalcula desde price_per_person × guests
+      // para no confiar en un total manipulable por el cliente.
       const res = await fetch("/api/dlocalgo/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: total, currency: "USD", proposalId, requestId }),
+        body: JSON.stringify({ proposalId, requestId, guests }),
       })
       let data: { redirect_url?: string; error?: string } = {}
       try {

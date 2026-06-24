@@ -36,15 +36,17 @@ export default async function PaymentPage({
     redirect(`/client-dashboard/${requestId}/proposals/${proposalId}`)
   }
 
-  const guests = guestsParam ? parseInt(guestsParam, 10) : 2
+  const guestsRaw = guestsParam ? parseInt(guestsParam, 10) : 2
+  const guests = Number.isFinite(guestsRaw) && guestsRaw > 0 ? guestsRaw : 2
   const pricePerPerson = (proposal.price_per_person as number) ?? 0
-  const total = pricePerPerson * (Number.isFinite(guests) && guests > 0 ? guests : 2)
+  const total = pricePerPerson * guests
 
   return (
     <PaymentView
       requestId={requestId}
       proposalId={proposalId}
       total={total}
+      guests={guests}
     />
   )
 }
