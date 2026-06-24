@@ -12,6 +12,8 @@ const STATUS_MAP: Record<string, string> = {
 
 export async function POST(req: Request) {
   const body = await req.json();
+  // Log del body crudo: confirma qué campo manda dLocalGo y traza por qué (no) actualiza.
+  console.log('📩 webhook recibido:', JSON.stringify(body));
   const { payment_id } = body;
   if (!payment_id) return NextResponse.json({ error: 'missing payment_id' }, { status: 400 });
 
@@ -27,13 +29,25 @@ export async function POST(req: Request) {
   const admin = createAdminClient();
 
   const mappedStatus = STATUS_MAP[payment.status] ?? payment.status.toLowerCase();
+  console.log('🔎 webhook: dLocalGo status', payment.status, '→', mappedStatus, '| payment_id', payment_id);
 
-  const { data: record } = await admin
+  const { data: record, error: updateError } = await admin
     .from('payments')
     .update({ status: mappedStatus })
     .eq('dlocalgo_payment_id', payment_id)
     .select('proposal_id, request_id')
     .single();
+
+  // Si no hay fila que matchee (porque el insert de create-payment falló) o RLS bloquea,
+  // esto lo deja explícito en vez de fallar mudo.
+  if (updateError) {
+    console.error('🛑 webhook: fallo update `payments` (¿0 filas o RLS/service-role?)', {
+      message: updateError.message,
+      code: updateError.code,
+      details: updateError.details,
+      hint: updateError.hint,
+    });
+  }
 
   if (record && payment.status === 'PAID') {
     await admin

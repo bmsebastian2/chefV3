@@ -92,7 +92,7 @@ export async function POST(req: Request) {
     }
 
     const admin = createAdminClient();
-    await admin.from('payments').insert({
+    const { error: insertError } = await admin.from('payments').insert({
       user_id: user.id,
       dlocalgo_payment_id: result.id,
       proposal_id: proposalId,
@@ -101,6 +101,17 @@ export async function POST(req: Request) {
       currency: _currency ?? 'USD',
       status: 'pending',
     });
+
+    // Antes este error se tragaba en silencio: si el insert falla, no hay fila en
+    // `payments` y el webhook nunca puede marcar el pago/propuesta → pago infinito.
+    if (insertError) {
+      console.error('🛑 create-payment: fallo al insertar en `payments`', {
+        message: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint,
+      });
+    }
 
     return NextResponse.json({ redirect_url: result.redirect_url });
   } catch (err) {
