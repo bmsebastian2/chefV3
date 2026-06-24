@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     // servicio de $378). total = price_per_person × guests.
     const { data: proposal } = await supabase
       .from('proposals')
-      .select('price_per_person')
+      .select('price_per_person, status')
       .eq('id', proposalId)
       .eq('request_id', requestId)
       .single();
@@ -48,6 +48,27 @@ export async function POST(req: Request) {
     if (!proposal || !Number.isFinite(pricePerPerson) || pricePerPerson <= 0) {
       console.error('🛑 create-payment: propuesta sin precio válido', { proposalId, pricePerPerson });
       return NextResponse.json({ error: 'Propuesta sin precio válido' }, { status: 400 });
+    }
+
+    // ── Guard anti re-pago (la UI bloquea, pero la API también debe hacerlo) ──
+    // 1) Si la propuesta ya no está 'pending' (ej. ya 'accepted'), no se vuelve a pagar.
+    if (proposal.status !== 'pending') {
+      console.warn('create-payment: pago rechazado, propuesta no-pending', { proposalId, status: proposal.status });
+      return NextResponse.json({ error: 'La propuesta ya no está disponible para pago' }, { status: 409 });
+    }
+    // 2) Si ya existe un pago completado para esta propuesta, rechazar (cubre la ventana
+    //    entre que el pago se completa y que el webhook marque la propuesta como accepted).
+    const admin = createAdminClient();
+    const { data: paidRow } = await admin
+      .from('payments')
+      .select('id')
+      .eq('proposal_id', proposalId)
+      .eq('status', 'completed')
+      .limit(1)
+      .maybeSingle();
+    if (paidRow) {
+      console.warn('create-payment: pago rechazado, ya existe un payment completado', { proposalId });
+      return NextResponse.json({ error: 'Esta propuesta ya fue pagada' }, { status: 409 });
     }
 
     const amountNumber = pricePerPerson * guestsNumber;
@@ -99,7 +120,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: result.message ?? 'Error creando pago' }, { status: 500 });
     }
 
-    const admin = createAdminClient();
     const { error: insertError } = await admin.from('payments').insert({
       user_id: user.id,
       dlocalgo_payment_id: result.id,
