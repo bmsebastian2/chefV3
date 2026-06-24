@@ -9,35 +9,21 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
 
-    const { amount: realAmount, currency: _currency, proposalId, requestId } = await req.json();
-    if (!realAmount || !proposalId || !requestId) {
-      // Log explícito: este 400 antes salía sin rastro en Vercel. `realAmount` es el
-      // sospechoso típico — llega 0 (falsy) cuando la propuesta no tiene price_per_person.
-      console.error('🛑 create-payment: parámetros faltantes', {
-        realAmount, currency: _currency, proposalId, requestId,
-      });
+    // El cliente NO manda el monto: solo la propuesta, el request y los comensales.
+    // El total lo calcula el servidor (ver más abajo) para no confiar en un valor manipulable.
+    const { proposalId, requestId, guests } = await req.json();
+    if (!proposalId || !requestId || !guests) {
+      console.error('🛑 create-payment: parámetros faltantes', { proposalId, requestId, guests });
       return NextResponse.json({
         error: 'Parámetros faltantes',
-        missing: { realAmount: !realAmount, proposalId: !proposalId, requestId: !requestId },
+        missing: { proposalId: !proposalId, requestId: !requestId, guests: !guests },
       }, { status: 400 });
     }
 
-    // ⚠️ MONTO FIJO DE PRUEBA ($20) ACTIVO EN PRODUCCIÓN — quitar al pasar a cobro real.
-    // Se subió de $2 a $20 porque dLocalGo rechazaba el micro-monto por riesgo
-    // (errorCode 818 "Rejected due to high risk" = heurística de card-testing).
-    console.warn("⚠️ create-payment: monto fijo de prueba ($20 USD) activo.");
-    // TODO_PROD: ⚠️ MONTO DE PRUEBA — cambiar a `realAmount` antes de cobro real
-    // const amount = realAmount; const currency = _currency ?? 'USD';
-    const amount = 20; const currency = 'USD'; // solo para testing
-    // FIN_TODO_PROD ⚠️
-
-    // ── Guarda: el monto debe ser un número finito y > 0 antes de enviarse ──
-    // dLocalGo registra "USD-" (monto vacío) cuando recibe un amount null/NaN/0.
-    // Esta validación evita que se cree un pago con monto inválido.
-    const amountNumber = Number(amount);
-    if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
-      console.error('🛑 create-payment: amount inválido, NO se envía a dLocalGo:', { amount, currency });
-      return NextResponse.json({ error: 'Monto de pago inválido' }, { status: 400 });
+    const guestsNumber = Number(guests);
+    if (!Number.isInteger(guestsNumber) || guestsNumber <= 0) {
+      console.error('🛑 create-payment: guests inválido', { guests });
+      return NextResponse.json({ error: 'Cantidad de comensales inválida' }, { status: 400 });
     }
 
     // Verify the client owns this request
@@ -48,6 +34,28 @@ export async function POST(req: Request) {
       .eq('user_id', user.id)
       .single();
     if (!request) return NextResponse.json({ error: 'Solicitud no encontrada' }, { status: 403 });
+
+    // ── Monto AUTORITATIVO: calculado en el servidor desde el precio de la propuesta ──
+    // Nunca se confía en un total mandado por el cliente (si no, podría pagar $1 por un
+    // servicio de $378). total = price_per_person × guests.
+    const { data: proposal } = await supabase
+      .from('proposals')
+      .select('price_per_person')
+      .eq('id', proposalId)
+      .eq('request_id', requestId)
+      .single();
+    const pricePerPerson = Number(proposal?.price_per_person);
+    if (!proposal || !Number.isFinite(pricePerPerson) || pricePerPerson <= 0) {
+      console.error('🛑 create-payment: propuesta sin precio válido', { proposalId, pricePerPerson });
+      return NextResponse.json({ error: 'Propuesta sin precio válido' }, { status: 400 });
+    }
+
+    const amountNumber = pricePerPerson * guestsNumber;
+    const currency = 'USD';
+    if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
+      console.error('🛑 create-payment: monto calculado inválido', { pricePerPerson, guestsNumber, amountNumber });
+      return NextResponse.json({ error: 'Monto de pago inválido' }, { status: 400 });
+    }
 
     // Base URL para success/back/notification. dLocalGo recibe la notification_url
     // por pago, así que si esto queda en localhost el webhook NUNCA llega en prod.
@@ -97,8 +105,8 @@ export async function POST(req: Request) {
       dlocalgo_payment_id: result.id,
       proposal_id: proposalId,
       request_id: requestId,
-      amount: realAmount,
-      currency: _currency ?? 'USD',
+      amount: amountNumber,
+      currency,
       status: 'pending',
     });
 
