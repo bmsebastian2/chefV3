@@ -3,14 +3,18 @@ export const dynamic = 'force-dynamic'
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { applyDlocalgoPaymentStatus } from '@/lib/dlocalgo-verify'
 import { ProposalDetailView } from './ProposalDetailView'
 
 export default async function ProposalDetailPage({
   params,
+  searchParams,
 }: {
-  params: Promise<{ id: string; proposalId: string }>
+  params:       Promise<{ id: string; proposalId: string }>
+  searchParams: Promise<{ payment?: string }>
 }) {
   const { id: requestId, proposalId } = await params
+  const { payment: paymentReturn } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
@@ -23,6 +27,26 @@ export default async function ProposalDetailPage({
     .eq('user_id', user.id)
     .single()
   if (!request) notFound()
+
+  const admin = createAdminClient()
+
+  // Retorno de éxito de dLocalGo. NO confiamos en el query param `?payment=success`
+  // (cualquiera podría falsearlo): re-consultamos el estado real del pago a dLocalGo y,
+  // solo si está realmente PAID, marcamos payments=completed y proposals=accepted.
+  // Esto cierra el pago aunque el webhook no haya llegado (preview protegido) o se demore.
+  if (paymentReturn === 'success') {
+    const { data: lastPayment } = await admin
+      .from('payments')
+      .select('dlocalgo_payment_id')
+      .eq('proposal_id', proposalId)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (lastPayment?.dlocalgo_payment_id) {
+      await applyDlocalgoPaymentStatus(lastPayment.dlocalgo_payment_id as string)
+    }
+  }
 
   // Fetch the specific proposal
   const { data: proposal } = await supabase
@@ -46,8 +70,6 @@ export default async function ProposalDetailPage({
     proposal.chef_id as string,
     ...(otherProposalsRaw ?? []).map((p) => p.chef_id as string),
   ]
-
-  const admin = createAdminClient()
 
   // Parallel: chef profiles, all photos, messages, meal date
   const [
