@@ -11,7 +11,15 @@ export async function POST(req: Request) {
 
     const { amount: realAmount, currency: _currency, proposalId, requestId } = await req.json();
     if (!realAmount || !proposalId || !requestId) {
-      return NextResponse.json({ error: 'Parámetros faltantes' }, { status: 400 });
+      // Log explícito: este 400 antes salía sin rastro en Vercel. `realAmount` es el
+      // sospechoso típico — llega 0 (falsy) cuando la propuesta no tiene price_per_person.
+      console.error('🛑 create-payment: parámetros faltantes', {
+        realAmount, currency: _currency, proposalId, requestId,
+      });
+      return NextResponse.json({
+        error: 'Parámetros faltantes',
+        missing: { realAmount: !realAmount, proposalId: !proposalId, requestId: !requestId },
+      }, { status: 400 });
     }
 
     // ⚠️ MONTO FIJO DE PRUEBA ($20) ACTIVO EN PRODUCCIÓN — quitar al pasar a cobro real.
