@@ -51,13 +51,24 @@ export async function middleware(request: NextRequest) {
 
       const { pathname } = request.nextUrl
 
-      // Rutas protegidas: redirigir al inicio si no está logueado
-      if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/client-dashboard'))) {
-        return NextResponse.redirect(new URL('/', request.url))
+      // Redirige preservando las cookies de sesión que getUser pudo refrescar.
+      // Sin esto, el redirect descarta el token nuevo y la próxima request ve al
+      // usuario como deslogueado (browser logueado ↔ server no → rebote a "/").
+      const redirectTo = (path: string) => {
+        const res = NextResponse.redirect(new URL(path, request.url))
+        supabaseResponse.cookies.getAll().forEach((cookie) => res.cookies.set(cookie))
+        return res
       }
 
-      // En la raíz con sesión → redirigir según rol
-      if (user && pathname === '/') {
+      // Rutas protegidas: redirigir al inicio si no está logueado
+      if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/client-dashboard') || pathname.startsWith('/admin'))) {
+        return redirectTo('/')
+      }
+
+      // En la raíz con sesión → redirigir según rol.
+      // Bypass con ?home=1: permite ver la landing aunque haya sesión (ej. botón
+      // "Inicio" del panel admin).
+      if (user && pathname === '/' && !searchParams.has('home')) {
         const { data: userData } = await supabase
           .from('users')
           .select('role')
@@ -65,8 +76,9 @@ export async function middleware(request: NextRequest) {
           .single()
 
         const role = userData?.role
-        if (role === 'chef')   return NextResponse.redirect(new URL('/dashboard', request.url))
-        if (role === 'client') return NextResponse.redirect(new URL('/client-dashboard', request.url))
+        if (role === 'admin')  return redirectTo('/admin')
+        if (role === 'chef')   return redirectTo('/dashboard')
+        if (role === 'client') return redirectTo('/client-dashboard')
       }
     } catch (error) {
       console.error('Error getting user:', error)

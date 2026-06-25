@@ -57,6 +57,27 @@ export default async function ProposalDetailPage({
     .single()
   if (!proposal || proposal.status === 'withdrawn') notFound()
 
+  // Booking del ciclo de vida (existe una vez pagada la propuesta → 'accepted').
+  let booking: { id: string; status: string; hasReview: boolean } | null = null
+  if (proposal.status === 'accepted') {
+    const { data: bookingRow } = await supabase
+      .from('bookings')
+      .select('id, booking_status')
+      .eq('proposal_id', proposalId)
+      .maybeSingle()
+    if (bookingRow) {
+      const { count } = await supabase
+        .from('reviews')
+        .select('id', { count: 'exact', head: true })
+        .eq('booking_id', bookingRow.id as string)
+      booking = {
+        id:        bookingRow.id as string,
+        status:    bookingRow.booking_status as string,
+        hasReview: (count ?? 0) > 0,
+      }
+    }
+  }
+
   // Other proposals for the sidebar (excluding this one and withdrawn)
   const { data: otherProposalsRaw } = await supabase
     .from('proposals')
@@ -145,6 +166,7 @@ export default async function ProposalDetailPage({
     <ProposalDetailView
       requestId={requestId}
       currentUserId={user.id}
+      booking={booking}
       proposal={{
         id:               proposal.id as string,
         message:          proposal.message as string | null,

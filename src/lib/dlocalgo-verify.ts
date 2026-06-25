@@ -63,6 +63,23 @@ export async function applyDlocalgoPaymentStatus(
       });
       return { error: 'proposals update failed' };
     }
+
+    // Crear el booking (escrow). Idempotente: un solo booking por propuesta,
+    // aunque webhook y retorno de éxito disparen ambos. Acá es donde `bookings`
+    // empieza a poblarse — antes nunca se creaba.
+    const { error: bookingError } = await admin.rpc('create_booking_for_payment', {
+      p_dlocalgo_payment_id: dlocalgoPaymentId,
+    });
+    if (bookingError) {
+      // Devolver error para que el webhook reintente (5xx) y no se pierda el booking.
+      console.error('🛑 dlocalgo-verify: fallo create_booking_for_payment', {
+        message: bookingError.message,
+        code: bookingError.code,
+        details: bookingError.details,
+        hint: bookingError.hint,
+      });
+      return { error: 'booking creation failed' };
+    }
   }
 
   return { status: mappedStatus, paid };

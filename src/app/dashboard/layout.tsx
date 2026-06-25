@@ -16,6 +16,8 @@ export default async function DashboardLayout({
     supabase.from('chef_profiles').select('id').eq('user_id', user.id).single(),
   ])
 
+  // Los admin van a su panel (evita el loop dashboard ↔ client-dashboard).
+  if (userData?.role === 'admin') redirect('/admin')
   // Solo chefs pueden acceder al dashboard de chef
   if (userData?.role !== 'chef') redirect('/client-dashboard')
 

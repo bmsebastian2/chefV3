@@ -17,6 +17,8 @@ export default async function ClientDashboardLayout({
     .eq('id', user.id)
     .single()
 
+  // Los admin van a su panel (evita el loop client-dashboard ↔ dashboard).
+  if (userData?.role === 'admin') redirect('/admin')
   if (userData?.role !== 'client') redirect('/dashboard')
 
   return (

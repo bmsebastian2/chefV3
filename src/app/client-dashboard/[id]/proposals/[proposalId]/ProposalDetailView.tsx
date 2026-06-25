@@ -9,6 +9,7 @@ import {
   Star, CheckCircle2, XCircle, Loader2,
 } from "lucide-react"
 import { rejectProposal, sendClientMessage, getMessages } from "./actions"
+import { BookingPanel } from "./BookingPanel"
 import { formatPrice } from "@/lib/format"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -32,6 +33,11 @@ type OtherProposal = {
 type Props = {
   requestId:   string
   currentUserId: string
+  booking: {
+    id:        string
+    status:    string
+    hasReview: boolean
+  } | null
   proposal: {
     id:               string
     message:          string | null
@@ -208,6 +214,7 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
 export function ProposalDetailView({
   requestId,
   currentUserId,
+  booking,
   proposal,
   chef,
   request,
@@ -315,6 +322,19 @@ export function ProposalDetailView({
           onAccept={handleAccept}
         />
       </div>
+
+      {/* Mobile booking lifecycle */}
+      {booking && (
+        <div className="lg:hidden mx-6 mt-4">
+          <BookingPanel
+            bookingId={booking.id}
+            requestId={requestId}
+            bookingStatus={booking.status}
+            hasReview={booking.hasReview}
+            chefName={chef.name}
+          />
+        </div>
+      )}
 
       <div className="flex gap-6 px-6 py-6 max-w-4xl">
 
@@ -560,6 +580,17 @@ export function ProposalDetailView({
                 Compartir propuesta
               </button>
             </div>
+
+            {/* Booking lifecycle */}
+            {booking && (
+              <BookingPanel
+                bookingId={booking.id}
+                requestId={requestId}
+                bookingStatus={booking.status}
+                hasReview={booking.hasReview}
+                chefName={chef.name}
+              />
+            )}
 
             {/* Other proposals */}
             {otherProposals.length > 0 && (
