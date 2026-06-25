@@ -16,10 +16,14 @@ export default async function DashboardLayout({
     supabase.from('chef_profiles').select('id').eq('user_id', user.id).single(),
   ])
 
-  // Los admin van a su panel (evita el loop dashboard ↔ client-dashboard).
-  if (userData?.role === 'admin') redirect('/admin')
-  // Solo chefs pueden acceder al dashboard de chef
-  if (userData?.role !== 'chef') redirect('/client-dashboard')
+  // Ruteo por rol — cada rol se maneja EXPLÍCITAMENTE y los desconocidos/null van
+  // a la landing. Si no, dashboard ↔ client-dashboard se rebotan en loop infinito
+  // (ej. un admin en un deploy sin /admin, o un role null). El ?home=1 evita que el
+  // middleware vuelva a redirigir desde "/".
+  const role = userData?.role
+  if (role === 'admin')  redirect('/admin')
+  if (role === 'client') redirect('/client-dashboard')
+  if (role !== 'chef')   redirect('/?home=1')
 
   let profilePhotoUrl: string | null = null
   if (chefProfile) {
