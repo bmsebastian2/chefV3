@@ -1,9 +1,15 @@
 export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/utils/supabase/admin'
-import { Banknote, Undo2, ShieldCheck } from 'lucide-react'
+import { Banknote, Undo2, ShieldCheck, CheckCircle2, Trophy } from 'lucide-react'
 import { formatPrice } from '@/lib/format'
 import { ProcessButton } from './ProcessButton'
+
+const SERVICE_TYPE_LABELS: Record<string, string> = {
+  single:   'Servicio Único',
+  multiple: 'Servicio Múltiple',
+  weekly:   'Servicio Semanal',
+}
 
 type Payout = {
   booking_id:         string
@@ -25,12 +31,51 @@ type Refund = {
   cancel_reason: string | null
 }
 
+type Released = {
+  booking_id:         string
+  chef_id:            string
+  chef_name:          string
+  client_name:        string
+  client_email:       string | null
+  service_type:       string | null
+  occasion:           string | null
+  city:               string | null
+  total_amount:       number
+  commission_amount:  number
+  chef_payout_amount: number
+  currency:           string
+  completed_at:       string | null
+  released_at:        string
+  payout_ref:         string | null
+}
+
 function fmtDate(iso: string | null) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export default async function AdminPage() {
+// Clave de agrupación mensual ('YYYY-MM') derivada del momento de liberación.
+function monthKey(iso: string) {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function monthLabel(key: string) {
+  const [y, m] = key.split('-').map(Number)
+  const label = new Date(y, m - 1, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
+function serviceLabel(r: Released) {
+  return SERVICE_TYPE_LABELS[r.service_type ?? ''] ?? (r.service_type || '—')
+}
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mes?: string }>
+}) {
+  const { mes } = await searchParams
   const admin = createAdminClient()
 
   // ── Payouts liberables (completed + paid + payout pending + 3 días) ──
@@ -82,6 +127,46 @@ export default async function AdminPage() {
       }
     }
   }
+
+  // ── Pagos liberados (histórico de payouts ya girados) ──────────────────────
+  const { data: releasedRaw } = await admin.rpc('get_released_bookings')
+  const released = (releasedRaw ?? []) as Released[]
+
+  // Agrupar por mes de liberación.
+  const byMonth = new Map<string, Released[]>()
+  for (const r of released) {
+    const k = monthKey(r.released_at)
+    if (!byMonth.has(k)) byMonth.set(k, [])
+    byMonth.get(k)!.push(r)
+  }
+  const monthKeys = [...byMonth.keys()].sort().reverse() // más reciente primero
+
+  // Mes seleccionado: ?mes= si existe y tiene datos, si no el más reciente.
+  const selectedMonth = mes && byMonth.has(mes) ? mes : monthKeys[0]
+  const monthRows = selectedMonth ? byMonth.get(selectedMonth)! : []
+
+  // Métricas del mes seleccionado.
+  const totalNet        = monthRows.reduce((s, r) => s + r.chef_payout_amount, 0)
+  const totalCommission = monthRows.reduce((s, r) => s + r.commission_amount, 0)
+  const releasedCount   = monthRows.length
+  const avgNet          = releasedCount ? totalNet / releasedCount : 0
+
+  // Chef del mes (mayor neto recibido en el mes seleccionado).
+  const chefAgg = new Map<string, { name: string; count: number; net: number }>()
+  for (const r of monthRows) {
+    const e = chefAgg.get(r.chef_id) ?? { name: r.chef_name, count: 0, net: 0 }
+    e.count += 1
+    e.net   += r.chef_payout_amount
+    chefAgg.set(r.chef_id, e)
+  }
+  const topChef = [...chefAgg.values()].sort((a, b) => b.net - a.net)[0]
+
+  // Tendencia: últimos 6 meses con liberaciones (neto total por mes), asc.
+  const trend = monthKeys.slice(0, 6).reverse().map((k) => ({
+    key:   k,
+    total: byMonth.get(k)!.reduce((s, r) => s + r.chef_payout_amount, 0),
+  }))
+  const trendMax = Math.max(1, ...trend.map((t) => t.total))
 
   return (
     <main className="max-w-4xl mx-auto px-6 pt-12 pb-16">
@@ -183,7 +268,184 @@ export default async function AdminPage() {
           </div>
         )}
       </section>
+
+      {/* ── Pagos liberados ── */}
+      <section className="mt-12 pt-12 border-t border-zinc-200">
+        <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+              Pagos liberados
+            </h2>
+          </div>
+          {monthKeys.length > 0 && (
+            <form method="get" className="flex items-center gap-2">
+              <select
+                name="mes"
+                defaultValue={selectedMonth}
+                className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors"
+              >
+                {monthKeys.map((k) => (
+                  <option key={k} value={k}>{monthLabel(k)}</option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors"
+              >
+                Ver
+              </button>
+            </form>
+          )}
+        </div>
+
+        {monthKeys.length === 0 ? (
+          <EmptyCard text="Todavía no liberaste ningún pago." />
+        ) : (
+          <>
+            {/* Resumen del mes */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+              <SummaryCard
+                label="Liberado a chefs"
+                value={formatPrice(totalNet)}
+                hint={`${releasedCount} ${releasedCount === 1 ? 'liberación' : 'liberaciones'}`}
+                tone="emerald"
+              />
+              <SummaryCard
+                label="Comisión plataforma"
+                value={formatPrice(totalCommission)}
+                hint="retenido por GetChef"
+                tone="zinc"
+              />
+              <SummaryCard
+                label="Promedio por servicio"
+                value={formatPrice(avgNet)}
+                hint="neto al chef"
+                tone="zinc"
+              />
+            </div>
+
+            {/* Tendencia: neto liberado por mes (últimos 6) */}
+            {trend.length > 1 && (
+              <div className="bg-white border border-zinc-100 rounded-xl shadow-sm p-4 mb-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-3">
+                  Tendencia · neto liberado por mes
+                </p>
+                <div className="flex items-end justify-between gap-2 h-24">
+                  {trend.map((t) => (
+                    <div key={t.key} className="flex-1 flex flex-col items-center justify-end gap-1.5 h-full">
+                      <div
+                        className={`w-full rounded-t-md transition-colors ${
+                          t.key === selectedMonth ? 'bg-emerald-500' : 'bg-emerald-200'
+                        }`}
+                        style={{ height: `${Math.max(6, (t.total / trendMax) * 100)}%` }}
+                        title={formatPrice(t.total)}
+                      />
+                      <span className="text-[9px] font-medium text-zinc-400 whitespace-nowrap">
+                        {monthLabel(t.key).split(' ')[0].slice(0, 3)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Chef del mes */}
+            {topChef && (
+              <div className="flex items-center gap-2.5 mb-4 px-4 py-2.5 bg-amber-50/60 border border-amber-100 rounded-xl">
+                <Trophy className="w-4 h-4 text-amber-500 shrink-0" />
+                <p className="text-xs text-zinc-600">
+                  <span className="font-semibold text-zinc-900">Chef del mes:</span>{' '}
+                  {topChef.name} · {topChef.count} {topChef.count === 1 ? 'liberación' : 'liberaciones'} ·{' '}
+                  <span className="font-semibold text-amber-700">{formatPrice(topChef.net)}</span> neto
+                </p>
+              </div>
+            )}
+
+            {/* Detalle: tabla en desktop, tarjetas en mobile */}
+            <div className="hidden sm:block bg-white border border-zinc-100 rounded-xl shadow-sm overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    <th className="text-left  font-bold px-4 py-3">Chef · Cliente</th>
+                    <th className="text-left  font-bold px-4 py-3">Servicio</th>
+                    <th className="text-right font-bold px-4 py-3">Bruto</th>
+                    <th className="text-right font-bold px-4 py-3">Comisión</th>
+                    <th className="text-right font-bold px-4 py-3">Neto</th>
+                    <th className="text-left  font-bold px-4 py-3">Liberado</th>
+                    <th className="text-left  font-bold px-4 py-3">Ref.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthRows.map((r) => (
+                    <tr key={r.booking_id} className="border-b border-zinc-50 last:border-0">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-zinc-900">{r.chef_name}</p>
+                        <p className="text-xs text-zinc-400">{r.client_name}</p>
+                      </td>
+                      <td className="px-4 py-3 text-zinc-600">
+                        {serviceLabel(r)}
+                        {r.city && <span className="text-zinc-400"> · {r.city}</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right text-zinc-600 tabular-nums">{formatPrice(r.total_amount)}</td>
+                      <td className="px-4 py-3 text-right text-zinc-400 tabular-nums">{formatPrice(r.commission_amount)}</td>
+                      <td className="px-4 py-3 text-right font-semibold text-emerald-700 tabular-nums">{formatPrice(r.chef_payout_amount)}</td>
+                      <td className="px-4 py-3 text-zinc-500 whitespace-nowrap">{fmtDate(r.released_at)}</td>
+                      <td className="px-4 py-3 text-zinc-400 text-xs">{r.payout_ref || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="sm:hidden space-y-3">
+              {monthRows.map((r) => (
+                <div key={r.booking_id} className="bg-white border border-zinc-100 rounded-xl shadow-sm p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-zinc-900 text-sm">{r.chef_name}</p>
+                      <p className="text-xs text-zinc-400 mt-0.5">{r.client_name}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Neto</p>
+                      <p className="font-serif text-base font-bold text-emerald-700 leading-none">
+                        {formatPrice(r.chef_payout_amount)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-zinc-400 mt-2">
+                    {serviceLabel(r)}{r.city && <> · {r.city}</>} · Liberado {fmtDate(r.released_at)}
+                  </p>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Bruto {formatPrice(r.total_amount)} · comisión {formatPrice(r.commission_amount)}
+                    {r.payout_ref && <> · ref {r.payout_ref}</>}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
     </main>
+  )
+}
+
+function SummaryCard({
+  label, value, hint, tone,
+}: {
+  label: string
+  value: string
+  hint:  string
+  tone:  'emerald' | 'zinc'
+}) {
+  return (
+    <div className="bg-white border border-zinc-100 rounded-xl shadow-sm p-4">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{label}</p>
+      <p className={`font-serif text-2xl font-bold leading-tight mt-1 ${tone === 'emerald' ? 'text-emerald-700' : 'text-zinc-900'}`}>
+        {value}
+      </p>
+      <p className="text-xs text-zinc-400 mt-0.5">{hint}</p>
+    </div>
   )
 }
 
