@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { PaymentView } from './PaymentView'
 
 export default async function PaymentPage({
@@ -33,6 +34,21 @@ export default async function PaymentPage({
     .eq('request_id', requestId)
     .single()
   if (!proposal || proposal.status !== 'pending') {
+    redirect(`/client-dashboard/${requestId}/proposals/${proposalId}`)
+  }
+
+  // Doble-reserva: si la solicitud ya tiene un booking ACTIVO (de esta o de otra
+  // propuesta), no se puede iniciar otro pago → fuera del flujo. (Defensa de UX;
+  // el backend y el índice son la protección real.)
+  const admin = createAdminClient()
+  const { data: activeBooking } = await admin
+    .from('bookings')
+    .select('id')
+    .eq('request_id', requestId)
+    .neq('booking_status', 'cancelled')
+    .limit(1)
+    .maybeSingle()
+  if (activeBooking) {
     redirect(`/client-dashboard/${requestId}/proposals/${proposalId}`)
   }
 

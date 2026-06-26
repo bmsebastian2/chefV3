@@ -35,6 +35,19 @@ export default async function BookingPage({
 
   const admin = createAdminClient()
 
+  // Doble-reserva: si la solicitud ya tiene un booking ACTIVO (de esta o de otra
+  // propuesta), no se puede iniciar otra reserva → fuera del flujo.
+  const { data: activeBooking } = await admin
+    .from('bookings')
+    .select('id')
+    .eq('request_id', requestId)
+    .neq('booking_status', 'cancelled')
+    .limit(1)
+    .maybeSingle()
+  if (activeBooking) {
+    redirect(`/client-dashboard/${requestId}/proposals/${proposalId}`)
+  }
+
   const { data: chefProfile } = await supabase
     .from('chef_profiles')
     .select('id, user_id')

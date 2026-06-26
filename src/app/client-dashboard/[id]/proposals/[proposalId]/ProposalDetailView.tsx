@@ -33,6 +33,7 @@ type OtherProposal = {
 type Props = {
   requestId:   string
   currentUserId: string
+  reservedElsewhere: boolean
   booking: {
     id:        string
     status:    string
@@ -133,15 +134,16 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 type PriceCTAProps = {
-  compact?:         boolean
-  price_per_person: number | null
-  isPending:        boolean
-  isAccepted:       boolean
-  isAccepting:      boolean
-  onAccept:         () => void
+  compact?:          boolean
+  price_per_person:  number | null
+  isPending:         boolean
+  isAccepted:        boolean
+  isAccepting:       boolean
+  reservedElsewhere: boolean
+  onAccept:          () => void
 }
 
-function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAccepting, onAccept }: PriceCTAProps) {
+function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAccepting, reservedElsewhere, onAccept }: PriceCTAProps) {
   return (
     <>
       {compact ? (
@@ -155,7 +157,7 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
               )}
             </p>
           </div>
-          {isPending ? (
+          {isPending && !reservedElsewhere ? (
             <button
               type="button"
               onClick={onAccept}
@@ -164,6 +166,10 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
             >
               {isAccepting ? "Reservando..." : "Reservar"}
             </button>
+          ) : isPending && reservedElsewhere ? (
+            <span className="px-4 py-2 rounded-xl text-xs font-semibold border bg-amber-50 text-amber-700 border-amber-200 flex-shrink-0 text-center">
+              Reserva activa en otra propuesta
+            </span>
           ) : (
             <span className={`px-4 py-2 rounded-xl text-xs font-semibold border flex-shrink-0 ${
               isAccepted
@@ -185,7 +191,7 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
               )}
             </span>
           </div>
-          {isPending ? (
+          {isPending && !reservedElsewhere ? (
             <button
               type="button"
               onClick={onAccept}
@@ -194,6 +200,10 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
             >
               {isAccepting ? "Reservando..." : "Reservar"}
             </button>
+          ) : isPending && reservedElsewhere ? (
+            <div className="w-full py-3 rounded-xl text-sm font-semibold text-center border bg-amber-50 text-amber-700 border-amber-200">
+              Ya tenés una reserva activa para esta solicitud
+            </div>
           ) : (
             <div className={`w-full py-3 rounded-xl text-sm font-semibold text-center border ${
               isAccepted
@@ -214,6 +224,7 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
 export function ProposalDetailView({
   requestId,
   currentUserId,
+  reservedElsewhere,
   booking,
   proposal,
   chef,
@@ -319,6 +330,7 @@ export function ProposalDetailView({
           isPending={isPending}
           isAccepted={isAccepted}
           isAccepting={isAccepting}
+          reservedElsewhere={reservedElsewhere}
           onAccept={handleAccept}
         />
       </div>
@@ -568,6 +580,7 @@ export function ProposalDetailView({
                 isPending={isPending}
                 isAccepted={isAccepted}
                 isAccepting={isAccepting}
+                reservedElsewhere={reservedElsewhere}
                 onAccept={handleAccept}
               />
 

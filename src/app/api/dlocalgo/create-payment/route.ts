@@ -70,6 +70,21 @@ export async function POST(req: Request) {
       console.warn('create-payment: pago rechazado, ya existe un payment completado', { proposalId });
       return NextResponse.json({ error: 'Esta propuesta ya fue pagada' }, { status: 409 });
     }
+    // 3) Doble-reserva por REQUEST: si la solicitud ya tiene un booking ACTIVO
+    //    (de esta o de OTRA propuesta), no se permite un segundo pago. Esto evita
+    //    que dLocalGo llegue a cobrar dos veces el mismo service_request — la falla
+    //    central del bug. El índice bookings_one_active_per_request es la red final.
+    const { data: activeBooking } = await admin
+      .from('bookings')
+      .select('id')
+      .eq('request_id', requestId)
+      .neq('booking_status', 'cancelled')
+      .limit(1)
+      .maybeSingle();
+    if (activeBooking) {
+      console.warn('create-payment: pago rechazado, el request ya tiene reserva activa', { requestId });
+      return NextResponse.json({ error: 'Esta solicitud ya tiene una reserva activa' }, { status: 409 });
+    }
 
     const amountNumber = pricePerPerson * guestsNumber;
     const currency = 'USD';

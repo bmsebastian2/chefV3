@@ -63,6 +63,21 @@ BEGIN
     RETURN v_booking_id;
   END IF;
 
+  -- 2b. UN booking activo por request: si OTRA propuesta del mismo request ya
+  --     tiene un booking no-cancelado, NO se crea un segundo (doble-reserva).
+  --     Se devuelve NULL (no excepción) para que el webhook no reintente en loop:
+  --     el pago queda 'completed' sin booking (huérfano) → lo reembolsa el admin.
+  IF EXISTS (
+    SELECT 1 FROM public.bookings
+    WHERE request_id   = v_payment.request_id
+      AND proposal_id  <> v_payment.proposal_id
+      AND booking_status <> 'cancelled'
+  ) THEN
+    RAISE WARNING 'create_booking_for_payment: request % ya tiene booking activo de otra propuesta; pago % queda huérfano',
+      v_payment.request_id, p_dlocalgo_payment_id;
+    RETURN NULL;
+  END IF;
+
   -- 3. Propuesta (de acá sale el chef)
   SELECT * INTO v_proposal
   FROM public.proposals
@@ -77,24 +92,34 @@ BEGIN
   v_commission := round(v_total * v_rate, 2);
 
   -- 5. Crear el booking → escrow: payment_status='paid' + payout_status='pending'
-  INSERT INTO public.bookings (
-    proposal_id, request_id, chef_id,
-    total_amount, currency,
-    commission_rate, commission_amount, chef_payout_amount,
-    payment_status, booking_status, payout_status,
-    payment_ref, confirmed_at
-  ) VALUES (
-    v_payment.proposal_id, v_payment.request_id, v_proposal.chef_id,
-    v_total, COALESCE(v_payment.currency, 'USD'),
-    v_rate, v_commission, v_total - v_commission,
-    'paid', 'confirmed', 'pending',
-    p_dlocalgo_payment_id, now()
-  )
-  ON CONFLICT (proposal_id) DO NOTHING
-  RETURNING id INTO v_booking_id;
+  --    Dentro de un bloque con EXCEPTION para atrapar la carrera contra el índice
+  --    bookings_one_active_per_request (otra propuesta del request reservó entre
+  --    el chequeo 2b y este insert).
+  BEGIN
+    INSERT INTO public.bookings (
+      proposal_id, request_id, chef_id,
+      total_amount, currency,
+      commission_rate, commission_amount, chef_payout_amount,
+      payment_status, booking_status, payout_status,
+      payment_ref, confirmed_at
+    ) VALUES (
+      v_payment.proposal_id, v_payment.request_id, v_proposal.chef_id,
+      v_total, COALESCE(v_payment.currency, 'USD'),
+      v_rate, v_commission, v_total - v_commission,
+      'paid', 'confirmed', 'pending',
+      p_dlocalgo_payment_id, now()
+    )
+    ON CONFLICT (proposal_id) DO NOTHING
+    RETURNING id INTO v_booking_id;
+  EXCEPTION WHEN unique_violation THEN
+    -- Carrera ganada por otra propuesta del request → no creamos doble booking.
+    RAISE WARNING 'create_booking_for_payment: carrera, request % ya tiene reserva activa; pago % queda huérfano',
+      v_payment.request_id, p_dlocalgo_payment_id;
+    RETURN NULL;
+  END;
 
-  -- Carrera entre el check (paso 2) y el insert: si el otro camino lo insertó
-  -- en el medio, ON CONFLICT no devuelve fila → lo recuperamos.
+  -- Carrera entre el check (paso 2) y el insert, MISMA propuesta: si el otro
+  -- camino la insertó en el medio, ON CONFLICT no devuelve fila → la recuperamos.
   IF v_booking_id IS NULL THEN
     SELECT id INTO v_booking_id
     FROM public.bookings

@@ -78,6 +78,17 @@ export default async function ProposalDetailPage({
     }
   }
 
+  // ¿El request ya tiene una reserva ACTIVA en OTRA propuesta? → para deshabilitar
+  // "Reservar" en esta y mostrar el aviso (una sola reserva activa por solicitud).
+  const { data: reqBooking } = await admin
+    .from('bookings')
+    .select('proposal_id')
+    .eq('request_id', requestId)
+    .neq('booking_status', 'cancelled')
+    .limit(1)
+    .maybeSingle()
+  const reservedElsewhere = !!reqBooking && reqBooking.proposal_id !== proposalId
+
   // Other proposals for the sidebar (excluding this one and withdrawn)
   const { data: otherProposalsRaw } = await supabase
     .from('proposals')
@@ -167,6 +178,7 @@ export default async function ProposalDetailPage({
       requestId={requestId}
       currentUserId={user.id}
       booking={booking}
+      reservedElsewhere={reservedElsewhere}
       proposal={{
         id:               proposal.id as string,
         message:          proposal.message as string | null,
