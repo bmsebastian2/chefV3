@@ -101,6 +101,7 @@ export default async function ProposalsListPage({ params }: { params: Promise<{ 
                   href={`/client-dashboard/${id}/proposals/${proposal.id}`}
                   photoUrl={photoUrl}
                   chefName={chefName}
+                  reserved={proposal.status === 'accepted'}
                   priceText={
                     proposal.price_per_person
                       ? `${formatPrice(Number(proposal.price_per_person))} / persona`
