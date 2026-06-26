@@ -65,20 +65,39 @@ export async function middleware(request: NextRequest) {
         return redirectTo('/')
       }
 
-      // En la raíz con sesión → redirigir según rol.
-      // Bypass con ?home=1: permite ver la landing aunque haya sesión (ej. botón
-      // "Inicio" del panel admin).
-      if (user && pathname === '/' && !searchParams.has('home')) {
+      // Panel "casa" de cada rol.
+      const HOME_BY_ROLE: Record<string, string> = {
+        admin:  '/admin',
+        chef:   '/dashboard',
+        client: '/client-dashboard',
+      }
+
+      // En la raíz con sesión (bypass con ?home=1 para ver la landing logueado),
+      // o en cualquier panel protegido → necesitamos el rol.
+      const onRoot = pathname === '/' && !searchParams.has('home')
+      const onDashboard =
+        pathname.startsWith('/dashboard') ||
+        pathname.startsWith('/client-dashboard') ||
+        pathname.startsWith('/admin')
+
+      if (user && (onRoot || onDashboard)) {
         const { data: userData } = await supabase
           .from('users')
           .select('role')
           .eq('id', user.id)
           .single()
 
-        const role = userData?.role
-        if (role === 'admin')  return redirectTo('/admin')
-        if (role === 'chef')   return redirectTo('/dashboard')
-        if (role === 'client') return redirectTo('/client-dashboard')
+        const home = userData?.role ? HOME_BY_ROLE[userData.role] : undefined
+
+        // En la raíz → mandar a su panel según rol.
+        if (onRoot && home) return redirectTo(home)
+
+        // En un panel que no es el de su rol → mandarlo al suyo.
+        // (No bloquea acceder a un recurso ajeno DENTRO del panel propio:
+        //  eso sigue resolviéndose con notFound() en la página.)
+        if (onDashboard && home && !pathname.startsWith(home)) {
+          return redirectTo(home)
+        }
       }
     } catch (error) {
       console.error('Error getting user:', error)
