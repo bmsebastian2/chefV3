@@ -78,16 +78,18 @@ export default async function ProposalDetailPage({
     }
   }
 
-  // ¿El request ya tiene una reserva ACTIVA en OTRA propuesta? → para deshabilitar
-  // "Reservar" en esta y mostrar el aviso (una sola reserva activa por solicitud).
-  const { data: reqBooking } = await admin
-    .from('bookings')
+  // ¿El request ya está pagado en OTRA propuesta? → para deshabilitar "Reservar"
+  // en esta y avisar ANTES de llegar a la pasarela. Se mira `payments.status=
+  // 'completed'` (señal confiable que se setea al confirmar el cobro), NO `bookings`
+  // (que puede no crearse / llegar tarde y dejaba el botón habilitado de más).
+  const { data: paidProposal } = await admin
+    .from('payments')
     .select('proposal_id')
     .eq('request_id', requestId)
-    .neq('booking_status', 'cancelled')
+    .eq('status', 'completed')
     .limit(1)
     .maybeSingle()
-  const reservedElsewhere = !!reqBooking && reqBooking.proposal_id !== proposalId
+  const reservedElsewhere = !!paidProposal && paidProposal.proposal_id !== proposalId
 
   // Other proposals for the sidebar (excluding this one and withdrawn)
   const { data: otherProposalsRaw } = await supabase

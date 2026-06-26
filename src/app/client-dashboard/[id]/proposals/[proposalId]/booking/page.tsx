@@ -35,16 +35,17 @@ export default async function BookingPage({
 
   const admin = createAdminClient()
 
-  // Doble-reserva: si la solicitud ya tiene un booking ACTIVO (de esta o de otra
-  // propuesta), no se puede iniciar otra reserva → fuera del flujo.
-  const { data: activeBooking } = await admin
-    .from('bookings')
+  // Doble-pago: si la solicitud ya tiene un pago 'completed' (de esta o de otra
+  // propuesta), no se puede iniciar otra reserva → fuera del flujo, antes de pagar.
+  // Señal confiable = payments.completed (NO bookings, que puede no crearse).
+  const { data: paidRequest } = await admin
+    .from('payments')
     .select('id')
     .eq('request_id', requestId)
-    .neq('booking_status', 'cancelled')
+    .eq('status', 'completed')
     .limit(1)
     .maybeSingle()
-  if (activeBooking) {
+  if (paidRequest) {
     redirect(`/client-dashboard/${requestId}/proposals/${proposalId}`)
   }
 
