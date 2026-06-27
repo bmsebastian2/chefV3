@@ -4,6 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { Banknote, Undo2, ShieldCheck, CheckCircle2, Trophy } from 'lucide-react'
 import { formatPrice } from '@/lib/format'
 import { ProcessButton } from './ProcessButton'
+import { AllPaymentsSection, type AllPayment } from './AllPaymentsSection'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   'Servicio Único',
@@ -73,10 +74,14 @@ function serviceLabel(r: Released) {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mes?: string }>
+  searchParams: Promise<{ mes?: string; pestado?: string; pmes?: string }>
 }) {
-  const { mes } = await searchParams
+  const { mes, pestado, pmes } = await searchParams
   const admin = createAdminClient()
+
+  // ── Pagos del ciclo completo (visibilidad temprana: todos los estados) ──
+  const { data: allPaymentsRaw } = await admin.rpc('get_all_payments_admin')
+  const allPayments = (allPaymentsRaw ?? []) as AllPayment[]
 
   // ── Payouts liberables (completed + paid + payout pending + 3 días) ──
   const { data: payoutsRaw } = await admin.rpc('get_releasable_bookings')
@@ -185,6 +190,13 @@ export default async function AdminPage({
           Liberá pagos a chefs y cerrá reembolsos. Hacé el giro real por fuera y marcalo acá.
         </p>
       </div>
+
+      {/* ── Pagos · ciclo completo (visibilidad temprana) ── */}
+      <AllPaymentsSection
+        payments={allPayments}
+        selectedState={pestado}
+        selectedMonth={pmes}
+      />
 
       {/* ── Payouts ── */}
       <section className="mb-12">
