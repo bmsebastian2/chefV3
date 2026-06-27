@@ -1,4 +1,5 @@
 import { dlocalgoRequest } from '@/lib/dlocalgo';
+import { applyDlocalgoPaymentStatus } from '@/lib/dlocalgo-verify';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
@@ -151,6 +152,31 @@ export async function POST(req: Request) {
     });
 
     if (!result.redirect_url) {
+      // dLocalGo rechaza un order_id ya usado ("Order id is duplicated"). Como el
+      // order_id está atado al REQUEST, esto es prueba definitiva de que la solicitud
+      // YA fue pagada — aunque nuestra base todavía la tenga 'pending' porque el webhook
+      // o el retorno de éxito no llegaron (ej. el usuario volvió a mano). Reconciliamos
+      // el pago existente para reflejar el estado real y respondemos `alreadyPaid` para
+      // que la UI lleve al usuario a la vista "Reservada" en vez de mostrar un error crudo.
+      const isDuplicateOrder =
+        typeof result?.message === 'string' && /duplicat/i.test(result.message);
+      if (isDuplicateOrder) {
+        const { data: existing } = await admin
+          .from('payments')
+          .select('dlocalgo_payment_id')
+          .eq('request_id', requestId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (existing?.dlocalgo_payment_id) {
+          await applyDlocalgoPaymentStatus(existing.dlocalgo_payment_id as string);
+        }
+        console.warn('create-payment: order_id duplicado en dLocalGo, request ya pagado', { requestId });
+        return NextResponse.json(
+          { error: 'Esta solicitud ya tiene una reserva pagada', alreadyPaid: true },
+          { status: 409 },
+        );
+      }
       console.error('dlocalgo create-payment error:', result);
       return NextResponse.json({ error: result.message ?? 'Error creando pago' }, { status: 500 });
     }

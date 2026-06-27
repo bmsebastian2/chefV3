@@ -104,7 +104,7 @@ export function PaymentView({ requestId, proposalId, total, guests }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ proposalId, requestId, guests }),
       })
-      let data: { redirect_url?: string; error?: string } = {}
+      let data: { redirect_url?: string; error?: string; alreadyPaid?: boolean } = {}
       try {
         data = await res.json()
       } catch {
@@ -113,6 +113,11 @@ export function PaymentView({ requestId, proposalId, total, guests }: Props) {
       }
       if (data.redirect_url) {
         window.location.href = data.redirect_url
+      } else if (data.alreadyPaid) {
+        // La solicitud ya estaba pagada (dLocalGo rechazó el order_id duplicado y el
+        // backend ya reconcilió el estado). Llevamos al detalle, que muestra "Reservada",
+        // en vez de dejar al usuario en la pantalla de pago con un error confuso.
+        router.replace(`/client-dashboard/${requestId}/proposals/${proposalId}`)
       } else {
         setError(data.error ?? "Error al iniciar el pago")
       }
