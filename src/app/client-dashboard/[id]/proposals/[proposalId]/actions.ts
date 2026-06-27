@@ -62,6 +62,90 @@ export async function rejectProposal(
   return {}
 }
 
+// ── Ciclo de vida del booking ────────────────────────────────────────────────
+
+export async function completeBooking(
+  bookingId: string,
+  requestId: string,
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  // complete_booking verifica adentro la propiedad (sr.user_id = auth.uid()).
+  const { error } = await supabase.rpc('complete_booking', {
+    p_booking_id: bookingId,
+  })
+  if (error) {
+    // Guard de fecha: el servicio todavía no ocurrió (no se puede completar antes).
+    if (error.message?.includes('service_date_not_reached')) {
+      return { error: 'Todavía no podés marcar este servicio como completado: la fecha del servicio aún no llegó.' }
+    }
+    console.error('completeBooking:', error)
+    return { error: 'No se pudo marcar el servicio como completado' }
+  }
+
+  revalidatePath(`/client-dashboard/${requestId}/proposals`)
+  return {}
+}
+
+export async function cancelBooking(
+  bookingId: string,
+  requestId: string,
+  reason?: string,
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  const { error } = await supabase.rpc('cancel_booking', {
+    p_booking_id: bookingId,
+    p_reason:     reason ?? null,
+  })
+  if (error) {
+    // Ventana de cancelación cerrada (<15 días) → mensaje específico.
+    if (error.message?.includes('cancellation_window_closed')) {
+      return { error: 'Faltan menos de 15 días para tu evento. Contactá a soporte para cancelar.' }
+    }
+    console.error('cancelBooking:', error)
+    return { error: 'No se pudo cancelar la reserva' }
+  }
+
+  revalidatePath(`/client-dashboard/${requestId}/proposals`)
+  return {}
+}
+
+export async function submitReview(
+  bookingId: string,
+  requestId: string,
+  ratings: { chef: number; food: number; presentation: number; cleanliness: number },
+  comment?: string,
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  const { error } = await supabase.rpc('submit_review', {
+    p_booking_id:          bookingId,
+    p_rating_chef:         ratings.chef,
+    p_rating_food:         ratings.food,
+    p_rating_presentation: ratings.presentation,
+    p_rating_cleanliness:  ratings.cleanliness,
+    p_comment:             comment ?? null,
+  })
+  if (error) {
+    if (error.message?.includes('already_reviewed')) {
+      return { error: 'Ya dejaste una reseña para este servicio' }
+    }
+    console.error('submitReview:', error)
+    return { error: 'No se pudo enviar la reseña' }
+  }
+
+  revalidatePath(`/client-dashboard/${requestId}/proposals/${bookingId}`)
+  revalidatePath(`/client-dashboard/${requestId}/proposals`)
+  return {}
+}
+
 export async function getMessages(proposalId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

@@ -17,7 +17,13 @@ export default async function ClientDashboardLayout({
     .eq('id', user.id)
     .single()
 
-  if (userData?.role !== 'client') redirect('/dashboard')
+  // Ruteo por rol — cada rol se maneja EXPLÍCITAMENTE y los desconocidos/null van
+  // a la landing, para no rebotar en loop infinito con dashboard (rol null o uno
+  // inesperado). El ?home=1 evita que el middleware vuelva a redirigir desde "/".
+  const role = userData?.role
+  if (role === 'admin') redirect('/admin')
+  if (role === 'chef')  redirect('/dashboard')
+  if (role !== 'client') redirect('/?home=1')
 
   return (
     <div className="min-h-screen bg-zinc-50">

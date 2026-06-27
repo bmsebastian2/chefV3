@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, UtensilsCrossed, X } from "lucide-react";
+import { Menu, UtensilsCrossed, X, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginDialog } from "../components/auth/login-dialog";
 import { InstallButton } from "@/components/InstallButton";
+import { createClient } from "@/utils/supabase/clients";
 
 const navLinks = [
   { href: "/#chefs", label: "Nuestros Chefs" },
@@ -17,12 +18,65 @@ const navLinks = [
 export function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // null = aún sin chequear; true/false = estado de sesión real.
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+  // Destino del panel según rol (admin / chef / client).
+  const [panelHref, setPanelHref] = useState("/");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Detectar sesión activa en el browser: la landing es estática (ISR) y no sabe
+  // si hay login. Si hay sesión, mostramos "Mi panel" en vez del login y
+  // resolvemos el destino directo según el rol (el usuario puede leer su propio
+  // rol por RLS).
+  useEffect(() => {
+    const supabase = createClient();
+
+    const resolve = async (userId: string | undefined) => {
+      if (!userId) { setLoggedIn(false); setPanelHref("/"); return; }
+      setLoggedIn(true);
+      const { data: u } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", userId)
+        .single();
+      const role = u?.role;
+      setPanelHref(
+        role === "admin" ? "/admin"
+        : role === "chef" ? "/dashboard"
+        : "/client-dashboard"
+      );
+    };
+
+    supabase.auth.getUser().then(({ data }) => resolve(data.user?.id));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      // NO llamar queries de supabase dentro del callback: deadlockea el auth
+      // client y deja el rol sin resolver (panelHref se queda en "/"). Lo diferimos
+      // para que el callback libere el lock antes de que corra resolve().
+      const id = session?.user?.id;
+      setTimeout(() => resolve(id), 0);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // Enlace real (<a href>) en vez de window.location.assign: hace una navegación
+  // de verdad que corre middleware + layout en el server y no puede "fallar en
+  // silencio". `panelHref` ya es el destino directo del rol, así que no depende de
+  // ningún redirect intermedio.
+  const PanelButton = ({ onClick }: { onClick?: () => void }) => (
+    <a href={panelHref} onClick={onClick} className="contents">
+      <Button
+        className="bg-accent text-white border-none rounded-full gap-2 hover:scale-105 transition-transform"
+      >
+        <LayoutDashboard className="w-4 h-4" />
+        Mi panel
+      </Button>
+    </a>
+  );
 
   return (
     <>
@@ -63,8 +117,7 @@ export function Header() {
         <div className="flex items-center gap-3">
           <div className="hidden md:flex items-center gap-3">
             <InstallButton />
-            <LoginDialog />
-        
+            {loggedIn ? <PanelButton /> : <LoginDialog />}
           </div>
 
           {/* Hamburger */}
@@ -113,7 +166,7 @@ export function Header() {
 
             <div className="mt-auto flex flex-col gap-3">
               <InstallButton className="justify-center py-2 border border-border rounded-lg hover:bg-secondary" />
-              <LoginDialog />
+              {loggedIn ? <PanelButton onClick={() => setOpen(false)} /> : <LoginDialog />}
               <Link href="/wizard" onClick={() => setOpen(false)}>
                 <Button className="w-full bg-accent text-white border-none h-12 text-base rounded-full transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-accent/50">
                   Reservar experiencia

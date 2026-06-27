@@ -35,6 +35,20 @@ export default async function BookingPage({
 
   const admin = createAdminClient()
 
+  // Doble-pago: si la solicitud ya tiene un pago 'completed' (de esta o de otra
+  // propuesta), no se puede iniciar otra reserva → fuera del flujo, antes de pagar.
+  // Señal confiable = payments.completed (NO bookings, que puede no crearse).
+  const { data: paidRequest } = await admin
+    .from('payments')
+    .select('id')
+    .eq('request_id', requestId)
+    .eq('status', 'completed')
+    .limit(1)
+    .maybeSingle()
+  if (paidRequest) {
+    redirect(`/client-dashboard/${requestId}/proposals/${proposalId}`)
+  }
+
   const { data: chefProfile } = await supabase
     .from('chef_profiles')
     .select('id, user_id')

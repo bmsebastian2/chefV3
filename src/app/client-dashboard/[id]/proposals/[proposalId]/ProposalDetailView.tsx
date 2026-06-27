@@ -9,6 +9,7 @@ import {
   Star, CheckCircle2, XCircle, Loader2,
 } from "lucide-react"
 import { rejectProposal, sendClientMessage, getMessages } from "./actions"
+import { BookingPanel } from "./BookingPanel"
 import { formatPrice } from "@/lib/format"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -32,6 +33,12 @@ type OtherProposal = {
 type Props = {
   requestId:   string
   currentUserId: string
+  reservedElsewhere: boolean
+  booking: {
+    id:        string
+    status:    string
+    hasReview: boolean
+  } | null
   proposal: {
     id:               string
     message:          string | null
@@ -127,15 +134,16 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 type PriceCTAProps = {
-  compact?:         boolean
-  price_per_person: number | null
-  isPending:        boolean
-  isAccepted:       boolean
-  isAccepting:      boolean
-  onAccept:         () => void
+  compact?:          boolean
+  price_per_person:  number | null
+  isPending:         boolean
+  isAccepted:        boolean
+  isAccepting:       boolean
+  reservedElsewhere: boolean
+  onAccept:          () => void
 }
 
-function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAccepting, onAccept }: PriceCTAProps) {
+function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAccepting, reservedElsewhere, onAccept }: PriceCTAProps) {
   return (
     <>
       {compact ? (
@@ -149,7 +157,7 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
               )}
             </p>
           </div>
-          {isPending ? (
+          {isPending && !reservedElsewhere ? (
             <button
               type="button"
               onClick={onAccept}
@@ -158,6 +166,10 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
             >
               {isAccepting ? "Reservando..." : "Reservar"}
             </button>
+          ) : isPending && reservedElsewhere ? (
+            <span className="px-4 py-2 rounded-xl text-xs font-semibold border bg-amber-50 text-amber-700 border-amber-200 flex-shrink-0 text-center">
+              Reserva activa en otra propuesta
+            </span>
           ) : (
             <span className={`px-4 py-2 rounded-xl text-xs font-semibold border flex-shrink-0 ${
               isAccepted
@@ -179,7 +191,7 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
               )}
             </span>
           </div>
-          {isPending ? (
+          {isPending && !reservedElsewhere ? (
             <button
               type="button"
               onClick={onAccept}
@@ -188,6 +200,10 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
             >
               {isAccepting ? "Reservando..." : "Reservar"}
             </button>
+          ) : isPending && reservedElsewhere ? (
+            <div className="w-full py-3 rounded-xl text-sm font-semibold text-center border bg-amber-50 text-amber-700 border-amber-200">
+              Ya tenés una reserva activa para esta solicitud
+            </div>
           ) : (
             <div className={`w-full py-3 rounded-xl text-sm font-semibold text-center border ${
               isAccepted
@@ -208,6 +224,8 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
 export function ProposalDetailView({
   requestId,
   currentUserId,
+  reservedElsewhere,
+  booking,
   proposal,
   chef,
   request,
@@ -290,6 +308,10 @@ export function ProposalDetailView({
   const isAccepted = status === "accepted"
   const { dateStr } = request
 
+  // Fecha de referencia del servicio (cuándo se considera "ocurrido"):
+  //   single → event_date_start · multiple → event_date_end (último día) · weekly → event_date_start
+  const serviceDate = request.event_date_end ?? request.event_date_start
+
   return (
     <div className="min-h-screen">
       {/* Top nav */}
@@ -312,9 +334,24 @@ export function ProposalDetailView({
           isPending={isPending}
           isAccepted={isAccepted}
           isAccepting={isAccepting}
+          reservedElsewhere={reservedElsewhere}
           onAccept={handleAccept}
         />
       </div>
+
+      {/* Mobile booking lifecycle */}
+      {booking && (
+        <div className="lg:hidden mx-6 mt-4">
+          <BookingPanel
+            bookingId={booking.id}
+            requestId={requestId}
+            bookingStatus={booking.status}
+            hasReview={booking.hasReview}
+            chefName={chef.name}
+            serviceDate={serviceDate}
+          />
+        </div>
+      )}
 
       <div className="flex gap-6 px-6 py-6 max-w-4xl">
 
@@ -548,6 +585,7 @@ export function ProposalDetailView({
                 isPending={isPending}
                 isAccepted={isAccepted}
                 isAccepting={isAccepting}
+                reservedElsewhere={reservedElsewhere}
                 onAccept={handleAccept}
               />
 
@@ -560,6 +598,18 @@ export function ProposalDetailView({
                 Compartir propuesta
               </button>
             </div>
+
+            {/* Booking lifecycle */}
+            {booking && (
+              <BookingPanel
+                bookingId={booking.id}
+                requestId={requestId}
+                bookingStatus={booking.status}
+                hasReview={booking.hasReview}
+                chefName={chef.name}
+                serviceDate={serviceDate}
+              />
+            )}
 
             {/* Other proposals */}
             {otherProposals.length > 0 && (

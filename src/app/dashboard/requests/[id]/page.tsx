@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { RequestChatView } from '@/components/dashboard/RequestChatView'
 
 export default async function RequestDetailPage({
@@ -22,23 +23,8 @@ export default async function RequestDetailPage({
 
   if (!chef) redirect('/dashboard')
 
-  // Fetch request
-  const { data: request } = await supabase
-    .from('service_requests')
-    .select('id, status, service_type, event_date_start, event_date_end, event_time, budget_min, budget_max, guests_adults, guests_teens, guests_kids, cuantas_personas, occasion, location, cuisine_type, user_id')
-    .eq('id', id)
-    .single()
-
-  if (!request) notFound()
-
-  // Fetch client name
-  const { data: clientUser } = await supabase
-    .from('users')
-    .select('first_name, first_surname')
-    .eq('id', request.user_id ?? '')
-    .maybeSingle()
-
-  // Fetch proposal
+  // Authorization gate: the chef must own a proposal on this request.
+  // (RLS lets the chef read their own proposals.)
   const { data: proposal } = await supabase
     .from('proposals')
     .select('id, message, menu_description, price_per_person, status, created_at')
@@ -47,6 +33,26 @@ export default async function RequestDetailPage({
     .maybeSingle()
 
   if (!proposal) redirect('/dashboard/requests')
+
+  // The chef does not own the service_request row, so RLS blocks a direct
+  // read. Fetch it with the service-role client now that authorization is
+  // established above.
+  const admin = createAdminClient()
+
+  const { data: request } = await admin
+    .from('service_requests')
+    .select('id, status, service_type, event_date_start, event_date_end, event_time, budget_min, budget_max, guests_adults, guests_teens, guests_kids, cuantas_personas, occasion, location, cuisine_type, user_id')
+    .eq('id', id)
+    .single()
+
+  if (!request) notFound()
+
+  // Fetch client name
+  const { data: clientUser } = await admin
+    .from('users')
+    .select('first_name, first_surname')
+    .eq('id', request.user_id ?? '')
+    .maybeSingle()
 
   // Fetch messages
   const { data: messages } = await supabase

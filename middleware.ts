@@ -51,22 +51,53 @@ export async function middleware(request: NextRequest) {
 
       const { pathname } = request.nextUrl
 
-      // Rutas protegidas: redirigir al inicio si no está logueado
-      if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/client-dashboard'))) {
-        return NextResponse.redirect(new URL('/', request.url))
+      // Redirige preservando las cookies de sesión que getUser pudo refrescar.
+      // Sin esto, el redirect descarta el token nuevo y la próxima request ve al
+      // usuario como deslogueado (browser logueado ↔ server no → rebote a "/").
+      const redirectTo = (path: string) => {
+        const res = NextResponse.redirect(new URL(path, request.url))
+        supabaseResponse.cookies.getAll().forEach((cookie) => res.cookies.set(cookie))
+        return res
       }
 
-      // En la raíz con sesión → redirigir según rol
-      if (user && pathname === '/') {
+      // Rutas protegidas: redirigir al inicio si no está logueado
+      if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/client-dashboard') || pathname.startsWith('/admin'))) {
+        return redirectTo('/')
+      }
+
+      // Panel "casa" de cada rol.
+      const HOME_BY_ROLE: Record<string, string> = {
+        admin:  '/admin',
+        chef:   '/dashboard',
+        client: '/client-dashboard',
+      }
+
+      // En la raíz con sesión (bypass con ?home=1 para ver la landing logueado),
+      // o en cualquier panel protegido → necesitamos el rol.
+      const onRoot = pathname === '/' && !searchParams.has('home')
+      const onDashboard =
+        pathname.startsWith('/dashboard') ||
+        pathname.startsWith('/client-dashboard') ||
+        pathname.startsWith('/admin')
+
+      if (user && (onRoot || onDashboard)) {
         const { data: userData } = await supabase
           .from('users')
           .select('role')
           .eq('id', user.id)
           .single()
 
-        const role = userData?.role
-        if (role === 'chef')   return NextResponse.redirect(new URL('/dashboard', request.url))
-        if (role === 'client') return NextResponse.redirect(new URL('/client-dashboard', request.url))
+        const home = userData?.role ? HOME_BY_ROLE[userData.role] : undefined
+
+        // En la raíz → mandar a su panel según rol.
+        if (onRoot && home) return redirectTo(home)
+
+        // En un panel que no es el de su rol → mandarlo al suyo.
+        // (No bloquea acceder a un recurso ajeno DENTRO del panel propio:
+        //  eso sigue resolviéndose con notFound() en la página.)
+        if (onDashboard && home && !pathname.startsWith(home)) {
+          return redirectTo(home)
+        }
       }
     } catch (error) {
       console.error('Error getting user:', error)

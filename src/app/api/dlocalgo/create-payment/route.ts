@@ -1,4 +1,5 @@
 import { dlocalgoRequest } from '@/lib/dlocalgo';
+import { applyDlocalgoPaymentStatus } from '@/lib/dlocalgo-verify';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
@@ -70,6 +71,35 @@ export async function POST(req: Request) {
       console.warn('create-payment: pago rechazado, ya existe un payment completado', { proposalId });
       return NextResponse.json({ error: 'Esta propuesta ya fue pagada' }, { status: 409 });
     }
+    // 3) Doble-pago por REQUEST — CHECK PRINCIPAL: si la solicitud ya tiene CUALQUIER
+    //    pago 'completed' (de esta o de OTRA propuesta), no se permite otro cobro.
+    //    `payments.status='completed'` es la señal CONFIABLE: se setea al confirmar
+    //    el cobro, exista o no el booking. Mirar `bookings` NO alcanza (bug confirmado
+    //    con datos: 2 pagos completed para un request con 0/1 bookings → el guard que
+    //    miraba bookings quedaba ciego porque el booking no se crea / llega tarde).
+    const { data: paidRequest } = await admin
+      .from('payments')
+      .select('id')
+      .eq('request_id', requestId)
+      .eq('status', 'completed')
+      .limit(1)
+      .maybeSingle();
+    if (paidRequest) {
+      console.warn('create-payment: pago rechazado, el request ya tiene un pago completado', { requestId });
+      return NextResponse.json({ error: 'Esta solicitud ya tiene una reserva pagada' }, { status: 409 });
+    }
+    // 4) Respaldo: booking activo (red secundaria; el índice DB es la red final).
+    const { data: activeBooking } = await admin
+      .from('bookings')
+      .select('id')
+      .eq('request_id', requestId)
+      .neq('booking_status', 'cancelled')
+      .limit(1)
+      .maybeSingle();
+    if (activeBooking) {
+      console.warn('create-payment: pago rechazado, el request ya tiene reserva activa', { requestId });
+      return NextResponse.json({ error: 'Esta solicitud ya tiene una reserva activa' }, { status: 409 });
+    }
 
     const amountNumber = pricePerPerson * guestsNumber;
     const currency = 'USD';
@@ -101,6 +131,12 @@ export async function POST(req: Request) {
       amount: amountNumber,
       currency,
       country_code: 'UY',
+      // order_id atado al REQUEST (no al intento): agrupa todos los cobros de una misma
+      // solicitud bajo un identificador propio. Sirve para trazar/reconciliar en el panel
+      // de dLocalGo un cobro huérfano (ej. re-pago por "Volver") contra su request. La
+      // idempotencia real la garantiza nuestra base (payments + índices de booking); esto
+      // es trazabilidad, no el candado.
+      order_id: requestId,
       description: 'Reserva de chef privado - GetChef',
       success_url: `${appUrl}/client-dashboard/${requestId}/proposals/${proposalId}?payment=success`,
       back_url: `${appUrl}/client-dashboard/${requestId}/proposals/${proposalId}/payment`,
@@ -116,6 +152,31 @@ export async function POST(req: Request) {
     });
 
     if (!result.redirect_url) {
+      // dLocalGo rechaza un order_id ya usado ("Order id is duplicated"). Como el
+      // order_id está atado al REQUEST, esto es prueba definitiva de que la solicitud
+      // YA fue pagada — aunque nuestra base todavía la tenga 'pending' porque el webhook
+      // o el retorno de éxito no llegaron (ej. el usuario volvió a mano). Reconciliamos
+      // el pago existente para reflejar el estado real y respondemos `alreadyPaid` para
+      // que la UI lleve al usuario a la vista "Reservada" en vez de mostrar un error crudo.
+      const isDuplicateOrder =
+        typeof result?.message === 'string' && /duplicat/i.test(result.message);
+      if (isDuplicateOrder) {
+        const { data: existing } = await admin
+          .from('payments')
+          .select('dlocalgo_payment_id')
+          .eq('request_id', requestId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (existing?.dlocalgo_payment_id) {
+          await applyDlocalgoPaymentStatus(existing.dlocalgo_payment_id as string);
+        }
+        console.warn('create-payment: order_id duplicado en dLocalGo, request ya pagado', { requestId });
+        return NextResponse.json(
+          { error: 'Esta solicitud ya tiene una reserva pagada', alreadyPaid: true },
+          { status: 409 },
+        );
+      }
       console.error('dlocalgo create-payment error:', result);
       return NextResponse.json({ error: result.message ?? 'Error creando pago' }, { status: 500 });
     }
