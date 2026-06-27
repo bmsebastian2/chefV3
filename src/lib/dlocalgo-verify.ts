@@ -32,12 +32,15 @@ export async function applyDlocalgoPaymentStatus(
   const admin = createAdminClient();
   const mappedStatus = STATUS_MAP[payment.status] ?? payment.status.toLowerCase();
 
-  const { data: record, error: updateError } = await admin
+  // 1) Camino normal: la fila ya existe (se insertó en create-payment). UPDATE de estado.
+  //    `maybeSingle()` (NO `single()`) para que "no hay fila" deje de ser un error: ese
+  //    es justamente el caso del re-cobro por "Volver", que reconciliamos en el paso 2.
+  const { data: updatedRecord, error: updateError } = await admin
     .from('payments')
     .update({ status: mappedStatus })
     .eq('dlocalgo_payment_id', dlocalgoPaymentId)
     .select('proposal_id, request_id')
-    .single();
+    .maybeSingle();
 
   if (updateError) {
     console.error('🛑 dlocalgo-verify: fallo update `payments`', {
@@ -47,6 +50,56 @@ export async function applyDlocalgoPaymentStatus(
       hint: updateError.hint,
     });
     return { error: 'payments update failed' };
+  }
+
+  let record = updatedRecord;
+
+  // 2) Reconciliación de cobro HUÉRFANO: no existía fila para este dlocalgo_payment_id.
+  //    Pasa cuando el usuario toca "Volver" en la pasarela y re-paga DENTRO de dLocalGo:
+  //    ese cobro tiene un id que nunca insertamos, así que el webhook no tenía nada que
+  //    actualizar y el pago quedaba fantasma (cobrado pero invisible en la base). Acá lo
+  //    INSERTAMOS desde la metadata que mandamos al crear el pago → NUNCA es invisible.
+  if (!record) {
+    const meta = (payment.metadata ?? {}) as {
+      user_id?: string; proposal_id?: string; request_id?: string;
+    };
+    const amount = Number(payment.amount);
+    if (!meta.user_id || !meta.proposal_id || !meta.request_id || !Number.isFinite(amount)) {
+      // Sin metadata no podemos atribuir el cobro: 502 para que dLocalGo reintente y
+      // quede traza en logs para reconciliación manual del admin.
+      console.error('🛑 dlocalgo-verify: cobro huérfano sin metadata, no se puede reconciliar', {
+        dlocalgoPaymentId, metadata: payment.metadata, amount: payment.amount,
+      });
+      return { error: 'orphan payment without metadata' };
+    }
+    // upsert idempotente por dlocalgo_payment_id: si dLocalGo reintenta el webhook del
+    // mismo id, no duplica la fila.
+    const { data: inserted, error: insertError } = await admin
+      .from('payments')
+      .upsert({
+        user_id:             meta.user_id,
+        dlocalgo_payment_id: dlocalgoPaymentId,
+        proposal_id:         meta.proposal_id,
+        request_id:          meta.request_id,
+        amount,
+        currency:            typeof payment.currency === 'string' ? payment.currency : 'USD',
+        status:              mappedStatus,
+      }, { onConflict: 'dlocalgo_payment_id' })
+      .select('proposal_id, request_id')
+      .single();
+    if (insertError) {
+      console.error('🛑 dlocalgo-verify: fallo al reconciliar cobro huérfano', {
+        message: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint,
+      });
+      return { error: 'orphan payment reconcile failed' };
+    }
+    record = inserted;
+    console.warn('⚠️ dlocalgo-verify: cobro huérfano reconciliado (re-pago por "Volver")', {
+      dlocalgoPaymentId, request_id: meta.request_id, status: mappedStatus,
+    });
   }
 
   const paid = payment.status === 'PAID';

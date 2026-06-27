@@ -25,7 +25,12 @@ DECLARE
   v_booking record;
 BEGIN
   -- Booking + verificación de propiedad (el cliente dueño de la solicitud).
-  SELECT b.id, b.request_id, b.chef_id, b.booking_status, b.payment_status
+  -- service_date = fecha de referencia del servicio:
+  --   single   → event_date_start (día único)
+  --   multiple → event_date_end   (último día del evento)
+  --   weekly   → event_date_start (fecha de inicio)
+  SELECT b.id, b.request_id, b.chef_id, b.booking_status, b.payment_status,
+         COALESCE(sr.event_date_end, sr.event_date_start) AS service_date
     INTO v_booking
   FROM public.bookings b
   JOIN public.service_requests sr ON sr.id = b.request_id
@@ -45,6 +50,17 @@ BEGIN
   IF v_booking.booking_status <> 'confirmed' OR v_booking.payment_status <> 'paid' THEN
     RAISE EXCEPTION 'booking not completable (status=%, payment=%)',
       v_booking.booking_status, v_booking.payment_status;
+  END IF;
+
+  -- La fecha del servicio debe haber llegado o pasado: un servicio futuro no pudo
+  -- prestarse, así que no se puede marcar como completado (esto abre la liberación
+  -- del pago al chef). Comparamos contra "hoy" en America/Managua (UTC-6), el huso
+  -- más atrasado que servimos, para no habilitar la confirmación antes de que el día
+  -- del evento haya llegado en ninguna región. NO usamos CURRENT_DATE (UTC), que
+  -- adelantaría el día hasta 6h y podría habilitar la noche anterior al evento.
+  IF v_booking.service_date IS NULL
+     OR v_booking.service_date > (now() AT TIME ZONE 'America/Managua')::date THEN
+    RAISE EXCEPTION 'service_date_not_reached (service_date=%)', v_booking.service_date;
   END IF;
 
   UPDATE public.bookings

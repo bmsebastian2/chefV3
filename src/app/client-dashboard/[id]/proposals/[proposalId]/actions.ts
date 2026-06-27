@@ -77,6 +77,10 @@ export async function completeBooking(
     p_booking_id: bookingId,
   })
   if (error) {
+    // Guard de fecha: el servicio todavía no ocurrió (no se puede completar antes).
+    if (error.message?.includes('service_date_not_reached')) {
+      return { error: 'Todavía no podés marcar este servicio como completado: la fecha del servicio aún no llegó.' }
+    }
     console.error('completeBooking:', error)
     return { error: 'No se pudo marcar el servicio como completado' }
   }

@@ -308,6 +308,10 @@ export function ProposalDetailView({
   const isAccepted = status === "accepted"
   const { dateStr } = request
 
+  // Fecha de referencia del servicio (cuándo se considera "ocurrido"):
+  //   single → event_date_start · multiple → event_date_end (último día) · weekly → event_date_start
+  const serviceDate = request.event_date_end ?? request.event_date_start
+
   return (
     <div className="min-h-screen">
       {/* Top nav */}
@@ -344,6 +348,7 @@ export function ProposalDetailView({
             bookingStatus={booking.status}
             hasReview={booking.hasReview}
             chefName={chef.name}
+            serviceDate={serviceDate}
           />
         </div>
       )}
@@ -602,6 +607,7 @@ export function ProposalDetailView({
                 bookingStatus={booking.status}
                 hasReview={booking.hasReview}
                 chefName={chef.name}
+                serviceDate={serviceDate}
               />
             )}
 

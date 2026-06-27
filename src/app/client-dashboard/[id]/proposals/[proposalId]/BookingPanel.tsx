@@ -13,6 +13,7 @@ type Props = {
   bookingStatus: string          // 'confirmed' | 'completed' | 'cancelled'
   hasReview:     boolean
   chefName:      string
+  serviceDate:   string          // 'YYYY-MM-DD' — fecha de referencia del servicio
 }
 
 // ── Star rating row ──────────────────────────────────────────────────────────
@@ -134,9 +135,19 @@ function ReviewModal({
 
 // ── Main panel ───────────────────────────────────────────────────────────────
 
-export function BookingPanel({ bookingId, requestId, bookingStatus, hasReview, chefName }: Props) {
+export function BookingPanel({ bookingId, requestId, bookingStatus, hasReview, chefName, serviceDate }: Props) {
   const router = useRouter()
   const [status, setStatus] = useState(bookingStatus)
+
+  // El servicio solo puede marcarse como completado una vez que su fecha llegó o
+  // pasó. Comparamos en la zona horaria local del navegador (la real del cliente):
+  // medianoche del día del servicio vs. ahora. El guard server-side (complete_booking)
+  // es la protección real; esto es UX para no ofrecer una acción que será rechazada.
+  const serviceDay  = new Date(serviceDate + "T00:00:00")
+  const serviceOccurred = serviceDay.getTime() <= Date.now()
+  const serviceDateLabel = serviceDay.toLocaleDateString("es-AR", {
+    day: "numeric", month: "short", year: "numeric",
+  })
   const [reviewed, setReviewed] = useState(hasReview)
   const [modalOpen, setModalOpen] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -145,6 +156,7 @@ export function BookingPanel({ bookingId, requestId, bookingStatus, hasReview, c
   const [isCancelling, startCancel] = useTransition()
 
   const handleComplete = () => {
+    if (!serviceOccurred) return
     setError(null)
     startComplete(async () => {
       const res = await completeBooking(bookingId, requestId)
@@ -233,12 +245,19 @@ export function BookingPanel({ bookingId, requestId, bookingStatus, hasReview, c
       <button
         type="button"
         onClick={handleComplete}
-        disabled={isCompleting}
-        className="w-full py-2.5 rounded-xl bg-accent text-white font-semibold text-sm hover:bg-accent/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 mb-2"
+        disabled={isCompleting || !serviceOccurred}
+        title={!serviceOccurred ? `Podrás marcar como completado a partir del ${serviceDateLabel}` : undefined}
+        className="w-full py-2.5 rounded-xl bg-accent text-white font-semibold text-sm hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 mb-2"
       >
         {isCompleting && <Loader2 className="w-4 h-4 animate-spin" />}
         {isCompleting ? "Confirmando..." : "Marcar como completado"}
       </button>
+
+      {!serviceOccurred && (
+        <p className="text-xs text-zinc-400 mb-2 text-center">
+          Podrás marcarlo como completado a partir del {serviceDateLabel}.
+        </p>
+      )}
 
       {confirmCancel ? (
         <div className="rounded-xl border border-red-100 bg-red-50/60 p-3 mt-2">

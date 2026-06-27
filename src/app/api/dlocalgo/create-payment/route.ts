@@ -130,6 +130,12 @@ export async function POST(req: Request) {
       amount: amountNumber,
       currency,
       country_code: 'UY',
+      // order_id atado al REQUEST (no al intento): agrupa todos los cobros de una misma
+      // solicitud bajo un identificador propio. Sirve para trazar/reconciliar en el panel
+      // de dLocalGo un cobro huérfano (ej. re-pago por "Volver") contra su request. La
+      // idempotencia real la garantiza nuestra base (payments + índices de booking); esto
+      // es trazabilidad, no el candado.
+      order_id: requestId,
       description: 'Reserva de chef privado - GetChef',
       success_url: `${appUrl}/client-dashboard/${requestId}/proposals/${proposalId}?payment=success`,
       back_url: `${appUrl}/client-dashboard/${requestId}/proposals/${proposalId}/payment`,
