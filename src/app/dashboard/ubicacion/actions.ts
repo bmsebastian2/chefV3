@@ -23,6 +23,8 @@ export async function saveUbicacion(
   const country            = (formData.get('country') as string)?.trim() || null
   const preferred_language = (formData.get('preferred_language') as string)?.trim() || 'es'
 
+  // Nota: las ciudades adicionales (additional_cities) se editan en
+  // Config. Solicitudes (request-settings), no acá. No se tocan en este save.
   const { error: updateError } = await supabase
     .from('chef_profiles')
     .update({ city, country, preferred_language, updated_at: new Date().toISOString() })

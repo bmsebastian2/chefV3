@@ -30,6 +30,45 @@ export const CITY_ALIASES: Record<string, string> = {
   'isla de ometepe': 'moyogalpa',
 }
 
+/** Una opción de ciudad para selectores: clave normalizada + nombre para mostrar. */
+export type CityOption = { key: string; name: string }
+
+/**
+ * Países que tienen catálogo de ciudades normalizado. Hoy solo Nicaragua; el
+ * matching por ciudades adicionales solo se ofrece para estos. Las claves van
+ * normalizadas (minúsculas, sin tildes) para tolerar "Nicaragua" / "nicaragua".
+ * A futuro: sumar más países → su propio JSON + entrada acá.
+ */
+const COUNTRY_CATALOGS: Record<string, Record<string, CityEntry>> = {
+  nicaragua: CITIES,
+}
+
+/**
+ * Lista de ciudades del catálogo de un país, ordenada alfabéticamente por nombre.
+ * Pensada para poblar selectores (ciudad base + ciudades adicionales del chef).
+ * Devuelve `null` si el país no tiene catálogo → el llamador oculta la función
+ * de ciudades adicionales y cae al selector genérico.
+ *
+ * Acepta el nombre completo ("Nicaragua") o el código ISO ("NI").
+ */
+export function getCatalogCities(country: string | null | undefined): CityOption[] | null {
+  if (!country) return null
+  const key = normalizeCity(country)
+  const catalog =
+    (key && COUNTRY_CATALOGS[key]) ||
+    (key === 'ni' ? CITIES : undefined) // tolera el ISO de Nicaragua
+  if (!catalog) return null
+
+  return Object.entries(catalog)
+    .map(([cityKey, entry]) => ({ key: cityKey, name: entry.name }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+}
+
+/** ¿El país tiene catálogo de ciudades? (habilita las ciudades adicionales). */
+export function countryHasCatalog(country: string | null | undefined): boolean {
+  return getCatalogCities(country) !== null
+}
+
 /** Resultado de resolver un `city` crudo contra el catálogo. */
 export type ResolvedCity = { key: string; entry: CityEntry }
 

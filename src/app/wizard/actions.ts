@@ -2,12 +2,22 @@
 'use server'
 
 import { after } from 'next/server'
+import { Country } from 'country-state-city'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { WizardData, ClientExtras } from '@/components/wizard/types'
 import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
 import { sendClientEmails, RequestSummary } from '@/lib/emails/client-emails'
 import { TERMS_VERSION } from '@/lib/terms'
+
+// País a persistir en la solicitud. Se deriva del countryCode (ISO) capturado en
+// el wizard con country-state-city — MISMA fuente que chef_profiles.country, así
+// ambos lados del matching usan el mismo formato. Fallback transitorio al único
+// mercado activo (Nicaragua) si el geocoder no devolvió país.
+function resolveCountryName(countryCode: string | undefined | null): string {
+  const name = countryCode ? Country.getCountryByCode(countryCode)?.name : null
+  return name ?? 'Nicaragua'
+}
 
 // ─── Mapeos Wizard → DB ───────────────────────────────────────────────────────
 
@@ -274,6 +284,7 @@ export async function submitServiceRequest(
     p_occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
     p_location:           data.location.name,
     p_city:               normalizeCity(data.location.city),
+    p_country:            resolveCountryName(data.location.countryCode),
     p_event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
     p_event_date_end:     eventDateEnd,
     p_event_time:         eventTime,
@@ -445,6 +456,7 @@ export async function submitWeeklyRequest(
     p_occasion:             'other',
     p_location:             data.location.name,
     p_city:                 normalizeCity(data.location.city),
+    p_country:              resolveCountryName(data.location.countryCode),
     p_event_date_start:     formatLocalDate(new Date(data.date as unknown as string)),
     p_event_date_end:       null,
     p_event_time:           null,

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { NicaraguaChefMap, type DemandRow } from '@/components/maps/NicaraguaChefMap'
+import { normalizeCity } from '@/lib/maps/normalizeCity'
 
 export default async function DemandaPage() {
   const supabase = await createClient()
@@ -16,6 +17,21 @@ export default async function DemandaPage() {
   }
   const demand = (Array.isArray(data) ? data : []) as DemandRow[]
   const total = demand.reduce((sum, row) => sum + row.demand, 0)
+
+  // Cobertura del chef (ciudad base + adicionales), normalizada, para resaltar
+  // en el mapa qué departamentos atiende sobre el heatmap nacional.
+  const { data: chef } = await supabase
+    .from('chef_profiles')
+    .select('city, additional_cities')
+    .eq('user_id', user.id)
+    .single()
+
+  const coveredCities = Array.from(
+    new Set(
+      [normalizeCity(chef?.city), ...((chef?.additional_cities ?? []) as string[]).map(normalizeCity)]
+        .filter((k): k is string => !!k)
+    )
+  )
 
   return (
     <div className="p-6 md:p-10 max-w-3xl">
@@ -35,7 +51,7 @@ export default async function DemandaPage() {
         </p>
       </div>
 
-      <NicaraguaChefMap mode="demand" demand={demand} />
+      <NicaraguaChefMap mode="demand" demand={demand} coveredCities={coveredCities} />
     </div>
   )
 }

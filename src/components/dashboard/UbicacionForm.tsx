@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { Country, City } from "country-state-city";
 import { saveUbicacion } from "@/app/dashboard/ubicacion/actions";
+import { getCatalogCities } from "@/lib/maps/cities";
 import { ChevronDown, X, AlertCircle, CheckCircle2 } from "lucide-react";
 
 const LANGUAGES = [
@@ -183,17 +184,25 @@ export function UbicacionForm({ initialData }: { initialData: UbicacionInitialDa
     label: `${c.flag ?? ""} ${c.name}`.trim(),
   }));
 
-  const cityOptions = countryIso
-    ? Array.from(new Set((City.getCitiesOfCountry(countryIso) ?? []).map((c) => c.name))).map(
-        (name) => ({ value: name, label: name })
-      )
-    : [];
+  // Si el país tiene catálogo (hoy: Nicaragua), la ciudad base sale del MISMO
+  // catálogo que usan las ciudades adicionales (en Config. Solicitudes) → claves
+  // idénticas, matching exacto. Si no, se cae al listado genérico de
+  // country-state-city.
+  const catalog = useMemo(() => getCatalogCities(countryName), [countryName]);
+
+  const cityOptions = catalog
+    ? catalog.map((c) => ({ value: c.name, label: c.name }))
+    : countryIso
+      ? Array.from(new Set((City.getCitiesOfCountry(countryIso) ?? []).map((c) => c.name))).map(
+          (name) => ({ value: name, label: name })
+        )
+      : [];
 
   function handleCountryChange(iso: string) {
     const country = allCountries.find((c) => c.isoCode === iso);
     setCountryIso(iso);
     setCountryName(country?.name ?? "");
-    setCityName(""); // reset city when country changes
+    setCityName(""); // reset ciudad base al cambiar de país
   }
 
   return (

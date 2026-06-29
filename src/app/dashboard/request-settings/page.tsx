@@ -10,11 +10,20 @@ export default async function RequestSettingsPage() {
 
   const { data: chef } = await supabase
     .from('chef_profiles')
-    .select('id')
+    .select('id, city, country')
     .eq('user_id', user.id)
     .single()
 
   if (!chef) redirect('/dashboard')
+
+  // additional_cities se lee aparte: si la migración aún no corrió, la columna no
+  // existe y este select falla, pero la página igual carga (cobertura vacía) en
+  // vez de rebotar al dashboard por un error de columna inexistente.
+  const { data: cov } = await supabase
+    .from('chef_profiles')
+    .select('additional_cities')
+    .eq('id', chef.id)
+    .single()
 
   const { data: settings } = await supabase
     .from('request_settings')
@@ -23,13 +32,16 @@ export default async function RequestSettingsPage() {
     .single()
 
   const initialData: RequestSettingsInitialData = {
-    accepts_single:   settings?.accepts_single   ?? true,
-    accepts_multiple: settings?.accepts_multiple ?? true,
-    accepts_weekly:   settings?.accepts_weekly   ?? true,
-    min_guests:       settings?.min_guests        ?? 1,
-    max_guests:       settings?.max_guests        ?? 50,
-    min_budget:       settings?.min_budget        ?? null,
-    advance_days:     settings?.advance_days      ?? 3,
+    accepts_single:    settings?.accepts_single   ?? true,
+    accepts_multiple:  settings?.accepts_multiple ?? true,
+    accepts_weekly:    settings?.accepts_weekly   ?? true,
+    min_guests:        settings?.min_guests        ?? 1,
+    max_guests:        settings?.max_guests        ?? 50,
+    min_budget:        settings?.min_budget        ?? null,
+    advance_days:      settings?.advance_days      ?? 3,
+    city:              chef.city,
+    country:           chef.country,
+    additional_cities: cov?.additional_cities ?? [],
   }
 
   return (

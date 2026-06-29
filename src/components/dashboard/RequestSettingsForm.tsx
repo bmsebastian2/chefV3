@@ -2,16 +2,20 @@
 
 import { useActionState } from "react";
 import { saveRequestSettings } from "@/app/dashboard/request-settings/actions";
+import { AdditionalCitiesPicker } from "@/components/dashboard/AdditionalCitiesPicker";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 export type RequestSettingsInitialData = {
-  accepts_single:   boolean
-  accepts_multiple: boolean
-  accepts_weekly:   boolean
-  min_guests:       number
-  max_guests:       number
-  min_budget:       number | null
-  advance_days:     number
+  accepts_single:    boolean
+  accepts_multiple:  boolean
+  accepts_weekly:    boolean
+  min_guests:        number
+  max_guests:        number
+  min_budget:        number | null
+  advance_days:      number
+  city:              string | null
+  country:           string | null
+  additional_cities: string[]
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -107,6 +111,15 @@ export function RequestSettingsForm({ initialData }: { initialData: RequestSetti
           />
         </div>
       </section>
+
+      <div className="border-t border-zinc-100" />
+
+      {/* ── Ciudades que cubrís ────────────────────────────── */}
+      <AdditionalCitiesPicker
+        city={initialData.city}
+        country={initialData.country}
+        initialKeys={initialData.additional_cities}
+      />
 
       <div className="border-t border-zinc-100" />
 

@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/utils/supabase/admin'
 import { resend } from '@/lib/resend'
 import { formatPriceRange } from '@/lib/format'
+import { normalizeCity } from '@/lib/maps/normalizeCity'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   'Servicio Único',
@@ -246,7 +247,7 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
   // Siempre busca los datos frescos desde la DB — evita depender del caller
   const { data: requestRow, error: reqError } = await admin
     .from('service_requests')
-    .select('service_type, occasion, city, event_date_start, event_date_end, event_time, guests_adults, cuisine_type, budget_min, budget_max, descripcion_evento')
+    .select('service_type, occasion, city, country, event_date_start, event_date_end, event_time, guests_adults, cuisine_type, budget_min, budget_max, descripcion_evento')
     .eq('id', requestId)
     .single()
 
@@ -295,6 +296,8 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
     .from('chef_profiles')
     .select(`
       city,
+      country,
+      additional_cities,
       users!inner ( email, first_name ),
       request_settings!inner (
         accepts_single, accepts_multiple, accepts_weekly,
@@ -308,11 +311,14 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
     return
   }
 
-  const vCity      = req.city
   const vType      = req.service_type
   const vGuests    = req.cuantas_personas
   const vBudgetMax = req.budget_max
   const vDate      = req.event_date_start
+
+  // Geografía del request, normalizada una sola vez (misma convención que el catálogo).
+  const reqCountryKey = normalizeCity(requestRow.country)
+  const reqCityKey    = normalizeCity(req.city)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chefs: MatchingChef[] = ((rows ?? []) as any[])
@@ -320,8 +326,19 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
       const rs = Array.isArray(cp.request_settings) ? cp.request_settings[0] : cp.request_settings
       if (!rs) return false
 
-      if (cp.city && vCity &&
-          cp.city.toLowerCase().trim() !== vCity.toLowerCase().trim()) return false
+      // ── Geografía: país primero (innegociable), luego ciudad ∈ cobertura ──
+      const chefCountryKey = normalizeCity(cp.country)
+      if (!reqCountryKey || !chefCountryKey || reqCountryKey !== chefCountryKey) return false
+
+      // Cobertura del chef: ciudad base + adicionales (estas ya vienen normalizadas en DB).
+      const covered = new Set<string>()
+      const baseCity = normalizeCity(cp.city)
+      if (baseCity) covered.add(baseCity)
+      for (const k of (cp.additional_cities ?? []) as string[]) {
+        const nk = normalizeCity(k)
+        if (nk) covered.add(nk)
+      }
+      if (!reqCityKey || !covered.has(reqCityKey)) return false
 
       if (vType === 'single'   && !rs.accepts_single)          return false
       if (vType === 'multiple' && !rs.accepts_multiple)        return false

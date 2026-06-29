@@ -31,6 +31,8 @@ type NicaraguaChefMapProps =
   | {
       mode: 'demand'
       demand: DemandRow[]
+      /** Claves normalizadas de las ciudades que el chef cubre (base + adicionales). */
+      coveredCities?: string[]
     }
 
 // ── Constantes de layout ───────────────────────────────────────────────────────
@@ -117,20 +119,36 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
     return { byDept, unlocated, max }
   }, [props])
 
+  // Departamentos que el chef cubre: se derivan de sus ciudades cubiertas
+  // (clave normalizada → departmentId vía catálogo). Granularidad de depto porque
+  // el mapa es por departamento; un depto se resalta si cubre ≥1 ciudad del chef.
+  const coveredDepts = useMemo(() => {
+    if (props.mode !== 'demand' || !props.coveredCities?.length) return null
+    const set = new Set<string>()
+    for (const key of props.coveredCities) {
+      const resolved = resolveCity(key)
+      if (resolved) set.add(resolved.entry.departmentId)
+    }
+    return set.size ? set : null
+  }, [props])
+
   // ── Estilo de relleno por departamento ─────────────────────────────────────
 
   const fillFor = useCallback(
-    (deptId: string): { fill: string; stroke: string; strokeWidth: number } => {
+    (deptId: string): { fill: string; stroke: string; strokeWidth: number; dash?: string } => {
       const isHover = hoveredDept === deptId
       const isSelected = selectedDept === deptId
 
       if (props.mode === 'demand' && demandData) {
         const value = demandData.byDept.get(deptId) ?? 0
         const intensity = value === 0 ? 0 : 0.15 + 0.65 * (value / demandData.max)
+        const isCovered = coveredDepts?.has(deptId) ?? false
         return {
           fill: value === 0 ? '#f4f4f5' : `rgba(34,197,94,${intensity.toFixed(3)})`,
-          stroke: isHover ? '#16a34a' : '#d4d4d8',
-          strokeWidth: isHover ? 1.5 : 0.75,
+          // Cobertura del chef: borde sólido emerald, por encima del estilo de hover.
+          stroke: isCovered ? '#059669' : isHover ? '#16a34a' : '#d4d4d8',
+          strokeWidth: isCovered ? 2 : isHover ? 1.5 : 0.75,
+          dash: isCovered ? '4 2' : undefined,
         }
       }
 
@@ -146,7 +164,7 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
         strokeWidth: isSelected || isHover ? 1.5 : 0.75,
       }
     },
-    [props.mode, demandData, chefData, hoveredDept, selectedDept]
+    [props.mode, demandData, chefData, coveredDepts, hoveredDept, selectedDept]
   )
 
   const toggleDept = useCallback((deptId: string) => {
@@ -222,6 +240,7 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
                     fill={style.fill}
                     stroke={style.stroke}
                     strokeWidth={style.strokeWidth}
+                    strokeDasharray={style.dash}
                     style={{ transition, cursor: interactive ? 'pointer' : 'default', outline: 'none' }}
                     role={interactive ? 'button' : 'img'}
                     aria-label={label}
@@ -304,15 +323,27 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
 
       {/* ── Leyenda de demanda ── */}
       {props.mode === 'demand' && demandData && (
-        <div className="mt-4 flex items-center justify-between gap-4 text-xs text-zinc-500">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-zinc-500">
           <div className="flex items-center gap-2">
             <span>Menos</span>
             <span className="flex h-2.5 w-32 rounded-full bg-gradient-to-r from-emerald-100 to-emerald-600" />
             <span>Más demanda</span>
           </div>
-          {demandData.unlocated > 0 && (
-            <span className="text-zinc-400">{demandData.unlocated} sin ubicar</span>
-          )}
+          <div className="flex items-center gap-4">
+            {coveredDepts && (
+              <span className="flex items-center gap-1.5">
+                <span
+                  className="h-3 w-4 rounded-sm border-2 border-dashed"
+                  style={{ borderColor: '#059669' }}
+                  aria-hidden="true"
+                />
+                Tu cobertura
+              </span>
+            )}
+            {demandData.unlocated > 0 && (
+              <span className="text-zinc-400">{demandData.unlocated} sin ubicar</span>
+            )}
+          </div>
         </div>
       )}
 
