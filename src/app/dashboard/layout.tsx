@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { Sidebar } from '@/components/dashboard/Sidebar'
+import { BlockedAccount } from '@/components/dashboard/BlockedAccount'
 
 export default async function DashboardLayout({
   children,
@@ -13,7 +14,7 @@ export default async function DashboardLayout({
 
   const [{ data: userData }, { data: chefProfile }] = await Promise.all([
     supabase.from('users').select('first_name, first_surname, role').eq('id', user.id).single(),
-    supabase.from('chef_profiles').select('id').eq('user_id', user.id).single(),
+    supabase.from('chef_profiles').select('id, admin_blocked, admin_block_reason').eq('user_id', user.id).single(),
   ])
 
   // Ruteo por rol — cada rol se maneja EXPLÍCITAMENTE y los desconocidos/null van
@@ -24,6 +25,15 @@ export default async function DashboardLayout({
   if (role === 'admin')  redirect('/admin')
   if (role === 'client') redirect('/client-dashboard')
   if (role !== 'chef')   redirect('/?home=1')
+
+  // Bloqueo administrativo: gate GLOBAL del dashboard. El chef puede loguearse
+  // (a propósito, para enterarse y contactar al admin) pero queda contenido en la
+  // pantalla de bloqueo, sin sidebar ni acceso a ninguna subpágina operativa. El
+  // backend (get_chef_requests_state, submit_proposal, listados públicos) ya
+  // enforza el bloqueo por su cuenta; esto corta la operativa también en la UI.
+  if (chefProfile?.admin_blocked) {
+    return <BlockedAccount reason={chefProfile.admin_block_reason} />
+  }
 
   let profilePhotoUrl: string | null = null
   if (chefProfile) {

@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Home, LogOut } from 'lucide-react'
+import { Home } from 'lucide-react'
 import { createClient } from '@/utils/supabase/server'
-import { logout } from '@/app/auth/actions'
 import { IdleLogout } from './IdleLogout'
+import { AdminLogoutButton } from './AdminLogoutButton'
 
 export default async function AdminLayout({
   children,
@@ -41,15 +41,7 @@ export default async function AdminLayout({
               <Home className="w-4 h-4" />
               <span className="hidden sm:inline">Inicio</span>
             </Link>
-            <form action={logout}>
-              <button
-                type="submit"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-zinc-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Cerrar sesión</span>
-              </button>
-            </form>
+            <AdminLogoutButton />
           </div>
         </div>
       </header>

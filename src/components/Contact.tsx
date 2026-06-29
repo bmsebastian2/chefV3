@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, Check, ArrowRight } from "lucide-react";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -22,6 +22,42 @@ export function Contact() {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const sectionRef = useRef<HTMLElement>(null);
+
+  // Llegar acá con #contacto desde otra página (ej. el botón del chef bloqueado)
+  // scrollea apenas pinta, pero el contenido de arriba (fotos de chefs, mapa…)
+  // termina de cargar después y empuja la sección hacia abajo, dejando el viewport
+  // sobre la sección anterior. Re-centramos en cada cambio de altura del body
+  // mientras el layout se acomoda, y soltamos en cuanto el usuario scrollea él
+  // mismo o pasa el presupuesto de tiempo.
+  useEffect(() => {
+    if (window.location.hash !== "#contacto") return;
+    const el = sectionRef.current;
+    if (!el) return;
+
+    let active = true;
+    const scroll = () => el.scrollIntoView({ block: "start" });
+    const release = () => {
+      if (!active) return;
+      active = false;
+      ro.disconnect();
+      window.removeEventListener("wheel", release);
+      window.removeEventListener("touchmove", release);
+      window.removeEventListener("keydown", release);
+    };
+
+    const ro = new ResizeObserver(() => { if (active) scroll(); });
+    ro.observe(document.body);
+
+    window.addEventListener("wheel", release, { passive: true });
+    window.addEventListener("touchmove", release, { passive: true });
+    window.addEventListener("keydown", release);
+
+    scroll();
+    const timeout = setTimeout(release, 2500);
+
+    return () => { release(); clearTimeout(timeout); };
+  }, []);
 
   const isValid =
     name.trim().length > 0 &&
@@ -70,7 +106,7 @@ export function Contact() {
     "focus:outline-none focus:ring-2 focus:ring-accent focus:shadow-[0_4px_16px_rgba(34,197,94,0.10)]";
 
   return (
-    <section id="contacto" className="py-24 bg-background scroll-mt-20">
+    <section ref={sectionRef} id="contacto" className="py-24 bg-background scroll-mt-20">
       <div className="container mx-auto px-6 max-w-[1280px]">
         {/* Encabezado */}
         <div className="text-center max-w-2xl mx-auto mb-12">

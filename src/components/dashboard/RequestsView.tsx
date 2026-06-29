@@ -272,6 +272,44 @@ function RequestsGate({ missing }: { missing: MissingRequirement[] }) {
   );
 }
 
+// Bloqueo administrativo: el chef no puede operar y no puede revertirlo. Mensaje
+// claro que lo deriva al admin (estado distinto al de "perfil incompleto").
+function RequestsBlocked() {
+  return (
+    <div className="p-6 md:p-10">
+      <div className="mb-10">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="h-px w-8 bg-accent rounded-full" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            Chef dashboard
+          </span>
+        </div>
+        <h1 className="font-serif text-3xl font-semibold text-zinc-900 mb-2">Solicitudes</h1>
+      </div>
+
+      <div className="max-w-md">
+        <div className="flex items-center justify-center w-16 h-16 bg-red-50 rounded-2xl mb-6">
+          <Lock className="w-7 h-7 text-red-500" />
+        </div>
+        <h2 className="font-serif text-xl font-semibold text-zinc-900 mb-2">
+          Tu cuenta está deshabilitada
+        </h2>
+        <p className="text-sm text-zinc-500 leading-relaxed">
+          La administración deshabilitó tu cuenta, así que por ahora no recibís solicitudes ni podés
+          enviar propuestas. Escribinos para resolverlo y reactivar tu cuenta.
+        </p>
+        <a
+          href="mailto:hola@getchef.com"
+          className="inline-flex items-center gap-2 mt-6 px-4 py-2.5 rounded-xl bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 transition-colors"
+        >
+          <MessageCircle className="w-4 h-4" />
+          Contactar a la administración
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ── Formulario de propuesta ────────────────────────────────────────────────────
 
 function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess, onClose }: {
@@ -570,11 +608,13 @@ export function RequestsView({
   missing,
   requests,
   chefMenus,
+  blocked = false,
 }: {
   canReceive: boolean
   missing:    MissingRequirement[]
   requests:   RequestCard[]
   chefMenus:  ChefMenu[]
+  blocked?:   boolean
 }) {
   const [activeTab, setActiveTab] = useState<string>("all");
   const router = useRouter();
@@ -600,6 +640,10 @@ export function RequestsView({
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canReceive]);
+
+  if (blocked) {
+    return <RequestsBlocked />;
+  }
 
   if (!canReceive) {
     return <RequestsGate missing={missing} />;

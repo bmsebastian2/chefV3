@@ -27,6 +27,12 @@ export async function submitProposal(
 
   if (error) {
     console.error('submitProposal:', error)
+    // El guard de submit_proposal (SECURITY DEFINER) corta a los chefs bloqueados
+    // aunque intenten saltarse la UI vía request directo. Lo distinguimos del error
+    // genérico para darle un mensaje claro en vez de "intentá de nuevo".
+    if (error.message?.includes('chef_blocked')) {
+      return { error: 'Tu cuenta está deshabilitada. Contactá a la administración para reactivarla.' }
+    }
     return { error: 'Error al enviar la propuesta. Intentá de nuevo.' }
   }
 

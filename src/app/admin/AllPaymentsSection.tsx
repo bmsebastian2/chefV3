@@ -211,6 +211,7 @@ export function AllPaymentsSection({
 
           {/* Filtros */}
           <form method="get" className="flex flex-wrap items-center gap-2 mb-4">
+            <input type="hidden" name="tab" value="pagos" />
             <select
               name="pestado"
               defaultValue={stateFilter}

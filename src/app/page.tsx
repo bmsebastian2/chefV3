@@ -54,6 +54,7 @@ async function getFeaturedChefs(): Promise<ChefCard[]> {
     `
     )
     .eq("is_active", true)
+    .eq("admin_blocked", false)
     .order("is_pro", { ascending: false })
     .order("rating_avg", { ascending: false })
     .limit(3);

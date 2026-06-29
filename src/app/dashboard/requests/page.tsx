@@ -7,6 +7,7 @@ import type { RequestCard, MissingRequirement, ChefMenu } from '@/components/das
 
 type ChefRequestsState = {
   can_receive: boolean
+  blocked?: boolean
   missing: MissingRequirement[]
   requests: RequestCard[]
 } | null
@@ -112,6 +113,7 @@ export default async function RequestsPage() {
       missing={state.missing}
       requests={requests}
       chefMenus={chefMenus}
+      blocked={state.blocked ?? false}
     />
   )
 }

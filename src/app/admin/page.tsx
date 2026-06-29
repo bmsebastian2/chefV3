@@ -1,10 +1,13 @@
 export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/utils/supabase/admin'
-import { Banknote, Undo2, ShieldCheck, CheckCircle2, Trophy } from 'lucide-react'
+import { Banknote, Undo2, ShieldCheck, CheckCircle2, Trophy, Wallet, ClipboardList, Users } from 'lucide-react'
 import { formatPrice } from '@/lib/format'
 import { ProcessButton } from './ProcessButton'
 import { AllPaymentsSection, type AllPayment } from './AllPaymentsSection'
+import { RequestsMonitorSection } from './RequestsMonitorSection'
+import { ChefsManagementSection } from './ChefsManagementSection'
+import { AdminTabs } from './AdminTabs'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   'Servicio Único',
@@ -74,9 +77,9 @@ function serviceLabel(r: Released) {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mes?: string; pestado?: string; pmes?: string }>
+  searchParams: Promise<{ mes?: string; pestado?: string; pmes?: string; tab?: string }>
 }) {
-  const { mes, pestado, pmes } = await searchParams
+  const { mes, pestado, pmes, tab } = await searchParams
   const admin = createAdminClient()
 
   // ── Pagos del ciclo completo (visibilidad temprana: todos los estados) ──
@@ -191,13 +194,28 @@ export default async function AdminPage({
         </p>
       </div>
 
-      {/* ── Pagos · ciclo completo (visibilidad temprana) ── */}
-      <AllPaymentsSection
-        payments={allPayments}
-        selectedState={pestado}
-        selectedMonth={pmes}
-      />
-
+      <AdminTabs
+        initialTab={tab}
+        tabs={[
+          {
+            id: 'pagos',
+            label: 'Pagos',
+            icon: <Wallet className="w-4 h-4" />,
+            content: (
+              <AllPaymentsSection
+                payments={allPayments}
+                selectedState={pestado}
+                selectedMonth={pmes}
+              />
+            ),
+          },
+          {
+            id: 'pendientes',
+            label: 'Pendientes',
+            icon: <Banknote className="w-4 h-4" />,
+            badge: payouts.length + refunds.length || undefined,
+            content: (
+              <>
       {/* ── Payouts ── */}
       <section className="mb-12">
         <div className="flex items-center gap-2 mb-4">
@@ -280,9 +298,15 @@ export default async function AdminPage({
           </div>
         )}
       </section>
-
-      {/* ── Pagos liberados ── */}
-      <section className="mt-12 pt-12 border-t border-zinc-200">
+              </>
+            ),
+          },
+          {
+            id: 'liberados',
+            label: 'Liberados',
+            icon: <CheckCircle2 className="w-4 h-4" />,
+            content: (
+      <section>
         <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -292,6 +316,7 @@ export default async function AdminPage({
           </div>
           {monthKeys.length > 0 && (
             <form method="get" className="flex items-center gap-2">
+              <input type="hidden" name="tab" value="liberados" />
               <select
                 name="mes"
                 defaultValue={selectedMonth}
@@ -438,6 +463,22 @@ export default async function AdminPage({
           </>
         )}
       </section>
+            ),
+          },
+          {
+            id: 'solicitudes',
+            label: 'Solicitudes',
+            icon: <ClipboardList className="w-4 h-4" />,
+            content: <RequestsMonitorSection />,
+          },
+          {
+            id: 'chefs',
+            label: 'Chefs',
+            icon: <Users className="w-4 h-4" />,
+            content: <ChefsManagementSection />,
+          },
+        ]}
+      />
     </main>
   )
 }
