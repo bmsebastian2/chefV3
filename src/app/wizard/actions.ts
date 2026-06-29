@@ -8,6 +8,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { WizardData, ClientExtras } from '@/components/wizard/types'
 import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
 import { sendClientEmails, RequestSummary } from '@/lib/emails/client-emails'
+import { canonicalCity } from '@/lib/maps/cities'
 import { TERMS_VERSION } from '@/lib/terms'
 
 // País a persistir en la solicitud. Se deriva del countryCode (ISO) capturado en
@@ -92,11 +93,6 @@ const GUESTS_DISPLAY: Record<string, string> = {
 }
 
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
-
-function normalizeCity(city: string | null | undefined): string | null {
-  if (!city) return null
-  return city.replace(/^\d+\s+/, '').replace(/\s+\d+$/, '').trim() || null
-}
 
 function formatLocalDate(date: Date): string {
   const y = date.getFullYear()
@@ -278,13 +274,17 @@ export async function submitServiceRequest(
     guestsKids   = data.guestsKids  ?? 0
   }
 
+  // Mismo país-fuente para persistir y para canonicalizar la ciudad: ambos lados
+  // del matching (request y chef) guardan el valor canónico del catálogo.
+  const country = resolveCountryName(data.location.countryCode)
+
   const { data: requestId, error } = await supabase.rpc('create_service_request', {
     p_user_id:            userId,
     p_service_type:       SERVICE_TYPE_MAP[data.serviceType ?? ''] ?? 'single',
     p_occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
     p_location:           data.location.name,
-    p_city:               normalizeCity(data.location.city),
-    p_country:            resolveCountryName(data.location.countryCode),
+    p_city:               canonicalCity(data.location.city, country),
+    p_country:            country,
     p_event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
     p_event_date_end:     eventDateEnd,
     p_event_time:         eventTime,
@@ -450,13 +450,15 @@ export async function submitWeeklyRequest(
   const restrictions = data.dietaryRestrictions ?? []
   const raciones     = data.weeklyDetails?.racionesPorComida ?? 1
 
+  const country = resolveCountryName(data.location.countryCode)
+
   const { data: requestId, error } = await supabase.rpc('create_service_request', {
     p_user_id:              userId,
     p_service_type:         'weekly',
     p_occasion:             'other',
     p_location:             data.location.name,
-    p_city:                 normalizeCity(data.location.city),
-    p_country:              resolveCountryName(data.location.countryCode),
+    p_city:                 canonicalCity(data.location.city, country),
+    p_country:              country,
     p_event_date_start:     formatLocalDate(new Date(data.date as unknown as string)),
     p_event_date_end:       null,
     p_event_time:           null,

@@ -28,6 +28,22 @@ export const CITY_ALIASES: Record<string, string> = {
   'puerto cabezas (bilwi)': 'puerto cabezas',
   ometepe: 'moyogalpa',             // isla de Ometepe → su cabecera principal
   'isla de ometepe': 'moyogalpa',
+
+  // Departamento → su cabecera, cuando NO coinciden de nombre. El geocoder a veces
+  // devuelve el departamento en vez de la ciudad; `normalizeCity` ya le quitó el
+  // prefijo "departamento de", así que acá llega la clave pelada del departamento.
+  // Los departamentos homónimos de su capital (managua, leon, granada, masaya,
+  // rivas, esteli, chinandega, matagalpa, jinotega, boaco) NO necesitan alias:
+  // el strip de prefijo los deja en una clave que ya existe en el catálogo.
+  carazo:           'jinotepe',
+  chontales:        'juigalpa',
+  madriz:           'somoto',
+  'nueva segovia':  'ocotal',
+  'rio san juan':   'san carlos',
+  raccn:            'puerto cabezas',   // Caribe Norte → Bilwi/Puerto Cabezas
+  'costa caribe norte': 'puerto cabezas',
+  raccs:            'bluefields',       // Caribe Sur → Bluefields
+  'costa caribe sur':   'bluefields',
 }
 
 /** Una opción de ciudad para selectores: clave normalizada + nombre para mostrar. */
@@ -88,4 +104,31 @@ export function resolveCity(rawCity: string | null | undefined): ResolvedCity | 
   if (aliasKey && CITIES[aliasKey]) return { key: aliasKey, entry: CITIES[aliasKey] }
 
   return null
+}
+
+/**
+ * Valor CANÓNICO de ciudad para PERSISTIR (en `service_requests.city` y
+ * `chef_profiles.city`). Fuente de verdad única del guardado: ambos lados del
+ * matching deben pasar por acá para almacenar lo mismo.
+ *
+ * - País con catálogo (hoy Nicaragua) y ciudad reconocida → nombre de display
+ *   del catálogo ("Managua", "León") — bonito para mostrar y clave exacta al
+ *   normalizar en el matching.
+ * - Sin catálogo o ciudad no reconocida → el valor crudo limpio de dígitos en los
+ *   bordes; el matching lo reduce con `normalizeCity` al comparar (idempotente).
+ *
+ * Devuelve `null` si la entrada queda vacía.
+ */
+export function canonicalCity(
+  rawCity: string | null | undefined,
+  country: string | null | undefined
+): string | null {
+  if (!rawCity) return null
+
+  if (countryHasCatalog(country)) {
+    const resolved = resolveCity(rawCity)
+    if (resolved) return resolved.entry.name
+  }
+
+  return rawCity.replace(/^\d+\s+/, '').replace(/\s+\d+$/, '').trim() || null
 }

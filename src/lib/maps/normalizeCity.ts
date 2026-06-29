@@ -1,9 +1,19 @@
 /**
+ * Prefijos administrativos que el geocoder antepone al nombre real de la ciudad,
+ * p. ej. "Departamento de Managua" / "Ciudad de México" / "Municipio de Tola".
+ * Se quitan para reducir cualquier variante a la clave de la ciudad (su cabecera).
+ * Requiere el " de " posterior, así "Ciudad Sandino" / "Ciudad Darío" (que NO son
+ * prefijos) quedan intactas. El artículo opcional cubre "Departamento de la RACCN".
+ */
+const ADMIN_PREFIX = /^(?:departamento|depto|dpto|municipio|ciudad|provincia|region) de (?:la |el |los |las )?/
+
+/**
  * Normaliza un nombre de ciudad/departamento para usarlo como clave de búsqueda
  * contra `nicaragua-cities.json` (cuyas claves están en minúscula y sin tildes).
  *
  * Pasos: recorta → quita dígitos en los bordes (igual que el wizard, ej. "12 Managua")
- * → minúsculas → descompone y elimina diacríticos (NFD) → colapsa espacios.
+ * → minúsculas → descompone y elimina diacríticos (NFD) → colapsa espacios → quita
+ * prefijos administrativos ("Departamento de", "Ciudad de", "Municipio de"…).
  *
  * Devuelve `null` si la entrada queda vacía, para que el llamador pueda aplicar
  * el fallback "Otras ciudades".
@@ -19,6 +29,8 @@ export function normalizeCity(city: string | null | undefined): string | null {
     .normalize('NFD')              // separa los acentos de sus letras base
     .replace(/[̀-ͯ]/g, '') // elimina los diacríticos combinantes (U+0300–U+036F)
     .replace(/\s+/g, ' ')          // colapsa espacios internos
+    .trim()
+    .replace(ADMIN_PREFIX, '')     // "departamento de managua" → "managua"
     .trim()
 
   return normalized || null

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
+import { canonicalCity } from '@/lib/maps/cities'
 
 export async function saveUbicacion(
   _prev: { error?: string; success?: boolean } | null,
@@ -19,9 +20,13 @@ export async function saveUbicacion(
 
   if (!chef) return { error: 'Perfil de chef no encontrado' }
 
-  const city               = (formData.get('city') as string)?.trim() || null
+  const rawCity            = (formData.get('city') as string)?.trim() || null
   const country            = (formData.get('country') as string)?.trim() || null
   const preferred_language = (formData.get('preferred_language') as string)?.trim() || 'es'
+
+  // Mismo canonicalizador que el request: el chef guarda la ciudad canónica del
+  // catálogo, así el matching compara valores ya canónicos en ambos lados.
+  const city               = canonicalCity(rawCity, country)
 
   // Nota: las ciudades adicionales (additional_cities) se editan en
   // Config. Solicitudes (request-settings), no acá. No se tocan en este save.
