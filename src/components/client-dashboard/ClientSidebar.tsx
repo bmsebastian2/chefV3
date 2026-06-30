@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingBag, HelpCircle, Settings, LogOut, ChevronDown, Menu, X } from "lucide-react";
+import { ShoppingBag, HelpCircle, Settings, ChevronDown, Menu, X } from "lucide-react";
 import { logout } from "@/app/auth/actions";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 export function ClientSidebar() {
   const pathname = usePathname();
@@ -81,16 +82,10 @@ export function ClientSidebar() {
         </Link>
       </nav>
 
-      {/* Footer: Salir */}
+      {/* Footer: Cerrar sesión */}
       <div className="px-4 pb-6 border-t border-zinc-100 pt-3">
         <form action={logout}>
-          <button
-            type="submit"
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
-          >
-            <LogOut className="w-4 h-4 flex-shrink-0" />
-            Salir
-          </button>
+          <LogoutButton className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" />
         </form>
       </div>
     </div>

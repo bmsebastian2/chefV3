@@ -3,9 +3,10 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { logout } from '@/app/auth/actions'
 import { BackLink } from './proposals/BackLink'
+import { LogoutButton } from '@/components/auth/LogoutButton'
 import { formatPrice, formatPriceRange } from '@/lib/format'
 import {
-  LogOut, ArrowLeft, CalendarDays, MapPin,
+  ArrowLeft, CalendarDays, MapPin,
   Users, Utensils, DollarSign, FileText, AlertCircle,
 } from 'lucide-react'
 
@@ -137,10 +138,11 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
         <div className="flex items-center gap-4">
           <span className="text-sm text-zinc-500 hidden sm:block">{name}</span>
           <form action={logout}>
-            <button type="submit" className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900 transition-colors">
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Salir</span>
-            </button>
+            <LogoutButton
+              className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              iconClassName="w-4 h-4"
+              labelClassName="hidden sm:inline"
+            />
           </form>
         </div>
       </header>
