@@ -245,12 +245,14 @@ export function AllPaymentsSection({
             </span>
           </form>
 
-          {/* Tabla (desktop) */}
-          <div className="hidden md:block bg-white border border-zinc-100 rounded-xl shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
+          {/* Tabla (desktop) — scroll horizontal: las columnas mantienen ancho
+              legible (min-w) y se accede al resto deslizando; la 1ª columna
+              (Cliente · Chef) queda fija como ancla de lectura. */}
+          <div className="hidden md:block bg-white border border-zinc-100 rounded-xl shadow-sm overflow-x-auto [-webkit-overflow-scrolling:touch]">
+            <table className="w-full min-w-[960px] text-sm">
               <thead>
                 <tr className="border-b border-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                  <th className="text-left  font-bold px-4 py-3">Cliente · Chef</th>
+                  <th className="text-left  font-bold px-4 py-3 sticky left-0 z-20 bg-white border-r border-zinc-100">Cliente · Chef</th>
                   <th className="text-left  font-bold px-4 py-3">Servicio</th>
                   <th className="text-right font-bold px-4 py-3">Monto</th>
                   <th className="text-right font-bold px-4 py-3">Comisión</th>
@@ -264,7 +266,7 @@ export function AllPaymentsSection({
               <tbody>
                 {rows.map((p) => (
                   <tr key={p.payment_id} className="border-b border-zinc-50 last:border-0">
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 sticky left-0 z-10 bg-white border-r border-zinc-100">
                       <p className="font-semibold text-zinc-900">{p.client_name ?? 'Cliente'}</p>
                       <p className="text-xs text-zinc-400">{p.chef_name ?? '—'}</p>
                     </td>

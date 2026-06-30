@@ -3,7 +3,6 @@
 import { useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { Trash2, X } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { cancelRequest } from './actions'
 
 const REASONS = [
@@ -13,11 +12,16 @@ const REASONS = [
   'Otro motivo',
 ]
 
-export function CancelButton({ requestId }: { requestId: string }) {
+export function CancelButton({
+  requestId,
+  onCancelled,
+}: {
+  requestId: string
+  onCancelled?: (id: string) => void
+}) {
   const [open, setOpen]     = useState(false)
   const [reason, setReason] = useState('')
   const [isPending, startTransition] = useTransition()
-  const router = useRouter()
 
   function handleConfirm() {
     if (!reason) return
@@ -25,7 +29,7 @@ export function CancelButton({ requestId }: { requestId: string }) {
       const result = await cancelRequest(requestId, reason)
       if (!result.error) {
         setOpen(false)
-        router.refresh()
+        onCancelled?.(requestId)
       }
     })
   }
