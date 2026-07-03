@@ -13,6 +13,7 @@
 import { Wallet } from 'lucide-react'
 import { formatPrice } from '@/lib/format'
 import { StateInfoButton } from './StateInfoButton'
+import { InitRefundButton } from './InitRefundButton'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   'Servicio Único',
@@ -25,6 +26,7 @@ export type AllPayment = {
   dlocalgo_payment_id: string | null
   request_id:         string | null
   proposal_id:        string | null
+  booking_id:         string | null
   chef_id:            string | null
   chef_name:          string | null
   client_name:        string | null
@@ -263,6 +265,7 @@ export function AllPaymentsSection({
                   <th className="text-center font-bold px-4 py-3">Confirmó</th>
                   <th className="text-left  font-bold px-4 py-3">Fecha pago</th>
                   <th className="text-left  font-bold px-4 py-3">Espera</th>
+                  <th className="text-right font-bold px-4 py-3">Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -297,6 +300,11 @@ export function AllPaymentsSection({
                     </td>
                     <td className="px-4 py-3 text-zinc-500 whitespace-nowrap">{fmtDate(p.payment_created_at)}</td>
                     <td className="px-4 py-3 text-zinc-400 text-xs whitespace-nowrap">{waitingText(p)}</td>
+                    <td className="px-4 py-3 text-right align-top">
+                      {p.lifecycle_state === 'escrow_held' && p.booking_id
+                        ? <InitRefundButton bookingId={p.booking_id} amount={p.amount} />
+                        : <span className="text-zinc-300">—</span>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -338,6 +346,11 @@ export function AllPaymentsSection({
                     )}
                   </div>
                 </div>
+                {p.lifecycle_state === 'escrow_held' && p.booking_id && (
+                  <div className="mt-3 pt-3 border-t border-zinc-50">
+                    <InitRefundButton bookingId={p.booking_id} amount={p.amount} />
+                  </div>
+                )}
               </div>
             ))}
           </div>

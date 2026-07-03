@@ -26,13 +26,18 @@ type Payout = {
   completed_at:       string
 }
 
-type Refund = {
-  id:            string
-  request_id:    string
-  total_amount:  number | null
-  currency:      string | null
-  cancelled_at:  string | null
-  cancel_reason: string | null
+type PendingRefund = {
+  kind:                'booking' | 'orphan'
+  id:                  string      // booking_id | payment_id
+  request_id:          string | null
+  dlocalgo_payment_id: string | null
+  client_name:         string | null
+  client_email:        string | null
+  amount:              number | null
+  currency:            string | null
+  cancelled_at:        string | null
+  cancel_reason:       string | null
+  created_at:          string | null
 }
 
 type Released = {
@@ -90,14 +95,10 @@ export default async function AdminPage({
   const { data: payoutsRaw } = await admin.rpc('get_releasable_bookings')
   const payouts = (payoutsRaw ?? []) as Payout[]
 
-  // ── Reembolsos pendientes (cancelled + plata todavía retenida) ──
-  const { data: refundsRaw } = await admin
-    .from('bookings')
-    .select('id, request_id, total_amount, currency, cancelled_at, cancel_reason')
-    .eq('booking_status', 'cancelled')
-    .eq('payment_status', 'paid')
-    .order('cancelled_at', { ascending: true })
-  const refunds = (refundsRaw ?? []) as Refund[]
+  // ── Reembolsos pendientes: bookings cancelados con plata retenida + pagos
+  //    huérfanos (completed sin booking). La RPC ya trae identidad del cliente. ──
+  const { data: refundsRaw } = await admin.rpc('get_pending_refunds_admin')
+  const refunds = (refundsRaw ?? []) as PendingRefund[]
 
   // ── Nombres de chefs (para payouts) ──
   const chefIds = [...new Set(payouts.map((p) => p.chef_id))]
@@ -117,22 +118,6 @@ export default async function AdminPage({
       chefNameMap[p.id as string] = u
         ? [u.first_name, u.first_surname].filter(Boolean).join(' ') || 'Chef'
         : 'Chef'
-    }
-  }
-
-  // ── Datos de contacto del cliente (para reembolsos) ──
-  const refundReqIds = [...new Set(refunds.map((r) => r.request_id))]
-  const contactMap: Record<string, { name: string; email: string }> = {}
-  if (refundReqIds.length > 0) {
-    const { data: contacts } = await admin
-      .from('request_contact_info')
-      .select('request_id, full_name, email')
-      .in('request_id', refundReqIds)
-    for (const c of contacts ?? []) {
-      contactMap[c.request_id as string] = {
-        name:  (c.full_name as string) ?? 'Cliente',
-        email: (c.email as string) ?? '',
-      }
     }
   }
 
@@ -248,7 +233,7 @@ export default async function AdminPage({
                     {formatPrice(p.chef_payout_amount)}
                   </p>
                 </div>
-                <ProcessButton bookingId={p.booking_id} kind="payout" />
+                <ProcessButton id={p.booking_id} kind="payout" amount={p.chef_payout_amount} />
               </div>
             ))}
           </div>
@@ -273,28 +258,34 @@ export default async function AdminPage({
           <EmptyCard text="No hay reembolsos pendientes." />
         ) : (
           <div className="space-y-3">
-            {refunds.map((r) => {
-              const contact = contactMap[r.request_id]
-              return (
-                <div key={r.id} className="bg-white border border-zinc-100 rounded-xl shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-zinc-900 text-sm">{contact?.name ?? 'Cliente'}</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      {contact?.email && <>{contact.email} · </>}
-                      Cancelado {fmtDate(r.cancelled_at)}
-                      {r.cancel_reason && <> · {r.cancel_reason}</>}
-                    </p>
+            {refunds.map((r) => (
+              <div key={`${r.kind}-${r.id}`} className="bg-white border border-zinc-100 rounded-xl shadow-sm p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-zinc-900 text-sm">{r.client_name ?? 'Cliente'}</p>
+                    {r.kind === 'orphan' && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                        Sin reserva
+                      </span>
+                    )}
                   </div>
-                  <div className="sm:text-right">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">A reembolsar</p>
-                    <p className="font-serif text-lg font-bold text-amber-700 leading-none">
-                      {r.total_amount != null ? formatPrice(r.total_amount) : '—'}
-                    </p>
-                  </div>
-                  <ProcessButton bookingId={r.id} kind="refund" />
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    {r.client_email && <>{r.client_email} · </>}
+                    {r.kind === 'booking'
+                      ? <>Cancelado {fmtDate(r.cancelled_at)}</>
+                      : <>Pagado {fmtDate(r.created_at)}</>}
+                    {r.cancel_reason && <> · {r.cancel_reason}</>}
+                  </p>
                 </div>
-              )
-            })}
+                <div className="sm:text-right">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">A reembolsar</p>
+                  <p className="font-serif text-lg font-bold text-amber-700 leading-none">
+                    {r.amount != null ? formatPrice(r.amount) : '—'}
+                  </p>
+                </div>
+                <ProcessButton id={r.id} kind={r.kind === 'orphan' ? 'orphan' : 'refund'} amount={r.amount} />
+              </div>
+            ))}
           </div>
         )}
       </section>

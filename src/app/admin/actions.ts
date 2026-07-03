@@ -18,6 +18,18 @@ async function isAdmin(): Promise<boolean> {
   return data?.role === 'admin'
 }
 
+// Igual que isAdmin() pero devuelve el id del admin (para registrarlo como autor de
+// la acción con dinero: refunded_by / cancel). Con service-role auth.uid() es NULL,
+// así que el id se resuelve acá desde la sesión y se pasa explícito a la RPC.
+async function requireAdminId(): Promise<{ adminId?: string; error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autorizado' }
+  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
+  if (data?.role !== 'admin') return { error: 'No autorizado' }
+  return { adminId: user.id }
+}
+
 export async function releasePayout(
   bookingId: string,
   payoutRef?: string,
@@ -41,19 +53,92 @@ export async function releasePayout(
   return {}
 }
 
+// ── Iniciar reembolso: el admin cancela un booking activo → refund_pending ────
+// Genera el "reembolso pendiente" que después se cierra con markRefund. Es la
+// pieza que faltaba: sin esto, dentro de la ventana de 15 días no había forma de
+// pasar un pago retenido a "a reembolsar".
+export async function initRefund(
+  bookingId: string,
+  reason: string,
+): Promise<{ error?: string }> {
+  const { adminId, error: authError } = await requireAdminId()
+  if (authError) return { error: authError }
+
+  const trimmed = reason.trim()
+  if (!trimmed) return { error: 'El motivo es obligatorio' }
+
+  const admin = createAdminClient()
+  const { error } = await admin.rpc('admin_cancel_booking', {
+    p_booking_id: bookingId,
+    p_reason:     trimmed,
+    p_admin_id:   adminId,
+  })
+  if (error) {
+    if (error.message?.includes('cannot_cancel_released_payout')) {
+      return { error: 'El pago ya fue girado al chef; no se puede reembolsar' }
+    }
+    console.error('initRefund:', error)
+    return { error: 'No se pudo iniciar el reembolso' }
+  }
+
+  revalidatePath('/admin')
+  return {}
+}
+
+// ── Cerrar reembolso de un BOOKING (la referencia del giro es obligatoria) ────
 export async function markRefund(
   bookingId: string,
-  refundRef?: string,
+  refundRef: string,
 ): Promise<{ error?: string }> {
-  if (!(await isAdmin())) return { error: 'No autorizado' }
+  const { adminId, error: authError } = await requireAdminId()
+  if (authError) return { error: authError }
+
+  const ref = refundRef.trim()
+  if (!ref) return { error: 'La referencia del giro es obligatoria' }
 
   const admin = createAdminClient()
   const { error } = await admin.rpc('mark_refund_processed', {
     p_booking_id: bookingId,
-    p_refund_ref: refundRef ?? null,
+    p_refund_ref: ref,
+    p_admin_id:   adminId,
   })
   if (error) {
+    if (error.message?.includes('refund_ref_required')) {
+      return { error: 'La referencia del giro es obligatoria' }
+    }
     console.error('markRefund:', error)
+    return { error: 'No se pudo marcar el reembolso' }
+  }
+
+  revalidatePath('/admin')
+  return {}
+}
+
+// ── Cerrar reembolso de un pago HUÉRFANO (completed sin booking) ──────────────
+export async function markOrphanRefund(
+  paymentId: string,
+  refundRef: string,
+): Promise<{ error?: string }> {
+  const { adminId, error: authError } = await requireAdminId()
+  if (authError) return { error: authError }
+
+  const ref = refundRef.trim()
+  if (!ref) return { error: 'La referencia del giro es obligatoria' }
+
+  const admin = createAdminClient()
+  const { error } = await admin.rpc('mark_orphan_payment_refunded', {
+    p_payment_id: paymentId,
+    p_refund_ref: ref,
+    p_admin_id:   adminId,
+  })
+  if (error) {
+    if (error.message?.includes('refund_ref_required')) {
+      return { error: 'La referencia del giro es obligatoria' }
+    }
+    if (error.message?.includes('has booking')) {
+      return { error: 'Este pago tiene reserva; usá el reembolso normal' }
+    }
+    console.error('markOrphanRefund:', error)
     return { error: 'No se pudo marcar el reembolso' }
   }
 
