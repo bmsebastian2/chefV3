@@ -50,6 +50,10 @@ DECLARE
   v_rows    jsonb;
   v_total   integer;
   v_summary jsonb;
+  -- "Activas" no es un solo estado: agrupa todas las solicitudes vivas
+  -- (sin confirmar / abiertas / pagadas en escrow). El filtro 'new' de la UI
+  -- y los agregados del resumen usan este conjunto.
+  v_active  text[] := ARRAY['new', 'active', 'pending', 'pending_confirmation', 'booked'];
 BEGIN
   -- ── Lote paginado de filas que matchean los filtros ──
   SELECT COALESCE(jsonb_agg(to_jsonb(t) ORDER BY t.created_at DESC), '[]'::jsonb)
@@ -79,7 +83,9 @@ BEGIN
       (SELECT count(*) FROM public.proposals p WHERE p.request_id = sr.id)::int AS proposals_count
     FROM public.service_requests sr
     LEFT JOIN public.request_contact_info ci ON ci.request_id = sr.id
-    WHERE (p_status       IS NULL OR p_status       = 'todos' OR sr.status       = p_status)
+    WHERE (p_status       IS NULL OR p_status = 'todos'
+            OR (p_status =  'new' AND sr.status = ANY(v_active))
+            OR (p_status <> 'new' AND sr.status = p_status))
       AND (p_service_type IS NULL OR p_service_type = 'todos' OR sr.service_type = p_service_type)
       AND (p_city         IS NULL OR p_city         = 'todos' OR lower(btrim(sr.city)) = lower(btrim(p_city)))
       AND (p_date_from    IS NULL OR sr.created_at >= p_date_from)
@@ -92,7 +98,9 @@ BEGIN
   SELECT count(*)
   INTO v_total
   FROM public.service_requests sr
-  WHERE (p_status       IS NULL OR p_status       = 'todos' OR sr.status       = p_status)
+  WHERE (p_status       IS NULL OR p_status = 'todos'
+          OR (p_status =  'new' AND sr.status = ANY(v_active))
+          OR (p_status <> 'new' AND sr.status = p_status))
     AND (p_service_type IS NULL OR p_service_type = 'todos' OR sr.service_type = p_service_type)
     AND (p_city         IS NULL OR p_city         = 'todos' OR lower(btrim(sr.city)) = lower(btrim(p_city)))
     AND (p_date_from    IS NULL OR sr.created_at >= p_date_from);
@@ -100,11 +108,11 @@ BEGIN
   -- ── Resumen global (independiente de los filtros) ──
   SELECT jsonb_build_object(
     'total_all', (SELECT count(*) FROM public.service_requests),
-    'active',    (SELECT count(*) FROM public.service_requests WHERE status = 'new'),
+    'active',    (SELECT count(*) FROM public.service_requests WHERE status = ANY(v_active)),
     'without_proposals', (
       SELECT count(*)
       FROM public.service_requests sr2
-      WHERE sr2.status = 'new'
+      WHERE sr2.status = ANY(v_active)
         AND NOT EXISTS (SELECT 1 FROM public.proposals p WHERE p.request_id = sr2.id)
     ),
     'cities', (

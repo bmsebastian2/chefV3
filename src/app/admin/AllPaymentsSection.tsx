@@ -12,6 +12,7 @@
 
 import { Wallet } from 'lucide-react'
 import { formatPrice } from '@/lib/format'
+import { StateInfoButton } from './StateInfoButton'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   'Servicio Único',
@@ -195,6 +196,7 @@ export function AllPaymentsSection({
                     <span className={`inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${stateConf(state).chip}`}>
                       {stateConf(state).label}
                     </span>
+                    <StateInfoButton state={state} />
                   </div>
                   <p className={`font-serif text-xl font-bold leading-none ${
                     tone === 'emerald' ? 'text-emerald-700' : tone === 'blue' ? 'text-blue-700' : tone === 'amber' ? 'text-amber-700' : 'text-zinc-900'
