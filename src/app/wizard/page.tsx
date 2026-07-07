@@ -87,6 +87,22 @@ function parseInitialState(
     if (list.length) data.dietaryRestrictions = ["Sí", ...list];
   }
 
+  // Comidas semanales: sembrar el step de volumen con lo elegido en el asistente
+  // (editable en el stepper). Se clampan a los rangos del wizard.
+  if (service === "3") {
+    const wd: NonNullable<WizardData["weeklyDetails"]> = {};
+    const meals = params.get("meals"); // "4" | "5" | "7"
+    if (meals) {
+      const n = parseInt(meals, 10);
+      if (Number.isFinite(n)) wd.comidasPorSemana = Math.min(14, Math.max(4, n));
+    }
+    if (guests) {
+      const raciones: Record<string, number> = { "2": 2, "3-6": 6, "7-12": 10, "13+": 10 };
+      if (raciones[guests]) wd.racionesPorComida = raciones[guests];
+    }
+    if (Object.keys(wd).length) data.weeklyDetails = wd;
+  }
+
   const weekly = service === "3";
   const step   = service === "1" || service === "2" ? 1 : 0;
 

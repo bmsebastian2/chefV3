@@ -12,30 +12,47 @@ import { cuisineLabel } from "./types";
 import type { AssistantCuisine, MatchResult } from "./types";
 
 // ── Configuración del flujo conversacional ────────────────────────────────────
-type Phase = "occasion" | "cuisine" | "guests" | "dietary" | "results";
+type Phase = "occasion" | "cuisine" | "meals" | "guests" | "dietary" | "results";
 
 type Answers = {
   serviceType: "single" | "weekly" | null;
   wizardService: string | null; // "1" | "3" | null
   occasion: string | null;
   cuisine: string | null;
+  mealsPerWeek: string | null;
   guestsRange: string | null;
   guestsNum: number | null;
   dietary: string[];
 };
 
-const STEPS: { key: Exclude<Phase, "results">; label: string; question: string }[] = [
-  { key: "occasion", label: "Ocasión",    question: "¿Qué ocasión estás imaginando?" },
-  { key: "cuisine",  label: "Cocina",     question: "¿Qué cocina te tienta?" },
-  { key: "guests",   label: "Comensales", question: "¿Cuántos a la mesa?" },
-  { key: "dietary",  label: "Detalles",   question: "¿Alguna preferencia en la cocina?" },
-];
+type Step = { key: Exclude<Phase, "results">; label: string; question: string };
+
+const STEP_DEFS: Record<Exclude<Phase, "results">, Step> = {
+  occasion: { key: "occasion", label: "Ocasión",    question: "¿Qué ocasión estás imaginando?" },
+  cuisine:  { key: "cuisine",  label: "Cocina",     question: "¿Qué cocina te tienta?" },
+  meals:    { key: "meals",    label: "Comidas",    question: "¿Cuántas comidas por semana?" },
+  guests:   { key: "guests",   label: "Comensales", question: "¿Cuántos a la mesa?" },
+  dietary:  { key: "dietary",  label: "Detalles",   question: "¿Alguna preferencia en la cocina?" },
+};
+
+// El flujo semanal cambia "Cocina" (no aplica) por "Comidas por semana".
+const stepsFor = (serviceType: Answers["serviceType"]): Step[] =>
+  serviceType === "weekly"
+    ? [STEP_DEFS.occasion, STEP_DEFS.meals, STEP_DEFS.guests, STEP_DEFS.dietary]
+    : [STEP_DEFS.occasion, STEP_DEFS.cuisine, STEP_DEFS.guests, STEP_DEFS.dietary];
 
 const OCCASION_OPTIONS = [
   { Icon: Heart,        label: "Cena romántica",    desc: "Una noche íntima",        serviceType: "single" as const, wizardService: "1",  occasion: "romantic_dinner" },
   { Icon: PartyPopper,  label: "Evento especial",   desc: "Celebración a lo grande", serviceType: "single" as const, wizardService: "1",  occasion: "corporate" },
   { Icon: CalendarDays, label: "Comidas semanales", desc: "Tu chef cada semana",     serviceType: "weekly" as const, wizardService: "3",  occasion: null },
   { Icon: Compass,      label: "Solo explorar",     desc: "Mostrame opciones",       serviceType: null,              wizardService: null, occasion: null },
+];
+
+const MEALS_OPTIONS = [
+  { label: "4 comidas", sub: "Algunos días",    value: "4" },
+  { label: "5 comidas", sub: "Días de semana",  value: "5" },
+  { label: "7 comidas", sub: "Toda la semana",  value: "7" },
+  { label: "A definir", sub: "Lo vemos juntos", value: null },
 ];
 
 const GUESTS_OPTIONS = [
@@ -55,7 +72,7 @@ const DIETARY_OPTIONS = [
 
 const INITIAL_ANSWERS: Answers = {
   serviceType: null, wizardService: null, occasion: null,
-  cuisine: null, guestsRange: null, guestsNum: null, dietary: [],
+  cuisine: null, mealsPerWeek: null, guestsRange: null, guestsNum: null, dietary: [],
 };
 
 type HistoryEntry = { label: string; answer: string };
@@ -66,13 +83,11 @@ function buildWizardUrl(a: Answers): string {
   if (a.occasion)      p.set("occasion", a.occasion);
   if (a.guestsRange)   p.set("guests", a.guestsRange);
   if (a.cuisine)       p.set("cuisine", a.cuisine);
+  if (a.mealsPerWeek)  p.set("meals", a.mealsPerWeek);
   if (a.dietary.length) p.set("dietary", a.dietary.join(","));
   const qs = p.toString();
   return qs ? `/wizard?${qs}` : "/wizard";
 }
-
-const phaseIndex = (p: Phase) =>
-  p === "results" ? STEPS.length : STEPS.findIndex((s) => s.key === p);
 
 export function ChefAssistant() {
   const [phase, setPhase] = useState<Phase>("occasion");
@@ -119,12 +134,19 @@ export function ChefAssistant() {
     setAnswers((a) => ({ ...a, serviceType: opt.serviceType, wizardService: opt.wizardService, occasion: opt.occasion }));
     pushHistory("Ocasión", opt.label);
     setRevealed(false);
-    setPhase("cuisine");
+    setPhase(opt.serviceType === "weekly" ? "meals" : "cuisine");
   };
 
   const pickCuisine = (value: string | null, label: string) => {
     setAnswers((a) => ({ ...a, cuisine: value }));
     pushHistory("Cocina", label);
+    setRevealed(false);
+    setPhase("guests");
+  };
+
+  const pickMeals = (opt: typeof MEALS_OPTIONS[number]) => {
+    setAnswers((a) => ({ ...a, mealsPerWeek: opt.value }));
+    pushHistory("Comidas", opt.label);
     setRevealed(false);
     setPhase("guests");
   };
@@ -159,7 +181,8 @@ export function ChefAssistant() {
   };
 
   const wizardUrl = buildWizardUrl(answers);
-  const idx = phaseIndex(phase);
+  const steps = stepsFor(answers.serviceType);
+  const idx = phase === "results" ? steps.length : steps.findIndex((s) => s.key === phase);
 
   return (
     <section id="asistente" className="relative overflow-hidden scroll-mt-24 bg-[#FAFAFA] py-24 md:py-32">
@@ -240,7 +263,7 @@ export function ChefAssistant() {
 
             {/* Riel de progreso (carta de degustación) */}
             <div className="flex gap-2.5">
-              {STEPS.map((s, i) => {
+              {steps.map((s, i) => {
                 const done = i < idx;
                 const current = i === idx;
                 return (
@@ -284,7 +307,7 @@ export function ChefAssistant() {
                     {String(idx + 1).padStart(2, "0")}
                   </span>
                   <h3 className="mt-2 font-serif text-3xl font-semibold leading-[1.12] tracking-tight text-zinc-900 md:text-[2.5rem]">
-                    {STEPS[idx].question}
+                    {steps[idx].question}
                     {!revealed && <span className="ca-caret ml-1 inline-block h-7 w-[3px] translate-y-1 bg-accent md:h-9" />}
                   </h3>
                 </div>
@@ -324,6 +347,23 @@ export function ChefAssistant() {
                         <PillButton delay={cuisines.length * 45} onClick={() => pickCuisine(null, "Me da igual")} ghost>
                           <Sparkles className="h-3.5 w-3.5" /> Me da igual
                         </PillButton>
+                      </div>
+                    )}
+
+                    {phase === "meals" && (
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        {MEALS_OPTIONS.map((opt, i) => (
+                          <button
+                            key={opt.label}
+                            type="button"
+                            onClick={() => pickMeals(opt)}
+                            style={{ animationDelay: `${i * 60}ms` }}
+                            className="ca-rise group flex flex-col items-center justify-center gap-1 rounded-2xl border border-zinc-200 bg-white px-3 py-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg hover:shadow-green-500/5"
+                          >
+                            <span className="font-serif text-xl text-zinc-900 transition-colors group-hover:text-accent">{opt.label}</span>
+                            <span className="text-[11px] uppercase tracking-wider text-zinc-400">{opt.sub}</span>
+                          </button>
+                        ))}
                       </div>
                     )}
 
