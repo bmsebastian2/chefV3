@@ -14,6 +14,7 @@ import type { StepProps } from "./types";
 import {
   StepServiceType,
   StepLocation,
+  StepLocationWeekly,
   StepOccasion,
   StepOccasion1,
   StepGuests,
@@ -30,6 +31,14 @@ import {
   StepContact,
   StepContact1,
 } from "./Steps";
+import {
+  WeeklyStepConfirm,
+  WeeklyStepMeals,
+  WeeklyStepSchedule,
+  WeeklyStepGuests,
+  WeeklyStepIngredients,
+  WeeklyStepPreferences,
+} from "./WeeklyFlowSteps";
 
 export interface FlowStep {
   id: string;
@@ -89,13 +98,32 @@ const flowService2: FlowStep[] = [
   { id: "contact",   component: StepContact,        title: "¡Ya está!" },
 ];
 
+// ── Flujo Servicio 3 · Comidas Semanales (orden tronco) ───────────────────────
+// Tronco: tipo → [confirmación de condiciones] → ubicación+CP → [rama fechas:
+// comidas/sem + fecha/día] → personas (raciones) → restricciones →
+// [ingredientes] → preferencias → contacto. Sin paso de presupuesto (budget
+// NULL, como siempre); la confirmación temprana cumple el rol de expectativa
+// de precio. El submit sigue siendo submitWeeklyRequest (ruteado por
+// handleFinalSubmit en page.tsx).
+const flowService3: FlowStep[] = [
+  serviceType,
+  { id: "confirm",     component: WeeklyStepConfirm,     title: "¿Todo claro?" },
+  { id: "location",    component: StepLocationWeekly,    title: "¿Dónde cocinamos?" },
+  { id: "meals",       component: WeeklyStepMeals,       title: "¿Cuántas comidas por semana?" },
+  { id: "schedule",    component: WeeklyStepSchedule,    title: "¿Cuándo empezamos?" },
+  { id: "guests",      component: WeeklyStepGuests,      title: "¿Para cuántas personas?" },
+  dietary,
+  { id: "ingredients", component: WeeklyStepIngredients, title: "Compra de ingredientes" },
+  { id: "details",     component: WeeklyStepPreferences, title: "¿Qué preferís comer?" },
+  { id: "contact",     component: StepContact1,          title: "¡Ya está!" },
+];
+
 // ── Flujo base (todavía sin tipo de servicio elegido) ─────────────────────────
-// El Servicio 3 (semanal) sigue viviendo en WeeklyMealsForm fuera del motor;
-// se incorpora acá en la Etapa 5.
 const baseFlow: FlowStep[] = [serviceType];
 
 export function getStepsForService(service?: string): FlowStep[] {
   if (service === "1") return flowService1;
   if (service === "2") return flowService2;
+  if (service === "3") return flowService3;
   return baseFlow;
 }

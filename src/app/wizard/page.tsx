@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ArrowLeft, X, UtensilsCrossed } from "lucide-react";
 import { WizardData } from "@/components/wizard/types";
 import { getStepsForService } from "@/components/wizard/flows";
-import { WeeklyMealsForm } from "@/components/wizard/WeeklyMealsForm";
 import { WizardSummaryBar } from "@/components/wizard/WizardSummaryBar";
 import { submitServiceRequest, submitWeeklyRequest } from "@/app/wizard/actions";
 import { ClientExtras } from "@/components/wizard/types";
@@ -19,7 +18,7 @@ import { createClient } from "@/utils/supabase/clients";
 // saltando ese primer paso.
 function parseInitialState(
   params: { get(key: string): string | null }
-): { data: WizardData; step: number; weekly: boolean } {
+): { data: WizardData; step: number } {
   const data: WizardData = {};
 
   const name  = params.get("name");
@@ -75,10 +74,11 @@ function parseInitialState(
     if (Object.keys(wd).length) data.weeklyDetails = wd;
   }
 
-  const weekly = service === "3";
-  const step   = service === "1" || service === "2" ? 1 : 0;
+  // Con el tipo ya elegido (venga del asistente o de un link directo), se
+  // arranca saltando el primer paso — los tres servicios viven en el motor.
+  const step = service === "1" || service === "2" || service === "3" ? 1 : 0;
 
-  return { data, step, weekly };
+  return { data, step };
 }
 
 function WizardContent() {
@@ -102,7 +102,6 @@ function WizardContent() {
     return ids;
   }, [initial, data.serviceType]);
   const [submitted, setSubmitted] = useState<false | "active" | "pending">(false);
-  const [showWeeklyForm, setShowWeeklyForm] = useState(initial.weekly);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -128,7 +127,6 @@ function WizardContent() {
   };
 
   const prevStep = () => {
-    if (showWeeklyForm) { setShowWeeklyForm(false); return; }
     if (currentStep > 0) setCurrentStep((p) => p - 1);
   };
 
@@ -142,9 +140,7 @@ function WizardContent() {
     setSubmitted(extras?.isNewUser ? "pending" : "active");
   };
 
-  const handleService3Selected  = () => setShowWeeklyForm(true);
   const handleServiceTypeSelected = () => setCurrentStep(1);
-  const handleWeeklyFormSubmit   = (status: "active" | "pending") => setSubmitted(status);
 
   // ── Success screen ──────────────────────────────────────────────────────────
   if (submitted === "active") {
@@ -253,13 +249,11 @@ function WizardContent() {
   }
 
   const CurrentComponent = stepsObj[currentStep].component;
-  const progressPercent  = showWeeklyForm ? 30 : ((currentStep + 1) / stepsObj.length) * 100;
-  const titleText        = showWeeklyForm ? "Cuéntanos sobre tus comidas semanales" : stepsObj[currentStep].title;
+  const progressPercent  = ((currentStep + 1) / stepsObj.length) * 100;
+  const titleText        = stepsObj[currentStep].title;
 
-  // Resumen progresivo: servicios 1 y 2 en su flujo de pasos; servicio 3 en el form semanal.
-  const showSummary =
-    ((data.serviceType === "1" || data.serviceType === "2") && !showWeeklyForm) ||
-    (data.serviceType === "3" && showWeeklyForm);
+  // Resumen progresivo: persiste hasta el paso final en los tres servicios.
+  const showSummary = !!data.serviceType;
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
@@ -269,7 +263,7 @@ function WizardContent() {
 
         {/* Back */}
         <div className="flex items-center w-1/3">
-          {currentStep > 0 || showWeeklyForm ? (
+          {currentStep > 0 ? (
             <button
               onClick={prevStep}
               className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors text-zinc-500 hover:text-zinc-900 cursor-pointer border-none bg-transparent"
@@ -298,16 +292,9 @@ function WizardContent() {
 
         {/* Step counter + close */}
         <div className="w-1/3 flex justify-end items-center gap-3">
-          {!showWeeklyForm && (
-            <span className="hidden md:inline-flex items-center px-3 py-1 rounded-full bg-zinc-50 border border-zinc-200 text-xs font-bold text-zinc-500 tracking-wider">
-              {currentStep + 1} / {stepsObj.length}
-            </span>
-          )}
-          {showWeeklyForm && (
-            <span className="hidden md:inline text-xs text-zinc-400 font-medium">
-              Comidas Semanales
-            </span>
-          )}
+          <span className="hidden md:inline-flex items-center px-3 py-1 rounded-full bg-zinc-50 border border-zinc-200 text-xs font-bold text-zinc-500 tracking-wider">
+            {currentStep + 1} / {stepsObj.length}
+          </span>
           <Link
             href="/"
             className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-zinc-100 transition-colors text-zinc-400 hover:text-zinc-700"
@@ -337,7 +324,7 @@ function WizardContent() {
 
           <div
             className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
-            key={showWeeklyForm ? "weekly" : currentStep}
+            key={currentStep}
           >
             {/* Title */}
             <div className="text-center mb-12">
@@ -348,22 +335,15 @@ function WizardContent() {
 
           {/* Step component */}
           <div className="w-full">
-            {showWeeklyForm ? (
-              <WeeklyMealsForm data={data} updateData={updateData} onSubmit={handleWeeklyFormSubmit} />
-            ) : (
-              <>
-                <CurrentComponent
-                  data={data}
-                  updateData={updateData}
-                  nextStep={nextStep}
-                  onService3Selected={handleService3Selected}
-                  onServiceTypeSelected={handleServiceTypeSelected}
-                  onFinalSubmit={handleFinalSubmit}
-                />
-                {submitError && (
-                  <p className="text-red-500 text-sm text-center mt-4">{submitError}</p>
-                )}
-              </>
+            <CurrentComponent
+              data={data}
+              updateData={updateData}
+              nextStep={nextStep}
+              onServiceTypeSelected={handleServiceTypeSelected}
+              onFinalSubmit={handleFinalSubmit}
+            />
+            {submitError && (
+              <p className="text-red-500 text-sm text-center mt-4">{submitError}</p>
             )}
           </div>
           </div>
