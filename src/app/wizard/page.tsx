@@ -44,9 +44,9 @@ function parseInitialState(
   if (service)  data.serviceType = service;
   if (occasion) data.occasion    = occasion;
   // Personas: el asistente envía un rango, pero el flujo unificado trabaja con
-  // número exacto (guestsAdults). Se convierte con el mismo representante que
-  // usa GUESTS_RANGE_MAP en el submit, así lo persistido no cambia respecto
-  // del comportamiento anterior del pre-llenado.
+  // número exacto (guestsAdults). Se siembra con el representante histórico de
+  // cada rango (los mismos valores que persistía el flujo viejo), editable en
+  // el wizard.
   const GUESTS_RANGE_SEED: Record<string, number> = { "2": 2, "3-6": 4, "7-12": 9, "13+": 13 };
   if (guests && GUESTS_RANGE_SEED[guests]) data.guestsAdults = GUESTS_RANGE_SEED[guests];
   if (cuisine)  data.cuisine     = cuisine;

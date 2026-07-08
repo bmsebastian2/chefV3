@@ -61,13 +61,6 @@ const BUDGET_MAP: Record<string, { min: number; max: number }> = {
   'exclusive': { min: 315, max: 420 },
 }
 
-const GUESTS_RANGE_MAP: Record<string, number> = {
-  '2':    2,
-  '3-6':  4,
-  '7-12': 9,
-  '13+':  13,
-}
-
 const CUISINE_DISPLAY: Record<string, string> = {
   'local':         'Local',
   'italian':       'Italiana',
@@ -83,13 +76,6 @@ const BUDGET_DISPLAY: Record<string, string> = {
   'casual':    'Casual',
   'gourmet':   'Gourmet',
   'exclusive': 'Exclusivo',
-}
-
-const GUESTS_DISPLAY: Record<string, string> = {
-  '2':    'Pareja (2 personas)',
-  '3-6':  '3 a 6 personas',
-  '7-12': '7 a 12 personas',
-  '13+':  '13 o más personas',
 }
 
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
@@ -251,9 +237,7 @@ export async function submitServiceRequest(
     notasArr.push('Restricciones adicionales — conversar con el chef')
   }
 
-  const guestsAdults = data.guestsRange
-    ? (GUESTS_RANGE_MAP[data.guestsRange] ?? 0)
-    : (data.guestsAdults ?? 0)
+  const guestsAdults = data.guestsAdults ?? 0
 
   const budgetTier = data.budgetTier ? BUDGET_MAP[data.budgetTier] : null
 
@@ -390,13 +374,9 @@ export async function submitServiceRequest(
     fecha:        eventDateStart
                     ? `${(eventDateStart as unknown as Date).getDate()} de ${MONTHS_ES[(eventDateStart as unknown as Date).getMonth()]} de ${(eventDateStart as unknown as Date).getFullYear()}`
                     : undefined,
-    // Rango legado si viene (pre-llenados viejos); si no, el número exacto
-    // que captura el flujo unificado.
-    comensales:   data.guestsRange
-                    ? GUESTS_DISPLAY[data.guestsRange]
-                    : (guestsAdults + guestsTeens + guestsKids) > 0
-                      ? `${guestsAdults + guestsTeens + guestsKids} ${(guestsAdults + guestsTeens + guestsKids) === 1 ? 'persona' : 'personas'}`
-                      : undefined,
+    comensales:   (guestsAdults + guestsTeens + guestsKids) > 0
+                    ? `${guestsAdults + guestsTeens + guestsKids} ${(guestsAdults + guestsTeens + guestsKids) === 1 ? 'persona' : 'personas'}`
+                    : undefined,
     precio:       budgetTier ? `desde $${budgetTier.min} a $${budgetTier.max} USD` : undefined,
     experiencia:  data.budgetTier ? BUDGET_DISPLAY[data.budgetTier] : undefined,
     gastronomia:  data.cuisine ? (CUISINE_DISPLAY[data.cuisine] ?? data.cuisine) : undefined,

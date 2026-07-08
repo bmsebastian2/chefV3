@@ -1108,50 +1108,10 @@ export function StepOccasion1({ data, updateData, nextStep }: StepProps) {
   );
 }
 
-// ── StepGuestsStatic: rangos fijos con precio desde ──────────────────────────
-const GUESTS_OPTIONS = [
-  { value: "2",    label: "2 personas",       price: "$210" },
-  { value: "3-6",  label: "3 a 6 personas",   price: "$189" },
-  { value: "7-12", label: "7 a 12 personas",  price: "$147" },
-  { value: "13+",  label: "13+ personas",     price: "$147" },
-] as const;
-
-export function StepGuestsStatic({ data, updateData, nextStep }: StepProps) {
-  return (
-    <div className="flex flex-col gap-3 max-w-xs mx-auto w-full">
-      <p className="text-center text-zinc-500 text-sm mb-2">
-        La tarifa del chef es fija, por lo que el precio por persona varía según el tamaño del grupo.
-      </p>
-      {GUESTS_OPTIONS.map(({ value, label, price }) => {
-        const active = data.guestsRange === value;
-        return (
-          <button
-            key={value}
-            type="button"
-            onClick={() => { updateData({ guestsRange: value }); nextStep(); }}
-            className={`flex items-center gap-4 px-5 h-16 rounded-xl border transition-all duration-200 ${
-              active ? CARD_ACTIVE : CARD_IDLE
-            }`}
-          >
-            <div className="flex-1 text-left">
-              <span className={`text-sm font-bold block ${active ? "text-zinc-900" : "text-zinc-800"}`}>{label}</span>
-              <span className="text-xs text-zinc-400 font-normal">desde {price} por persona</span>
-            </div>
-            <RadioCircle active={active} />
-          </button>
-        );
-      })}
-      <HintBox />
-    </div>
-  );
-}
-
 // ── StepGuestsCount: contador único de personas (tronco común) ────────────────
-// Reemplaza a StepGuestsStatic en el flujo unificado: guarda el número exacto
-// en guestsAdults (mismo destino guests_adults en la BD, vía el camino
-// data.guestsAdults que el submit ya contempla) en vez del representante del
-// rango. El precio orientativo se calcula con el mismo bracket que usa el
-// paso de presupuesto, para que ambos cuenten la misma historia.
+// Guarda el número exacto en guestsAdults (columna guests_adults). El precio
+// orientativo se calcula con el mismo bracket que usa el paso de presupuesto,
+// para que ambos cuenten la misma historia.
 export function StepGuestsCount({ data, updateData, nextStep }: StepProps) {
   const [count, setCount] = useState(data.guestsAdults ?? 2);
   const basePrice = getBasePrice(guestsRangeKey(count));
@@ -1278,12 +1238,10 @@ function getBudgetOptions(guestsRange: string | undefined) {
 }
 
 export function StepBudgetTier({ data, updateData, nextStep }: StepProps) {
-  // Bracket desde el número exacto de personas (StepGuestsCount). guestsRange
-  // queda como fallback transicional para estados que todavía lo traigan
-  // (p. ej. pre-llenado viejo del asistente).
+  // Bracket desde el número exacto de personas (StepGuestsCount), igual que
+  // en StepBudgetMultiple.
   const totalGuests = (data.guestsAdults ?? 0) + (data.guestsTeens ?? 0) + (data.guestsKids ?? 0);
-  const bracket = totalGuests > 0 ? guestsRangeKey(totalGuests) : data.guestsRange;
-  const budgetOptions = getBudgetOptions(bracket);
+  const budgetOptions = getBudgetOptions(guestsRangeKey(totalGuests));
   return (
     <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
       <p className="text-center text-zinc-500 text-sm mb-2">

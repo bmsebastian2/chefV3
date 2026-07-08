@@ -14,10 +14,6 @@ const OCCASION_LABELS: Record<string, string> = {
   gastronomic: "Aventura gastronómica", other: "Otra",
 };
 
-const GUESTS_LABELS: Record<string, string> = {
-  "2": "2 personas", "3-6": "3–6 personas", "7-12": "7–12 personas", "13+": "13+ personas",
-};
-
 const CUISINE_LABELS: Record<string, string> = {
   local: "Local", italian: "Italiana", mediterranean: "Mediterránea",
   seafood: "Mariscos", french: "Francesa", japanese: "Japonesa",
@@ -98,12 +94,9 @@ export function WizardSummaryBar({ data }: { data: WizardData }) {
       chips.push({ key: "guests", Icon: Users, label: `${total} ${total === 1 ? "persona" : "personas"}` });
     }
   } else {
-    // Servicio 1 — número exacto (flujo unificado), con fallback al rango
-    // por si el estado viene de un pre-llenado viejo.
+    // Servicio 1 — número exacto de personas (flujo unificado)
     if (data.guestsAdults !== undefined)
       chips.push({ key: "guests", Icon: Users, label: `${data.guestsAdults} ${data.guestsAdults === 1 ? "persona" : "personas"}` });
-    else if (data.guestsRange)
-      chips.push({ key: "guests", Icon: Users, label: GUESTS_LABELS[data.guestsRange] ?? data.guestsRange });
 
     if (data.mealTime)
       chips.push({

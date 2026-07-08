@@ -16,9 +16,7 @@ export interface WizardData {
     countryCode?: string;
   };
   occasion?: string;
-  // Service 1 — static guest range
-  guestsRange?: string;       // '2' | '3-6' | '7-12' | '13+'
-  // Service 2 — individual counters
+  // Personas: S1 usa solo guestsAdults (número exacto); S2 desglosa los tres
   guestsAdults?: number;
   guestsTeens?: number;
   guestsKids?: number;
