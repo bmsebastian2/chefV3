@@ -276,7 +276,9 @@ export function StepOccasion({ data, updateData, nextStep }: StepProps) {
   );
 }
 
-export function StepLocation({ data, updateData, nextStep }: StepProps) {
+// withPostal: modo de la rama semanal — agrega el código postal (que persiste
+// en weekly_meal_details.codigo_postal) debajo del buscador de Mapbox.
+export function StepLocation({ data, updateData, nextStep, withPostal }: StepProps & { withPostal?: boolean }) {
   const [query, setQuery] = useState(data.location?.name || "");
   const [results, setResults] = useState<{ place_name: string; center: [number, number]; context?: { id: string; short_code?: string }[] }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -331,8 +333,16 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
     setResults([]);
   };
 
+  const codigoPostal = data.weeklyDetails?.codigoPostal ?? "";
+  const canContinue  = !!data.location?.name && (!withPostal || codigoPostal.length >= 3);
+
+  const handlePostal = (val: string) => {
+    const numeric = val.replace(/\D/g, "").slice(0, 8);
+    updateData({ weeklyDetails: { ...data.weeklyDetails, codigoPostal: numeric } });
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && data.location?.name) {
+    if (e.key === 'Enter' && canContinue) {
       e.preventDefault();
       nextStep();
     }
@@ -386,9 +396,25 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
           </div>
         )}
       </div>
+      {withPostal && (
+        <div className="w-full">
+          <p className="text-[10px] tracking-[0.2em] uppercase text-zinc-400 mb-2.5">Código postal</p>
+          <Input
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            placeholder="Ej: 1425"
+            value={codigoPostal}
+            onChange={(e) => handlePostal(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="h-14 text-base w-full shadow-sm rounded-xl border-zinc-200 focus:border-accent/60 transition-colors"
+          />
+        </div>
+      )}
+
       <Button
         onClick={nextStep}
-        disabled={!data.location?.name}
+        disabled={!canContinue}
         size="lg"
         className={BTN_CONTINUE}
       >
@@ -396,6 +422,11 @@ export function StepLocation({ data, updateData, nextStep }: StepProps) {
       </Button>
     </div>
   );
+}
+
+// Variante de la rama semanal para flows.ts (ubicación Mapbox + código postal)
+export function StepLocationWeekly(props: StepProps) {
+  return <StepLocation {...props} withPostal />;
 }
 
 // ── CounterRow ────────────────────────────────────────────────────────────────

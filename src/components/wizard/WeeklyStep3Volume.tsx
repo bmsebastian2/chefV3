@@ -8,7 +8,7 @@ const COMIDAS_MAX  = 14;
 const RACIONES_MIN = 1;
 const RACIONES_MAX = 10;
 
-function Stepper({
+export function Stepper({
   label,
   value,
   min,

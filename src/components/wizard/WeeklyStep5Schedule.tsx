@@ -9,7 +9,7 @@ import {
 import { es } from "date-fns/locale";
 import { WizardData } from "./types";
 
-const DAYS_OF_WEEK = [
+export const DAYS_OF_WEEK = [
   { id: 1, initial: "L", label: "Lun" },
   { id: 2, initial: "M", label: "Mar" },
   { id: 3, initial: "X", label: "Mié" },
@@ -30,7 +30,7 @@ function ChevronIcon({ dir }: { dir: "left" | "right" }) {
   );
 }
 
-function InlineCalendar({
+export function InlineCalendar({
   selected,
   onSelect,
 }: {
