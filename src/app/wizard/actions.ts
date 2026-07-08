@@ -327,6 +327,15 @@ export async function submitServiceRequest(
     }
   }
 
+  // Origen de la solicitud (medición del piloto asistente-como-entrada)
+  if (data.source) {
+    const { error: sourceError } = await supabase.rpc('set_request_source', {
+      p_request_id: newRequestId,
+      p_source:     data.source,
+    })
+    if (sourceError) console.error('Error setting request source:', sourceError)
+  }
+
   // Presupuesto
   if (budgetTier) {
     const { error: budgetError } = await supabase.rpc('update_request_budget', {
@@ -381,7 +390,13 @@ export async function submitServiceRequest(
     fecha:        eventDateStart
                     ? `${(eventDateStart as unknown as Date).getDate()} de ${MONTHS_ES[(eventDateStart as unknown as Date).getMonth()]} de ${(eventDateStart as unknown as Date).getFullYear()}`
                     : undefined,
-    comensales:   data.guestsRange ? GUESTS_DISPLAY[data.guestsRange] : undefined,
+    // Rango legado si viene (pre-llenados viejos); si no, el número exacto
+    // que captura el flujo unificado.
+    comensales:   data.guestsRange
+                    ? GUESTS_DISPLAY[data.guestsRange]
+                    : (guestsAdults + guestsTeens + guestsKids) > 0
+                      ? `${guestsAdults + guestsTeens + guestsKids} ${(guestsAdults + guestsTeens + guestsKids) === 1 ? 'persona' : 'personas'}`
+                      : undefined,
     precio:       budgetTier ? `desde $${budgetTier.min} a $${budgetTier.max} USD` : undefined,
     experiencia:  data.budgetTier ? BUDGET_DISPLAY[data.budgetTier] : undefined,
     gastronomia:  data.cuisine ? (CUISINE_DISPLAY[data.cuisine] ?? data.cuisine) : undefined,
@@ -493,6 +508,15 @@ export async function submitWeeklyRequest(
       p_request_id: newRequestId,
     })
     if (statusError) console.error('[weekly] Error setting pending status:', statusError)
+  }
+
+  // Origen de la solicitud (medición del piloto asistente-como-entrada)
+  if (data.source) {
+    const { error: sourceError } = await supabase.rpc('set_request_source', {
+      p_request_id: newRequestId,
+      p_source:     data.source,
+    })
+    if (sourceError) console.error('[weekly] Error setting request source:', sourceError)
   }
 
   // Insertar weekly_meal_details (requiere RPC definida arriba)

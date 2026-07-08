@@ -98,8 +98,11 @@ export function WizardSummaryBar({ data }: { data: WizardData }) {
       chips.push({ key: "guests", Icon: Users, label: `${total} ${total === 1 ? "persona" : "personas"}` });
     }
   } else {
-    // Servicio 1
-    if (data.guestsRange)
+    // Servicio 1 — número exacto (flujo unificado), con fallback al rango
+    // por si el estado viene de un pre-llenado viejo.
+    if (data.guestsAdults !== undefined)
+      chips.push({ key: "guests", Icon: Users, label: `${data.guestsAdults} ${data.guestsAdults === 1 ? "persona" : "personas"}` });
+    else if (data.guestsRange)
       chips.push({ key: "guests", Icon: Users, label: GUESTS_LABELS[data.guestsRange] ?? data.guestsRange });
 
     if (data.mealTime)

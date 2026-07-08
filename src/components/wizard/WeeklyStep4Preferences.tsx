@@ -3,13 +3,15 @@
 import { useRef } from "react";
 import { WizardData } from "./types";
 
+// Los ids son los strings exactos que submitWeeklyRequest chequea con includes()
+// para mapear a los booleans de request_restrictions — no cambiar sin tocar ambos.
 const ALERGIAS = [
-  { id: "gluten",       label: "Gluten" },
-  { id: "frutos_secos", label: "Frutos secos" },
-  { id: "lacteos",      label: "Lácteos" },
-  { id: "mariscos",     label: "Mariscos" },
-  { id: "vegetariana",  label: "Vegetariana" },
-  { id: "vegana",       label: "Vegana" },
+  { id: "Gluten",       label: "Gluten" },
+  { id: "Frutos secos", label: "Frutos secos" },
+  { id: "Lácteos",      label: "Lácteos" },
+  { id: "Mariscos",     label: "Mariscos" },
+  { id: "Vegetariana",  label: "Vegetariana" },
+  { id: "Vegana",       label: "Vegana" },
 ];
 
 const INGREDIENTES_OPTS = [

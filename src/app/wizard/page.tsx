@@ -5,49 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, X, UtensilsCrossed } from "lucide-react";
 import { WizardData } from "@/components/wizard/types";
-import { StepServiceType, StepLocation, StepOccasion, StepGuests, StepDateRange, StepMealSlots, StepCuisine, StepDetails, StepContact, StepOccasion1, StepGuestsStatic, StepMealTime, StepDateCalendar, StepBudgetTier, StepBudgetMultiple, StepDietarySimple, StepContact1 } from "@/components/wizard/Steps";
+import { getStepsForService } from "@/components/wizard/flows";
 import { WeeklyMealsForm } from "@/components/wizard/WeeklyMealsForm";
 import { WizardSummaryBar } from "@/components/wizard/WizardSummaryBar";
 import { submitServiceRequest } from "@/app/wizard/actions";
 import { ClientExtras } from "@/components/wizard/types";
 import { createClient } from "@/utils/supabase/clients";
-
-const baseSteps = [
-  { id: "serviceType", component: StepServiceType, title: "¿Qué tipo de servicio de chef necesitas?" },
-];
-
-const stepsService1 = [
-  { id: "serviceType", component: StepServiceType,  title: "¿Qué tipo de servicio de chef necesitas?" },
-  { id: "occasion",    component: StepOccasion1,    title: "¿Cuál es la ocasión?" },
-  { id: "location",    component: StepLocation,     title: "¿Dónde será el evento?" },
-  { id: "guests",      component: StepGuestsStatic, title: "¿Para cuántas personas?" },
-  { id: "mealTime",    component: StepMealTime,     title: "¿A qué hora?" },
-  { id: "cuisine",     component: StepCuisine,      title: "¿Qué te apetece?" },
-  { id: "date",        component: StepDateCalendar, title: "¿Cuándo?" },
-  { id: "budget",      component: StepBudgetTier,   title: "¿Cuál es tu presupuesto para esta experiencia?" },
-  { id: "dietary",     component: StepDietarySimple, title: "¿Alguna restricción alimentaria?" },
-  { id: "details",     component: StepDetails,      title: "Por último, describe tu evento" },
-  { id: "contact",     component: StepContact1,     title: "¡Ya está!" },
-];
-
-const stepsService2 = [
-  { id: "serviceType", component: StepServiceType,    title: "¿Qué tipo de servicio de chef necesitas?" },
-  { id: "occasion",    component: StepOccasion,       title: "¿Cuál es la ocasión?" },
-  { id: "location",    component: StepLocation,       title: "¿Dónde será el evento?" },
-  { id: "dateRange",   component: StepDateRange,      title: "¿Cuándo necesitarás el servicio?" },
-  { id: "mealSlots",   component: StepMealSlots,      title: "Quiero disfrutar del servicio los días" },
-  { id: "guests",      component: StepGuests,         title: "Somos" },
-  { id: "budget",      component: StepBudgetMultiple, title: "¿Cuál es tu presupuesto para esta experiencia?" },
-  { id: "dietary",     component: StepDietarySimple,  title: "¿Alguna restricción alimentaria?" },
-  { id: "details",     component: StepDetails,        title: "Describe tu evento" },
-  { id: "contact",     component: StepContact,        title: "¡Ya está!" },
-];
-
-const getStepsForService = (serviceType?: string) => {
-  if (serviceType === "1") return stepsService1;
-  if (serviceType === "2") return stepsService2;
-  return baseSteps;
-};
 
 // Estado inicial del wizard a partir de los query params.
 // Incluye el contacto (comportamiento previo) y el pre-llenado que envía
@@ -80,8 +43,17 @@ function parseInitialState(
 
   if (service)  data.serviceType = service;
   if (occasion) data.occasion    = occasion;
-  if (guests)   data.guestsRange = guests;
+  // Personas: el asistente envía un rango, pero el flujo unificado trabaja con
+  // número exacto (guestsAdults). Se convierte con el mismo representante que
+  // usa GUESTS_RANGE_MAP en el submit, así lo persistido no cambia respecto
+  // del comportamiento anterior del pre-llenado.
+  const GUESTS_RANGE_SEED: Record<string, number> = { "2": 2, "3-6": 4, "7-12": 9, "13+": 13 };
+  if (guests && GUESTS_RANGE_SEED[guests]) data.guestsAdults = GUESTS_RANGE_SEED[guests];
   if (cuisine)  data.cuisine     = cuisine;
+
+  // Origen para medición: solo aceptamos el valor conocido del piloto para que
+  // la columna quede limpia (no free-text arbitrario desde la URL).
+  if (params.get("source") === "assistant") data.source = "assistant";
   if (dietary) {
     const list = dietary.split(",").map((s) => s.trim()).filter(Boolean);
     if (list.length) data.dietaryRestrictions = ["Sí", ...list];
@@ -122,9 +94,9 @@ function WizardContent() {
   const skipStepIds = useMemo(() => {
     const ids = new Set<string>();
     if (initial.data.occasion)                       ids.add("occasion");
-    // El rango del asistente solo aplica al servicio único (servicio múltiple
-    // usa contadores de invitados distintos), así que solo se saltea ahí.
-    if (initial.data.guestsRange && data.serviceType === "1") ids.add("guests");
+    // Las personas del asistente solo saltean el paso en el servicio único
+    // (el servicio múltiple desglosa adultos/adolescentes/niños).
+    if (initial.data.guestsAdults !== undefined && data.serviceType === "1") ids.add("guests");
     if (initial.data.cuisine)                        ids.add("cuisine");
     if (initial.data.dietaryRestrictions?.length)    ids.add("dietary");
     return ids;

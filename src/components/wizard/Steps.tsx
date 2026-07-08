@@ -631,7 +631,7 @@ export function StepDetails({ data, updateData, nextStep }: StepProps) {
         onChange={(e) => updateData({ details: e.target.value })}
       />
       <Button onClick={nextStep} size="lg" className={BTN_CONTINUE}>
-        Revisar mi Solicitud
+        Continuar
       </Button>
     </div>
   );
@@ -1146,6 +1146,41 @@ export function StepGuestsStatic({ data, updateData, nextStep }: StepProps) {
   );
 }
 
+// ── StepGuestsCount: contador único de personas (tronco común) ────────────────
+// Reemplaza a StepGuestsStatic en el flujo unificado: guarda el número exacto
+// en guestsAdults (mismo destino guests_adults en la BD, vía el camino
+// data.guestsAdults que el submit ya contempla) en vez del representante del
+// rango. El precio orientativo se calcula con el mismo bracket que usa el
+// paso de presupuesto, para que ambos cuenten la misma historia.
+export function StepGuestsCount({ data, updateData, nextStep }: StepProps) {
+  const [count, setCount] = useState(data.guestsAdults ?? 2);
+  const basePrice = getBasePrice(guestsRangeKey(count));
+
+  const handleContinue = () => {
+    updateData({ guestsAdults: count });
+    nextStep();
+  };
+
+  return (
+    <div className="flex flex-col gap-3 max-w-md mx-auto w-full">
+      <p className="text-center text-zinc-500 text-sm mb-2">
+        La tarifa del chef es fija, por lo que el precio por persona varía según el tamaño del grupo.
+      </p>
+      <CounterRow
+        label="Personas"
+        subtitle={`desde $${basePrice} por persona`}
+        value={count} min={1}
+        onDecrement={() => setCount(v => Math.max(1, v - 1))}
+        onIncrement={() => setCount(v => v + 1)}
+      />
+      <Button onClick={handleContinue} size="lg" className={BTN_CONTINUE + " mt-2"}>
+        Continuar
+      </Button>
+      <HintBox />
+    </div>
+  );
+}
+
 // ── StepMealTime: Comida / Cena ───────────────────────────────────────────────
 export function StepMealTime({ data, updateData, nextStep }: StepProps) {
   const options = [
@@ -1243,7 +1278,12 @@ function getBudgetOptions(guestsRange: string | undefined) {
 }
 
 export function StepBudgetTier({ data, updateData, nextStep }: StepProps) {
-  const budgetOptions = getBudgetOptions(data.guestsRange);
+  // Bracket desde el número exacto de personas (StepGuestsCount). guestsRange
+  // queda como fallback transicional para estados que todavía lo traigan
+  // (p. ej. pre-llenado viejo del asistente).
+  const totalGuests = (data.guestsAdults ?? 0) + (data.guestsTeens ?? 0) + (data.guestsKids ?? 0);
+  const bracket = totalGuests > 0 ? guestsRangeKey(totalGuests) : data.guestsRange;
+  const budgetOptions = getBudgetOptions(bracket);
   return (
     <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
       <p className="text-center text-zinc-500 text-sm mb-2">
