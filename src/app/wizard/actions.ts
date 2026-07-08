@@ -465,13 +465,17 @@ export async function submitWeeklyRequest(
     p_contact_name:         data.contact.name,
     p_contact_email:        data.contact.email,
     p_contact_phone:        data.contact.phone ?? null,
+    // Acepta las dos variantes de cada valor: las de WeeklyStep4Preferences
+    // ('Mariscos', 'Frutos secos') y las de StepDietarySimple ('Marisco',
+    // 'Frutos Secos'), para que el semanal pueda migrar al paso del tronco
+    // sin perder restricciones.
     p_vegetariano:          restrictions.includes('Vegetariana') || restrictions.includes('Vegetariano'),
     p_vegano:               restrictions.includes('Vegano')      || restrictions.includes('Vegana'),
     p_sin_gluten:           restrictions.includes('Gluten'),
     p_sin_lactosa:          restrictions.includes('Lácteos'),
-    p_sin_mariscos:         restrictions.includes('Mariscos'),
-    p_sin_frutos_secos:     restrictions.includes('Frutos secos'),
-    p_alergias_adicionales: null,
+    p_sin_mariscos:         restrictions.includes('Mariscos')     || restrictions.includes('Marisco'),
+    p_sin_frutos_secos:     restrictions.includes('Frutos secos') || restrictions.includes('Frutos Secos'),
+    p_alergias_adicionales: data.dietaryOtras?.trim() || null,
     p_notas_adicionales:    null,
   })
 
@@ -517,7 +521,8 @@ export async function submitWeeklyRequest(
     lugar:         data.location.name,
     fecha:         `${eventDate.getDate()} de ${MONTHS_ES[eventDate.getMonth()]} de ${eventDate.getFullYear()}`,
     comensales:    `${raciones} ${raciones === 1 ? 'persona' : 'personas'}`,
-    restricciones: restrictions.length > 0 ? restrictions.join(', ') : 'No',
+    // Sin los centinelas "Sí"/"Ninguna" que agrega StepDietarySimple
+    restricciones: restrictions.filter((r) => r !== 'Sí' && r !== 'Ninguna').join(', ') || 'No',
     notas:         data.weeklyDetails?.preferenciasCulinarias ?? undefined,
   }
 

@@ -8,7 +8,7 @@ import { WizardData } from "@/components/wizard/types";
 import { getStepsForService } from "@/components/wizard/flows";
 import { WeeklyMealsForm } from "@/components/wizard/WeeklyMealsForm";
 import { WizardSummaryBar } from "@/components/wizard/WizardSummaryBar";
-import { submitServiceRequest } from "@/app/wizard/actions";
+import { submitServiceRequest, submitWeeklyRequest } from "@/app/wizard/actions";
 import { ClientExtras } from "@/components/wizard/types";
 import { createClient } from "@/utils/supabase/clients";
 
@@ -134,7 +134,10 @@ function WizardContent() {
 
   const handleFinalSubmit = async (userId: string, extras?: ClientExtras) => {
     setSubmitError(null);
-    const result = await submitServiceRequest(data, userId, extras);
+    // El semanal tiene su propio submit (weekly_meal_details); los servicios
+    // de evento comparten submitServiceRequest. Mismo contacto para los tres.
+    const submit = data.serviceType === "3" ? submitWeeklyRequest : submitServiceRequest;
+    const result = await submit(data, userId, extras);
     if (result.error) { setSubmitError(result.error); return; }
     setSubmitted(extras?.isNewUser ? "pending" : "active");
   };
