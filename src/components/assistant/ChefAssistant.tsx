@@ -5,89 +5,15 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ChefHat, Sparkles, ArrowRight, ArrowUpRight, RotateCcw, Star, MapPin, Check,
-  Heart, PartyPopper, CalendarDays, Compass,
 } from "lucide-react";
 import { getAssistantCuisines, matchChefs } from "./actions";
 import { cuisineLabel } from "./types";
 import type { AssistantCuisine, MatchResult } from "./types";
-
-// ── Configuración del flujo conversacional ────────────────────────────────────
-type Phase = "occasion" | "cuisine" | "meals" | "guests" | "dietary" | "results";
-
-type Answers = {
-  serviceType: "single" | "weekly" | null;
-  wizardService: string | null; // "1" | "3" | null
-  occasion: string | null;
-  cuisine: string | null;
-  mealsPerWeek: string | null;
-  guestsRange: string | null;
-  guestsNum: number | null;
-  dietary: string[];
-};
-
-type Step = { key: Exclude<Phase, "results">; label: string; question: string };
-
-const STEP_DEFS: Record<Exclude<Phase, "results">, Step> = {
-  occasion: { key: "occasion", label: "Ocasión",    question: "¿Qué ocasión estás imaginando?" },
-  cuisine:  { key: "cuisine",  label: "Cocina",     question: "¿Qué cocina te tienta?" },
-  meals:    { key: "meals",    label: "Comidas",    question: "¿Cuántas comidas por semana?" },
-  guests:   { key: "guests",   label: "Comensales", question: "¿Cuántos a la mesa?" },
-  dietary:  { key: "dietary",  label: "Detalles",   question: "¿Alguna preferencia en la cocina?" },
-};
-
-// El flujo semanal cambia "Cocina" (no aplica) por "Comidas por semana".
-const stepsFor = (serviceType: Answers["serviceType"]): Step[] =>
-  serviceType === "weekly"
-    ? [STEP_DEFS.occasion, STEP_DEFS.meals, STEP_DEFS.guests, STEP_DEFS.dietary]
-    : [STEP_DEFS.occasion, STEP_DEFS.cuisine, STEP_DEFS.guests, STEP_DEFS.dietary];
-
-const OCCASION_OPTIONS = [
-  { Icon: Heart,        label: "Cena romántica",    desc: "Una noche íntima",        serviceType: "single" as const, wizardService: "1",  occasion: "romantic_dinner" },
-  { Icon: PartyPopper,  label: "Evento especial",   desc: "Celebración a lo grande", serviceType: "single" as const, wizardService: "1",  occasion: "corporate" },
-  { Icon: CalendarDays, label: "Comidas semanales", desc: "Tu chef cada semana",     serviceType: "weekly" as const, wizardService: "3",  occasion: null },
-  { Icon: Compass,      label: "Solo explorar",     desc: "Mostrame opciones",       serviceType: null,              wizardService: null, occasion: null },
-];
-
-const MEALS_OPTIONS = [
-  { label: "4 comidas", sub: "Algunos días",    value: "4" },
-  { label: "5 comidas", sub: "Días de semana",  value: "5" },
-  { label: "7 comidas", sub: "Toda la semana",  value: "7" },
-  { label: "A definir", sub: "Lo vemos juntos", value: null },
-];
-
-const GUESTS_OPTIONS = [
-  { label: "Solo 2",   sub: "Pareja",      range: "2",    num: 2 },
-  { label: "3 a 6",    sub: "Mesa chica",  range: "3-6",  num: 6 },
-  { label: "7 a 12",   sub: "Reunión",     range: "7-12", num: 12 },
-  { label: "13 o más", sub: "Gran evento", range: "13+",  num: 13 },
-];
-
-// chip del asistente → valor de restricción que entiende el wizard
-const DIETARY_OPTIONS = [
-  { label: "Vegetariano", value: "Vegetariano" },
-  { label: "Vegano",      value: "Vegano" },
-  { label: "Sin gluten",  value: "Gluten" },
-  { label: "Sin lactosa", value: "Lácteos" },
-];
-
-const INITIAL_ANSWERS: Answers = {
-  serviceType: null, wizardService: null, occasion: null,
-  cuisine: null, mealsPerWeek: null, guestsRange: null, guestsNum: null, dietary: [],
-};
-
-type HistoryEntry = { label: string; answer: string };
-
-function buildWizardUrl(a: Answers): string {
-  const p = new URLSearchParams();
-  if (a.wizardService) p.set("service", a.wizardService);
-  if (a.occasion)      p.set("occasion", a.occasion);
-  if (a.guestsRange)   p.set("guests", a.guestsRange);
-  if (a.cuisine)       p.set("cuisine", a.cuisine);
-  if (a.mealsPerWeek)  p.set("meals", a.mealsPerWeek);
-  if (a.dietary.length) p.set("dietary", a.dietary.join(","));
-  const qs = p.toString();
-  return qs ? `/wizard?${qs}` : "/wizard";
-}
+import {
+  stepsFor, OCCASION_OPTIONS, MEALS_OPTIONS, GUESTS_OPTIONS,
+  DIETARY_OPTIONS, INITIAL_ANSWERS, buildWizardUrl,
+} from "./flow";
+import type { Answers, Phase, HistoryEntry } from "./flow";
 
 export function ChefAssistant() {
   const [phase, setPhase] = useState<Phase>("occasion");

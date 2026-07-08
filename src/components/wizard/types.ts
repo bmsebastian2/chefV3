@@ -35,6 +35,8 @@ export interface WizardData {
   dietaryOtras?: string;
   mealSlots?: MealSlot[];
   details?: string;
+  // Origen de la solicitud para medición del piloto ('assistant' | undefined)
+  source?: string;
   weeklyDetails?: {
     codigoPostal?: string;
     comidasPorSemana?: number;

@@ -102,7 +102,7 @@ export function Hero() {
               className="hero-anim flex flex-col sm:flex-row gap-4 items-stretch sm:items-center"
               style={{ animationDelay: "360ms" }}
             >
-              <Link href="/wizard" className="w-full sm:w-auto">
+              <Link href="/asistente" className="w-full sm:w-auto">
                 <Button
                   size="lg"
                   className="group/cta relative w-full sm:w-auto overflow-hidden rounded-full border-none bg-accent text-white h-12 px-8 text-base font-medium shadow-xl shadow-green-500/25 ring-1 ring-inset ring-white/10 transform-gpu transition-all duration-300 ease-out hover:bg-green-600 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-green-500/40"
