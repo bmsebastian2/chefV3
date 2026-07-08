@@ -73,7 +73,9 @@ const flowService1: FlowStep[] = [
   { id: "contact",  component: StepContact1,     title: "¡Ya está!" },
 ];
 
-// ── Flujo Servicio 2 · Varios Servicios ───────────────────────────────────────
+// ── Flujo Servicio 2 · Varios Servicios (orden tronco) ────────────────────────
+// Tronco: tipo → ocasión → ubicación → [rama fechas: rango + slots] →
+// personas → restricciones → descripción → presupuesto → contacto.
 const flowService2: FlowStep[] = [
   serviceType,
   { id: "occasion",  component: StepOccasion,       title: "¿Cuál es la ocasión?" },
@@ -81,9 +83,9 @@ const flowService2: FlowStep[] = [
   { id: "dateRange", component: StepDateRange,      title: "¿Cuándo necesitarás el servicio?" },
   { id: "mealSlots", component: StepMealSlots,      title: "Quiero disfrutar del servicio los días" },
   { id: "guests",    component: StepGuests,         title: "Somos" },
-  { id: "budget",    component: StepBudgetMultiple, title: "¿Cuál es tu presupuesto para esta experiencia?" },
   dietary,
   { id: "details",   component: StepDetails,        title: "Describe tu evento" },
+  { id: "budget",    component: StepBudgetMultiple, title: "¿Cuál es tu presupuesto para esta experiencia?" },
   { id: "contact",   component: StepContact,        title: "¡Ya está!" },
 ];
 
