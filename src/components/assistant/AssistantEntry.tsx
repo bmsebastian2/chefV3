@@ -423,6 +423,17 @@ export function AssistantEntry() {
             )}
           </div>
         </div>
+
+        {/* Escape hatch: solicitar sin asistente (para usuarios apurados) */}
+        <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-zinc-400">
+          ¿Preferís el formulario directo?{" "}
+          <Link
+            href="/wizard"
+            className="font-medium text-zinc-600 underline underline-offset-2 transition-colors hover:text-zinc-900"
+          >
+            Completá tu solicitud sin asistente
+          </Link>
+        </p>
       </div>
     </section>
   );

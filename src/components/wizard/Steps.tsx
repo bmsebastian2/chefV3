@@ -1205,9 +1205,13 @@ export function StepMealTime({ data, updateData, nextStep }: StepProps) {
 
 // ── StepDateCalendar: calendario inline ───────────────────────────────────────
 export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
+  // Un mes a la vez: desde el mes actual hasta 6 meses adelante.
+  const now = new Date();
+  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endMonth = new Date(now.getFullYear(), now.getMonth() + 6, 1);
   return (
-    <div className="flex flex-col gap-4 items-center max-w-4xl mx-auto w-full">
-      <div className="w-full border border-zinc-200 rounded-2xl overflow-x-auto bg-white p-4 shadow-sm">
+    <div className="flex flex-col gap-4 items-center max-w-sm mx-auto w-full">
+      <div className="w-full border border-zinc-200 rounded-2xl bg-white p-4 shadow-sm">
         <Calendar
           mode="single"
           selected={data.date}
@@ -1224,7 +1228,9 @@ export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
             return new Date(date.getFullYear(), date.getMonth(), date.getDate()) <=
               new Date(today.getFullYear(), today.getMonth(), today.getDate());
           }}
-          numberOfMonths={3}
+          numberOfMonths={1}
+          startMonth={startMonth}
+          endMonth={endMonth}
           locale={esRDP}
           className="mx-auto"
           classNames={{ day_button: "cursor-pointer" }}
