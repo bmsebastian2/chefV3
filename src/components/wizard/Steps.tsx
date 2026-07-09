@@ -156,7 +156,7 @@ function IconWeekly() {
   );
 }
 
-export function StepServiceType({ data, updateData, nextStep, onService3Selected, onServiceTypeSelected }: StepProps) {
+export function StepServiceType({ data, updateData, nextStep, onServiceTypeSelected }: StepProps) {
   const options = [
     {
       id: 1,
@@ -180,9 +180,7 @@ export function StepServiceType({ data, updateData, nextStep, onService3Selected
 
   const handleSelectService = (id: number) => {
     updateData({ serviceType: id.toString() });
-    if (id === 3 && onService3Selected) {
-      onService3Selected();
-    } else if (onServiceTypeSelected) {
+    if (onServiceTypeSelected) {
       onServiceTypeSelected(id.toString());
     } else {
       nextStep();

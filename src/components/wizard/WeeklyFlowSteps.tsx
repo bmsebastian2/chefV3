@@ -12,9 +12,197 @@
 //   date → event_date_start · racionesPorComida además → guests_adults
 
 import { useState } from "react";
+import {
+  format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  eachDayOfInterval, isSameMonth, isSameDay, isToday,
+  isBefore, startOfDay, addMonths, subMonths,
+} from "date-fns";
+import { es } from "date-fns/locale";
 import { StepProps } from "./types";
-import { Stepper } from "./WeeklyStep3Volume";
-import { InlineCalendar, DAYS_OF_WEEK } from "./WeeklyStep5Schedule";
+
+// ── Piezas heredadas del flujo semanal viejo (WeeklyStep3Volume/5Schedule) ────
+
+function Stepper({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+}) {
+  const [dir, setDir]         = useState<"up" | "down">("up");
+  const [animKey, setAnimKey] = useState(0);
+
+  const step = (delta: 1 | -1) => {
+    const next = value + delta;
+    if (next < min || next > max) return;
+    setDir(delta === 1 ? "up" : "down");
+    setAnimKey((k) => k + 1);
+    onChange(next);
+  };
+
+  return (
+    <div>
+      <p className="text-[10px] tracking-[0.2em] uppercase text-zinc-400 mb-5">{label}</p>
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => step(-1)}
+          disabled={value <= min}
+          aria-label="Disminuir"
+          className="w-14 h-14 rounded-full bg-zinc-100 hover:bg-zinc-200 active:scale-95 flex items-center justify-center text-2xl text-zinc-600 transition-all duration-150 disabled:opacity-25 disabled:cursor-not-allowed select-none"
+        >
+          −
+        </button>
+
+        <div className="flex-1 flex justify-center items-center overflow-hidden h-[72px]">
+          <span
+            key={animKey}
+            className={`font-serif text-6xl text-zinc-900 leading-none animate-in duration-200 ${
+              dir === "up"
+                ? "slide-in-from-bottom-2 fade-in"
+                : "slide-in-from-top-2 fade-in"
+            }`}
+          >
+            {value}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => step(1)}
+          disabled={value >= max}
+          aria-label="Aumentar"
+          className="w-14 h-14 rounded-full bg-zinc-100 hover:bg-zinc-200 active:scale-95 flex items-center justify-center text-2xl text-zinc-600 transition-all duration-150 disabled:opacity-25 disabled:cursor-not-allowed select-none"
+        >
+          +
+        </button>
+      </div>
+      <p className="text-[10px] text-zinc-400 text-center mt-2 tabular-nums">
+        {min} – {max}
+      </p>
+    </div>
+  );
+}
+
+const DAYS_OF_WEEK = [
+  { id: 1, initial: "L", label: "Lun" },
+  { id: 2, initial: "M", label: "Mar" },
+  { id: 3, initial: "X", label: "Mié" },
+  { id: 4, initial: "J", label: "Jue" },
+  { id: 5, initial: "V", label: "Vie" },
+  { id: 6, initial: "S", label: "Sáb" },
+  { id: 7, initial: "D", label: "Dom" },
+];
+
+const DAY_HEADERS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
+
+function NavChevron({ dir }: { dir: "left" | "right" }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points={dir === "left" ? "15 18 9 12 15 6" : "9 18 15 12 9 6"} />
+    </svg>
+  );
+}
+
+function InlineCalendar({
+  selected,
+  onSelect,
+}: {
+  selected?: Date;
+  onSelect: (d: Date) => void;
+}) {
+  const [currentMonth, setCurrentMonth] = useState<Date>(
+    selected ?? new Date()
+  );
+  const today = startOfDay(new Date());
+
+  const days = eachDayOfInterval({
+    start: startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 }),
+    end: endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 }),
+  });
+
+  const canGoPrev = !isBefore(
+    startOfMonth(subMonths(currentMonth, 1)),
+    startOfMonth(new Date())
+  );
+
+  return (
+    <div className="w-full">
+      {/* Navegación de mes */}
+      <div className="flex items-center justify-between mb-5">
+        <button
+          type="button"
+          onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
+          disabled={!canGoPrev}
+          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 text-zinc-500 transition-colors duration-150 disabled:opacity-25 disabled:cursor-not-allowed"
+        >
+          <NavChevron dir="left" />
+        </button>
+
+        <span className="text-sm font-semibold text-zinc-900 capitalize">
+          {format(currentMonth, "MMMM yyyy", { locale: es })}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
+          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-100 text-zinc-500 transition-colors duration-150"
+        >
+          <NavChevron dir="right" />
+        </button>
+      </div>
+
+      {/* Cabeceras de día */}
+      <div className="grid grid-cols-7 mb-2">
+        {DAY_HEADERS.map((h) => (
+          <div key={h} className="text-center text-[10px] text-zinc-400 pb-1">
+            {h}
+          </div>
+        ))}
+      </div>
+
+      {/* Grilla de días */}
+      <div className="grid grid-cols-7 gap-y-1">
+        {days.map((day, idx) => {
+          const inMonth  = isSameMonth(day, currentMonth);
+          const isPast   = isBefore(day, today);
+          const isSelDay = selected ? isSameDay(day, selected) : false;
+          const isTodayD = isToday(day);
+
+          if (!inMonth) return <div key={idx} className="h-9" />;
+
+          return (
+            <button
+              key={idx}
+              type="button"
+              disabled={isPast}
+              onClick={() => onSelect(day)}
+              className={[
+                "h-9 w-full flex items-center justify-center rounded-full text-sm transition-all duration-100 select-none",
+                isPast
+                  ? "text-zinc-300 cursor-not-allowed"
+                  : isSelDay
+                  ? "bg-zinc-900 text-white font-medium"
+                  : isTodayD
+                  ? "text-accent font-semibold hover:bg-zinc-100"
+                  : "text-zinc-700 hover:bg-zinc-100",
+              ].join(" ")}
+            >
+              {format(day, "d")}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 const BTN_NEXT =
   "w-full h-14 bg-zinc-900 hover:bg-zinc-800 text-white text-sm font-semibold rounded-xl transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed";

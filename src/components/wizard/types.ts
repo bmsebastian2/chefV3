@@ -63,7 +63,6 @@ export interface StepProps {
   data: WizardData;
   updateData: (updates: Partial<WizardData>) => void;
   nextStep: () => void;
-  onService3Selected?: () => void;
   onServiceTypeSelected?: (serviceType: string) => void;
   onFinalSubmit?: (userId: string, extras?: ClientExtras) => Promise<void>;
 }
