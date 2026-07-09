@@ -28,7 +28,7 @@ export const STEP_DEFS: Record<Exclude<Phase, "results">, Step> = {
   cuisine:  { key: "cuisine",  label: "Cocina",     question: "¿Qué cocina te tienta?" },
   meals:    { key: "meals",    label: "Comidas",    question: "¿Cuántas comidas por semana?" },
   guests:   { key: "guests",   label: "Comensales", question: "¿Cuántos a la mesa?" },
-  dietary:  { key: "dietary",  label: "Detalles",   question: "¿Alguna preferencia en la cocina?" },
+  dietary:  { key: "dietary",  label: "Detalles",   question: "¿Alguna restricción alimentaria?" },
 };
 
 // El flujo semanal cambia "Cocina" (no aplica) por "Comidas por semana".

@@ -51,7 +51,7 @@ const QUESTIONS: Record<EntryStep, string> = {
   cuisine:  "¿Qué cocina te tienta?",
   meals:    "¿Cuántas comidas por semana?",
   guests:   "¿Cuántos a la mesa?",
-  dietary:  "¿Alguna preferencia en la cocina?",
+  dietary:  "¿Alguna restricción alimentaria?",
 };
 
 export function AssistantEntry() {
@@ -137,7 +137,7 @@ export function AssistantEntry() {
   const confirmDietary = () => {
     const labels = DIETARY_OPTIONS.filter((o) => dietarySel.includes(o.value)).map((o) => o.label);
     setAnswers((a) => ({ ...a, dietary: dietarySel }));
-    pushHistory("Preferencias", labels.length ? labels.join(", ") : "Sin restricciones");
+    pushHistory("Restricciones", labels.length ? labels.join(", ") : "Sin restricciones");
     setSearching(true);
     setCount(null);
     setPhase("results");

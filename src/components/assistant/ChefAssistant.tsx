@@ -90,7 +90,7 @@ export function ChefAssistant() {
   const confirmDietary = () => {
     const labels = DIETARY_OPTIONS.filter((o) => dietarySel.includes(o.value)).map((o) => o.label);
     setAnswers((a) => ({ ...a, dietary: dietarySel }));
-    pushHistory("Preferencias", labels.length ? labels.join(", ") : "Sin restricciones");
+    pushHistory("Restricciones", labels.length ? labels.join(", ") : "Sin restricciones");
     setSearching(true);
     setResult(null);
     setPhase("results");
