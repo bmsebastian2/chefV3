@@ -12,19 +12,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, RotateCcw, ChefHat, Sparkles, ArrowRight, Check,
+  ArrowLeft, RotateCcw, ChefHat, Sparkles, ArrowRight, Check, Plus,
 } from "lucide-react";
 import { getAssistantCuisines, matchChefs } from "./actions";
+import { CUISINE_LABELS } from "./types";
 import type { AssistantCuisine } from "./types";
 import {
-  INITIAL_ANSWERS, SERVICE_OPTIONS, OCCASION_OPTIONS, MEALS_OPTIONS,
-  GUESTS_OPTIONS, DIETARY_OPTIONS, buildWizardUrl,
+  INITIAL_ANSWERS, SERVICE_OPTIONS, OCCASION_CHIPS, OCCASION_CHIPS_MORE,
+  MEALS_OPTIONS, GUESTS_OPTIONS, DIETARY_OPTIONS, buildWizardUrl,
 } from "./flow";
 import type { Answers, HistoryEntry } from "./flow";
-
-// La ocasión aplica solo a la rama de evento único; acá las cards son solo
-// ocasión (el tipo de servicio ya se eligió en el paso anterior).
-const SINGLE_OCCASIONS = OCCASION_OPTIONS.filter((o) => o.serviceType === "single");
 
 // Orden de la conversación según servicio elegido. "results" es el beat de confianza.
 type EntryStep = "service" | "occasion" | "cuisine" | "meals" | "guests" | "dietary";
@@ -43,6 +40,10 @@ const STEP_LABELS: Record<EntryStep, string> = {
   guests:   "Comensales",
   dietary:  "Detalles",
 };
+
+// Cocinas visibles antes de "Más cocinas": llegan ordenadas por nº de chefs,
+// así que las frecuentes ya están primero.
+const CUISINES_VISIBLE = 4;
 
 const QUESTIONS: Record<EntryStep, string> = {
   service:  "¿Qué tipo de servicio buscás?",
@@ -63,6 +64,9 @@ export function AssistantEntry() {
   const [searching, setSearching] = useState(false);
   const [count, setCount] = useState<number | null>(null);
   const [occasionLabel, setOccasionLabel] = useState<string>("");
+  const [moreOccasions, setMoreOccasions] = useState(false);
+  const [customOccasion, setCustomOccasion] = useState("");
+  const [moreCuisines, setMoreCuisines] = useState(false);
 
   useEffect(() => {
     getAssistantCuisines().then(setCuisines).catch(() => setCuisines([]));
@@ -70,6 +74,17 @@ export function AssistantEntry() {
 
   const pushHistory = (label: string, answer: string) =>
     setHistory((h) => [...h, { label, answer }]);
+
+  // Catálogo completo de cocinas: primero las que tienen chefs activos
+  // (llegan de la RPC ordenadas por cantidad), después el resto del catálogo,
+  // que solo se ve al desplegar "Más cocinas". Elegir una sin chefs es válido:
+  // match_chefs relaja el filtro automáticamente.
+  const allCuisines: AssistantCuisine[] = [
+    ...cuisines,
+    ...Object.entries(CUISINE_LABELS)
+      .filter(([value]) => !cuisines.some((c) => c.value === value))
+      .map(([value, label]) => ({ value, label, count: 0 })),
+  ];
 
   const pickService = (opt: (typeof SERVICE_OPTIONS)[number]) => {
     // "Varios días" aún no tiene conversación propia: entrega directo al wizard.
@@ -82,14 +97,19 @@ export function AssistantEntry() {
     setAnswers({ ...INITIAL_ANSWERS, serviceType: opt.serviceType, wizardService: opt.wizardService });
     setDietarySel([]);
     setOccasionLabel("");
+    setMoreOccasions(false);
+    setCustomOccasion("");
+    setMoreCuisines(false);
     setHistory([{ label: "Servicio", answer: opt.label }]);
     setPhase(opt.serviceType === "weekly" ? "meals" : "occasion");
   };
 
-  const pickOccasion = (opt: (typeof SINGLE_OCCASIONS)[number]) => {
-    setAnswers((a) => ({ ...a, occasion: opt.occasion }));
-    setOccasionLabel(opt.label);
-    pushHistory("Ocasión", opt.label);
+  // `occasion` es siempre un slug del CHECK de la BD; `label` es lo que se
+  // muestra en la conversación (puede ser texto libre que persiste como "other").
+  const pickOccasion = (occasion: string, label: string) => {
+    setAnswers((a) => ({ ...a, occasion }));
+    setOccasionLabel(label);
+    pushHistory("Ocasión", label);
     setPhase("cuisine");
   };
 
@@ -335,36 +355,77 @@ export function AssistantEntry() {
                 )}
 
                 {phase === "occasion" && (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {SINGLE_OCCASIONS.map((opt, i) => (
-                      <button
-                        key={opt.label}
-                        type="button"
-                        onClick={() => pickOccasion(opt)}
-                        style={{ animationDelay: `${i * 60}ms` }}
-                        className="ae-rise group flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg hover:shadow-green-500/5"
-                      >
-                        <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-100 ring-1 ring-zinc-200/60 transition-colors group-hover:bg-accent/12 group-hover:ring-accent/25">
-                          <opt.Icon className="h-5 w-5 text-zinc-600 transition-colors group-hover:text-accent" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block font-serif text-base text-zinc-900">{opt.label}</span>
-                          <span className="block text-xs text-zinc-500">{opt.desc}</span>
-                        </span>
-                        <ArrowRight className="h-4 w-4 flex-shrink-0 text-zinc-300 transition-all group-hover:translate-x-0.5 group-hover:text-accent" />
-                      </button>
-                    ))}
+                  <div>
+                    <div className="flex flex-wrap gap-2.5">
+                      {OCCASION_CHIPS.map((opt, i) => (
+                        <EntryPill key={opt.label} delay={i * 45} onClick={() => pickOccasion(opt.occasion, opt.label)}>
+                          {opt.label}
+                        </EntryPill>
+                      ))}
+                      {!moreOccasions && (
+                        <EntryPill delay={OCCASION_CHIPS.length * 45} onClick={() => setMoreOccasions(true)} ghost>
+                          <Plus className="h-3.5 w-3.5" /> Otra ocasión
+                        </EntryPill>
+                      )}
+                    </div>
+                    {moreOccasions && (
+                      <div className="mt-2.5">
+                        <div className="flex flex-wrap gap-2.5">
+                          {OCCASION_CHIPS_MORE.map((opt, i) => (
+                            <EntryPill key={opt.label} delay={i * 45} onClick={() => pickOccasion(opt.occasion, opt.label)}>
+                              {opt.label}
+                            </EntryPill>
+                          ))}
+                        </div>
+                        <form
+                          style={{ animationDelay: `${OCCASION_CHIPS_MORE.length * 45}ms` }}
+                          className="ae-rise mt-3 flex max-w-md items-center gap-2 rounded-full border border-zinc-200 bg-white py-1 pl-5 pr-1.5 transition-colors focus-within:border-accent/50"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            const text = customOccasion.trim();
+                            if (text) pickOccasion("other", text);
+                          }}
+                        >
+                          <input
+                            type="text"
+                            value={customOccasion}
+                            onChange={(e) => setCustomOccasion(e.target.value)}
+                            placeholder="Contanos tu ocasión…"
+                            maxLength={60}
+                            className="min-w-0 flex-1 bg-transparent py-2 text-base text-zinc-900 outline-none placeholder:text-zinc-400"
+                          />
+                          <button
+                            type="submit"
+                            disabled={!customOccasion.trim()}
+                            aria-label="Confirmar ocasión"
+                            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-accent text-white transition-all hover:brightness-110 disabled:bg-zinc-100 disabled:text-zinc-400"
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </button>
+                        </form>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {phase === "cuisine" && (
                   <div className="flex flex-wrap gap-2.5">
-                    {cuisines.map((c, i) => (
-                      <EntryPill key={c.value} delay={i * 45} onClick={() => pickCuisine(c.value, c.label)}>
+                    {(moreCuisines ? allCuisines : allCuisines.slice(0, CUISINES_VISIBLE)).map((c, i) => (
+                      <EntryPill
+                        key={c.value}
+                        // Las que aparecen al desplegar animan desde cero, no arrastran el stagger inicial.
+                        delay={(i >= CUISINES_VISIBLE ? i - CUISINES_VISIBLE : i) * 45}
+                        onClick={() => pickCuisine(c.value, c.label)}
+                      >
                         {c.label}
                       </EntryPill>
                     ))}
-                    <EntryPill delay={cuisines.length * 45} onClick={() => pickCuisine(null, "Me da igual")} ghost>
+                    {!moreCuisines && allCuisines.length > CUISINES_VISIBLE && (
+                      <EntryPill delay={CUISINES_VISIBLE * 45} onClick={() => setMoreCuisines(true)} ghost>
+                        <Plus className="h-3.5 w-3.5" /> Más cocinas
+                      </EntryPill>
+                    )}
+                    <EntryPill delay={(CUISINES_VISIBLE + 1) * 45} onClick={() => pickCuisine(null, "Me da igual")} ghost>
                       <Sparkles className="h-3.5 w-3.5" /> Me da igual
                     </EntryPill>
                   </div>

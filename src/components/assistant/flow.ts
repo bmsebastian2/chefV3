@@ -68,6 +68,25 @@ export const OCCASION_OPTIONS: OccasionOption[] = [
   { Icon: Compass,      label: "Solo explorar",     desc: "Mostrame opciones",       serviceType: null,     wizardService: null, occasion: null },
 ];
 
+// ── Ocasiones del paso "ocasión" de AssistantEntry (rama de evento único) ─────
+// Progressive disclosure: las frecuentes visibles como chips, el resto detrás
+// de "Otra ocasión". Los slugs deben existir en el CHECK de
+// service_requests.occasion; las ocasiones sin slug propio persisten como "other"
+// (la etiqueta elegida o escrita solo vive en la conversación del asistente).
+export type EntryOccasion = { label: string; occasion: string };
+
+export const OCCASION_CHIPS: EntryOccasion[] = [
+  { label: "Cena romántica",             occasion: "romantic_dinner" },
+  { label: "Cumpleaños",                 occasion: "birthday" },
+  { label: "Reunión con amigos/familia", occasion: "friends_gathering" },
+];
+
+export const OCCASION_CHIPS_MORE: EntryOccasion[] = [
+  { label: "Aniversario",              occasion: "other" },
+  { label: "Cena de negocios",         occasion: "corporate" },
+  { label: "Celebración de temporada", occasion: "other" },
+];
+
 export const MEALS_OPTIONS = [
   { label: "4 comidas", sub: "Algunos días",    value: "4" },
   { label: "5 comidas", sub: "Días de semana",  value: "5" },
