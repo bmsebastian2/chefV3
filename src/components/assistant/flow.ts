@@ -5,14 +5,14 @@
 // Sin JSX acá: solo tipos, datos y helpers, para que ambas superficies
 // consuman una única fuente de verdad.
 
-import { Heart, PartyPopper, CalendarDays, Compass } from "lucide-react";
+import { Heart, PartyPopper, CalendarDays, CalendarRange, Soup, Compass } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export type Phase = "occasion" | "cuisine" | "meals" | "guests" | "dietary" | "results";
 
 export type Answers = {
-  serviceType: "single" | "weekly" | null;
-  wizardService: string | null; // "1" | "3" | null
+  serviceType: "single" | "multiple" | "weekly" | null;
+  wizardService: string | null; // "1" | "2" | "3" | null
   occasion: string | null;
   cuisine: string | null;
   mealsPerWeek: string | null;
@@ -36,6 +36,21 @@ export const stepsFor = (serviceType: Answers["serviceType"]): Step[] =>
   serviceType === "weekly"
     ? [STEP_DEFS.occasion, STEP_DEFS.meals, STEP_DEFS.guests, STEP_DEFS.dietary]
     : [STEP_DEFS.occasion, STEP_DEFS.cuisine, STEP_DEFS.guests, STEP_DEFS.dietary];
+
+// ── Tipo de servicio: primer paso del asistente (ramifica todo el flujo) ──────
+export type ServiceOption = {
+  Icon: LucideIcon;
+  label: string;
+  desc: string;
+  serviceType: Exclude<Answers["serviceType"], null>;
+  wizardService: string; // "1" | "2" | "3"
+};
+
+export const SERVICE_OPTIONS: ServiceOption[] = [
+  { Icon: PartyPopper,   label: "Un evento especial",   desc: "Un chef privado para una fecha",             serviceType: "single",   wizardService: "1" },
+  { Icon: CalendarRange, label: "Varios días",          desc: "Un chef para varias fechas seguidas",        serviceType: "multiple", wizardService: "2" },
+  { Icon: Soup,          label: "Comidas de la semana", desc: "Un chef que cocina tus comidas cada semana", serviceType: "weekly",   wizardService: "3" },
+];
 
 export type OccasionOption = {
   Icon: LucideIcon;

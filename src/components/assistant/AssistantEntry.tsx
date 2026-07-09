@@ -1,9 +1,11 @@
 "use client";
 
-// Puerta de entrada full-screen a la solicitud (piloto Servicio 1).
-// Conduce la conversación (ocasión → cocina → comensales → preferencias),
-// muestra una señal de disponibilidad por capacidad (sin listar chefs: el
-// modelo es por postulaciones) y entrega al wizard ya pre-llenado.
+// Puerta de entrada full-screen a la solicitud.
+// Conduce la conversación (servicio → ocasión → cocina → comensales → preferencias;
+// la rama semanal cambia ocasión/cocina por comidas), muestra una señal de
+// disponibilidad por capacidad (sin listar chefs: el modelo es por postulaciones)
+// y entrega al wizard ya pre-llenado. "Varios días" aún no tiene conversación
+// propia: deriva directo al wizard con el servicio pre-seteado.
 // La sección "descubrir chefs" de la home (ChefAssistant) queda intacta.
 
 import { useEffect, useState } from "react";
@@ -15,35 +17,45 @@ import {
 import { getAssistantCuisines, matchChefs } from "./actions";
 import type { AssistantCuisine } from "./types";
 import {
-  INITIAL_ANSWERS, OCCASION_OPTIONS, GUESTS_OPTIONS, DIETARY_OPTIONS,
-  buildWizardUrl,
+  INITIAL_ANSWERS, SERVICE_OPTIONS, OCCASION_OPTIONS, MEALS_OPTIONS,
+  GUESTS_OPTIONS, DIETARY_OPTIONS, buildWizardUrl,
 } from "./flow";
 import type { Answers, HistoryEntry } from "./flow";
 
-// El piloto cubre solo Servicio 1: entrada acotada a las ocasiones de evento único.
+// La ocasión aplica solo a la rama de evento único; acá las cards son solo
+// ocasión (el tipo de servicio ya se eligió en el paso anterior).
 const SINGLE_OCCASIONS = OCCASION_OPTIONS.filter((o) => o.serviceType === "single");
 
-// Orden de la conversación (Servicio 1). "results" es el beat de confianza.
-const ORDER = ["occasion", "cuisine", "guests", "dietary"] as const;
-type EntryPhase = (typeof ORDER)[number] | "results";
+// Orden de la conversación según servicio elegido. "results" es el beat de confianza.
+type EntryStep = "service" | "occasion" | "cuisine" | "meals" | "guests" | "dietary";
+type EntryPhase = EntryStep | "results";
 
-const STEP_LABELS: Record<(typeof ORDER)[number], string> = {
+const orderFor = (serviceType: Answers["serviceType"]): EntryStep[] =>
+  serviceType === "weekly"
+    ? ["service", "meals", "guests", "dietary"]
+    : ["service", "occasion", "cuisine", "guests", "dietary"];
+
+const STEP_LABELS: Record<EntryStep, string> = {
+  service:  "Servicio",
   occasion: "Ocasión",
   cuisine:  "Cocina",
+  meals:    "Comidas",
   guests:   "Comensales",
   dietary:  "Detalles",
 };
 
-const QUESTIONS: Record<(typeof ORDER)[number], string> = {
+const QUESTIONS: Record<EntryStep, string> = {
+  service:  "¿Qué tipo de servicio buscás?",
   occasion: "¿Qué ocasión estás imaginando?",
   cuisine:  "¿Qué cocina te tienta?",
+  meals:    "¿Cuántas comidas por semana?",
   guests:   "¿Cuántos a la mesa?",
   dietary:  "¿Alguna preferencia en la cocina?",
 };
 
 export function AssistantEntry() {
   const router = useRouter();
-  const [phase, setPhase] = useState<EntryPhase>("occasion");
+  const [phase, setPhase] = useState<EntryPhase>("service");
   const [answers, setAnswers] = useState<Answers>(INITIAL_ANSWERS);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [cuisines, setCuisines] = useState<AssistantCuisine[]>([]);
@@ -59,11 +71,32 @@ export function AssistantEntry() {
   const pushHistory = (label: string, answer: string) =>
     setHistory((h) => [...h, { label, answer }]);
 
+  const pickService = (opt: (typeof SERVICE_OPTIONS)[number]) => {
+    // "Varios días" aún no tiene conversación propia: entrega directo al wizard.
+    if (opt.serviceType === "multiple") {
+      router.push(buildWizardUrl({ ...INITIAL_ANSWERS, wizardService: opt.wizardService }, "assistant"));
+      return;
+    }
+    // Arranque limpio de la rama: si vuelve y cambia de servicio, no arrastra
+    // respuestas de la rama anterior (cocina/comidas).
+    setAnswers({ ...INITIAL_ANSWERS, serviceType: opt.serviceType, wizardService: opt.wizardService });
+    setDietarySel([]);
+    setOccasionLabel("");
+    setHistory([{ label: "Servicio", answer: opt.label }]);
+    setPhase(opt.serviceType === "weekly" ? "meals" : "occasion");
+  };
+
   const pickOccasion = (opt: (typeof SINGLE_OCCASIONS)[number]) => {
-    setAnswers((a) => ({ ...a, serviceType: opt.serviceType, wizardService: opt.wizardService, occasion: opt.occasion }));
+    setAnswers((a) => ({ ...a, occasion: opt.occasion }));
     setOccasionLabel(opt.label);
     pushHistory("Ocasión", opt.label);
     setPhase("cuisine");
+  };
+
+  const pickMeals = (opt: (typeof MEALS_OPTIONS)[number]) => {
+    setAnswers((a) => ({ ...a, mealsPerWeek: opt.value }));
+    pushHistory("Comidas", opt.label);
+    setPhase("guests");
   };
 
   const pickCuisine = (value: string | null, label: string) => {
@@ -105,11 +138,13 @@ export function AssistantEntry() {
     return () => { active = false; };
   }, [phase, answers.serviceType, answers.cuisine, answers.guestsNum]);
 
+  const order = orderFor(answers.serviceType);
+
   const goBack = () => {
     if (phase === "results") { setPhase("dietary"); return; }
-    const i = ORDER.indexOf(phase as (typeof ORDER)[number]);
+    const i = order.indexOf(phase as EntryStep);
     if (i > 0) {
-      setPhase(ORDER[i - 1]);
+      setPhase(order[i - 1]);
       setHistory((h) => h.slice(0, -1));
     } else {
       router.push("/");
@@ -123,12 +158,12 @@ export function AssistantEntry() {
     setCount(null);
     setSearching(false);
     setOccasionLabel("");
-    setPhase("occasion");
+    setPhase("service");
   };
 
   const goToWizard = () => router.push(buildWizardUrl(answers, "assistant"));
 
-  const stepIndex = phase === "results" ? ORDER.length : ORDER.indexOf(phase as (typeof ORDER)[number]);
+  const stepIndex = phase === "results" ? order.length : order.indexOf(phase as EntryStep);
 
   return (
     <section className="relative min-h-screen overflow-hidden bg-[#FAFAFA] py-14 font-sans md:py-20">
@@ -178,7 +213,7 @@ export function AssistantEntry() {
             <span className="italic text-accent"> ideal</span>
           </h1>
           <p className="mx-auto mt-4 max-w-md font-sans text-[15px] font-light leading-relaxed text-zinc-500">
-            Cuatro preguntas. Cero formularios. Armamos tu solicitud a tu medida.
+            Unas pocas preguntas. Cero formularios. Armamos tu solicitud a tu medida.
           </p>
         </div>
 
@@ -203,7 +238,7 @@ export function AssistantEntry() {
               </div>
 
               <div className="flex items-center gap-2">
-                {phase !== "occasion" && (
+                {phase !== "service" && (
                   <button
                     type="button"
                     onClick={goBack}
@@ -228,7 +263,7 @@ export function AssistantEntry() {
 
             {/* Riel de progreso (carta de degustación) */}
             <div className="flex gap-2.5">
-              {ORDER.map((key, i) => {
+              {order.map((key, i) => {
                 const done = i < stepIndex;
                 const current = i === stepIndex;
                 return (
@@ -272,9 +307,32 @@ export function AssistantEntry() {
                     {String(stepIndex + 1).padStart(2, "0")}
                   </span>
                   <h2 className="mt-2 font-serif text-3xl font-semibold leading-[1.12] tracking-tight text-zinc-900 md:text-[2.5rem]">
-                    {QUESTIONS[phase as (typeof ORDER)[number]]}
+                    {QUESTIONS[phase as EntryStep]}
                   </h2>
                 </div>
+
+                {phase === "service" && (
+                  <div className="grid grid-cols-1 gap-3">
+                    {SERVICE_OPTIONS.map((opt, i) => (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => pickService(opt)}
+                        style={{ animationDelay: `${i * 60}ms` }}
+                        className="ae-rise group flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg hover:shadow-green-500/5"
+                      >
+                        <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-100 ring-1 ring-zinc-200/60 transition-colors group-hover:bg-accent/12 group-hover:ring-accent/25">
+                          <opt.Icon className="h-5 w-5 text-zinc-600 transition-colors group-hover:text-accent" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-serif text-base text-zinc-900">{opt.label}</span>
+                          <span className="block text-xs text-zinc-500">{opt.desc}</span>
+                        </span>
+                        <ArrowRight className="h-4 w-4 flex-shrink-0 text-zinc-300 transition-all group-hover:translate-x-0.5 group-hover:text-accent" />
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {phase === "occasion" && (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -309,6 +367,23 @@ export function AssistantEntry() {
                     <EntryPill delay={cuisines.length * 45} onClick={() => pickCuisine(null, "Me da igual")} ghost>
                       <Sparkles className="h-3.5 w-3.5" /> Me da igual
                     </EntryPill>
+                  </div>
+                )}
+
+                {phase === "meals" && (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {MEALS_OPTIONS.map((opt, i) => (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => pickMeals(opt)}
+                        style={{ animationDelay: `${i * 60}ms` }}
+                        className="ae-rise group flex flex-col items-center justify-center gap-1 rounded-2xl border border-zinc-200 bg-white px-3 py-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg hover:shadow-green-500/5"
+                      >
+                        <span className="font-serif text-xl text-zinc-900 transition-colors group-hover:text-accent">{opt.label}</span>
+                        <span className="text-[11px] uppercase tracking-wider text-zinc-400">{opt.sub}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
 
