@@ -2,6 +2,7 @@ import ReactDOM from "react-dom";
 import Link from "next/link";
 import { ChefHat, MapPin, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HeroVideo } from "@/components/HeroVideo";
 
 // Posiciones de los chefs en el radar (en %)
 const chefPins = [
@@ -11,6 +12,51 @@ const chefPins = [
   { top: "66%", left: "60%", delay: ".7s" },
   { top: "46%", left: "80%", delay: "1.3s" },
 ];
+
+// Banner gastronómico con video — comunica el servicio de chef/comida.
+// Se renderiza en dos posiciones: arriba en móvil (primera pantalla) y en la
+// columna derecha en desktop; `videoWhen` limita en cuál instancia corre el video.
+function HeroVideoCard({ className, videoWhen }: { className: string; videoWhen: string }) {
+  return (
+    <Link
+      href="/wizard"
+      className={`hero-anim group relative block overflow-hidden rounded-2xl shadow-lg shadow-zinc-900/10 ring-1 ring-black/5 transition-[transform,box-shadow] duration-500 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-900/15 hover:ring-amber-300/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${className}`}
+      style={{ animationDelay: "560ms" }}
+    >
+      <div className="relative h-56 w-full sm:h-72">
+        <HeroVideo when={videoWhen} />
+        {/* Velado para legibilidad del texto — se aclara un punto al hover (la señal cobra vida) */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-zinc-900/90 via-zinc-900/45 to-transparent transition-opacity duration-500 group-hover:opacity-85" />
+
+        {/* Visor de cámara — encuadra la toma en vivo al pasar el cursor */}
+        <div
+          className="pointer-events-none absolute inset-3 z-10 opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 motion-reduce:transition-none"
+          aria-hidden="true"
+        >
+          <span className="absolute left-0 top-0 h-6 w-6 -translate-x-1.5 -translate-y-1.5 rounded-tl-md border-l-2 border-t-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
+          <span className="absolute right-0 top-0 h-6 w-6 translate-x-1.5 -translate-y-1.5 rounded-tr-md border-r-2 border-t-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
+          <span className="absolute bottom-0 left-0 h-6 w-6 -translate-x-1.5 translate-y-1.5 rounded-bl-md border-b-2 border-l-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
+          <span className="absolute bottom-0 right-0 h-6 w-6 translate-x-1.5 translate-y-1.5 rounded-br-md border-b-2 border-r-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
+        </div>
+
+        {/* Contenido */}
+        <div className="absolute inset-0 flex flex-col justify-center gap-1.5 p-5">
+          <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-300">
+            <ChefHat className="h-3.5 w-3.5" />
+            Catering & cenas privadas
+          </span>
+          <h2 className="font-serif text-xl font-semibold leading-tight text-white sm:text-2xl">
+            Comida de chef, en tu mesa
+          </h2>
+          <span className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-white/90">
+            Reserva experiencia
+            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 export function Hero() {
   // El poster del <video> de abajo es el candidato a LCP, pero el preload scanner
@@ -161,6 +207,9 @@ export function Hero() {
               </Link>
             </div>
 
+            {/* Banner gastronómico — en móvil sube aquí para verse en la primera pantalla */}
+            <HeroVideoCard className="mt-8 lg:hidden" videoWhen="(max-width: 1023px)" />
+
             {/* ── Sellos de confianza ── */}
             <ul
               className="hero-anim mt-10 grid grid-cols-1 divide-y divide-zinc-100 border-t border-zinc-100 pt-7 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:divide-zinc-200/60"
@@ -245,54 +294,8 @@ export function Hero() {
           {/* ── Columna derecha: mapa arriba + experiencias debajo ── */}
           <div className="flex flex-col gap-8">
 
-            {/* Descubre chefs cerca de ti — radar de descubrimiento */}
-             {/* Banner gastronómico — comunica el servicio de chef/comida */}
-            <Link
-              href="/wizard"
-              className="hero-anim group relative mt-10 block overflow-hidden rounded-2xl shadow-lg shadow-zinc-900/10 ring-1 ring-black/5 transition-[transform,box-shadow] duration-500 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-900/15 hover:ring-amber-300/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-              style={{ animationDelay: "560ms" }}
-            >
-              <div className="relative h-56 w-full sm:h-72">
-                <video
-                  src="/Cocina%20en%20vivo.mp4"
-                  poster="/banner-chef.webp"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  aria-label="Chef cocinando en vivo un plato nicaragüense de autor"
-                  className="absolute inset-0 h-full w-full object-cover object-right transition-transform duration-700 ease-out group-hover:scale-105"
-                />
-                {/* Velado para legibilidad del texto — se aclara un punto al hover (la señal cobra vida) */}
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-zinc-900/90 via-zinc-900/45 to-transparent transition-opacity duration-500 group-hover:opacity-85" />
-
-                {/* Visor de cámara — encuadra la toma en vivo al pasar el cursor */}
-                <div
-                  className="pointer-events-none absolute inset-3 z-10 opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 motion-reduce:transition-none"
-                  aria-hidden="true"
-                >
-                  <span className="absolute left-0 top-0 h-6 w-6 -translate-x-1.5 -translate-y-1.5 rounded-tl-md border-l-2 border-t-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
-                  <span className="absolute right-0 top-0 h-6 w-6 translate-x-1.5 -translate-y-1.5 rounded-tr-md border-r-2 border-t-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
-                  <span className="absolute bottom-0 left-0 h-6 w-6 -translate-x-1.5 translate-y-1.5 rounded-bl-md border-b-2 border-l-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
-                  <span className="absolute bottom-0 right-0 h-6 w-6 translate-x-1.5 translate-y-1.5 rounded-br-md border-b-2 border-r-2 border-amber-300/90 transition-transform duration-500 ease-out group-hover:translate-x-0 group-hover:translate-y-0 motion-reduce:transition-none motion-reduce:translate-x-0 motion-reduce:translate-y-0" />
-                </div>
-
-                {/* Contenido */}
-                <div className="absolute inset-0 flex flex-col justify-center gap-1.5 p-5">
-                  <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-300">
-                    <ChefHat className="h-3.5 w-3.5" />
-                    Catering & cenas privadas
-                  </span>
-                  <h2 className="font-serif text-xl font-semibold leading-tight text-white sm:text-2xl">
-                    Comida de chef, en tu mesa
-                  </h2>
-                  <span className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-white/90">
-                    Reserva experiencia
-                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-                  </span>
-                </div>
-              </div>
-            </Link>
+            {/* Banner gastronómico — solo desktop; en móvil sube junto al título */}
+            <HeroVideoCard className="hidden lg:block mt-10" videoWhen="(min-width: 1024px)" />
             <a
               href="#asistente"
               className="hero-anim group relative block w-full overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/70 px-5 py-4 shadow-lg shadow-zinc-900/5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-xl hover:shadow-green-500/10"
