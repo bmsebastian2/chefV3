@@ -2,7 +2,6 @@
 
 import { createAdminClient } from '@/utils/supabase/admin'
 import { resend } from '@/lib/resend'
-import { formatPriceRange } from '@/lib/format'
 import { normalizeCity } from '@/lib/maps/normalizeCity'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
@@ -22,15 +21,24 @@ const OCCASION_LABELS: Record<string, string> = {
   other:             'Otro',
 }
 
+// Mapa inverso del BUDGET_MAP del wizard: el tier no se persiste como columna,
+// se reconoce por el rango exacto de budget_min/budget_max.
+const EXPERIENCE_BY_BUDGET: Record<string, string> = {
+  '210-263': 'Casual',
+  '263-315': 'Gourmet',
+  '315-420': 'Exclusivo',
+}
+
+// Mismos labels que CUISINE_DISPLAY del wizard (email del cliente)
 const CUISINE_LABELS: Record<string, string> = {
   local:          'Local',
   mediterranean:  'Mediterránea',
   french:         'Francesa',
   fusion:         'Fusión',
   italian:        'Italiana',
-  seafood:        'Mariscos',
+  seafood:        'Mariscos/Pescados',
   japanese:       'Japonesa',
-  chefs_special:  'Sorpresa del Chef',
+  chefs_special:  'A elección del Chef',
 }
 
 // ── HTML shell (idéntico al de client-emails) ─────────────────────────────────
@@ -100,62 +108,81 @@ const DAY_NAMES_CHEF: Record<number, string> = {
 function buildEmailHtml(chef: string, req: RequestData): string {
   const fmtDate = (d: string) =>
     new Date(d + 'T00:00:00').toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' })
-  const dateFormatted = req.event_date_start
-    ? req.event_date_end && req.event_date_end !== req.event_date_start
-      ? `${fmtDate(req.event_date_start)} → ${fmtDate(req.event_date_end)}`
-      : fmtDate(req.event_date_start)
-    : undefined
-  const mealTimeLabel = req.event_time === 'Cena'
-    ? '🌙 Cena'
-    : req.event_time === 'Comida'
-      ? '☀️ Comida'
-      : req.event_time ?? undefined
-  const budget = req.budget_min && req.budget_max
-    ? formatPriceRange(req.budget_min, req.budget_max)
-    : undefined
-
-  const wd = req.weeklyDetails
-  const frecuenciaLabel = wd?.frecuencia_cocina
-    ? wd.frecuencia_cocina
-        .split(',')
-        .map((n) => DAY_NAMES_CHEF[Number(n.trim())] ?? n.trim())
-        .filter(Boolean)
-        .join(', ')
-    : undefined
 
   const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
-  return shell(`
+  const intro = `
     <p style="margin:0 0 20px;font-size:16px;line-height:1.5;">
       Hola <strong>${chef}</strong>, hay una nueva solicitud en tu ciudad que coincide con tu perfil.
-    </p>
+    </p>`
+  const ctaBlock = cta(`${SITE_URL}/dashboard/requests`, 'Ver solicitud en el dashboard')
+
+  if (req.service_type === 'weekly') {
+    const wd = req.weeklyDetails
+    const frecuenciaLabel = wd?.frecuencia_cocina
+      ? wd.frecuencia_cocina
+          .split(',')
+          .map((n) => DAY_NAMES_CHEF[Number(n.trim())] ?? n.trim())
+          .filter(Boolean)
+          .join(', ')
+      : undefined
+
+    return shell(`${intro}
     <div style="margin-top:8px;">
       ${section('Dónde y cuándo', [
         ['Ciudad',          req.city ?? undefined],
-        ['Fecha de inicio', dateFormatted],
+        ['Fecha de inicio', req.event_date_start ? fmtDate(req.event_date_start) : undefined],
       ])}
-      ${req.mealSlots?.length ? mealSlotsTableChef(req.mealSlots) : ''}
-      ${req.service_type === 'weekly' ? section('Servicio semanal', [
+      ${section('Servicio semanal', [
         ['Tipo de servicio',      SERVICE_TYPE_LABELS['weekly']],
         ['Comidas por semana',    wd?.comidas_por_semana != null ? String(wd.comidas_por_semana) : undefined],
         ['Raciones por comida',   wd?.raciones_por_comida != null ? String(wd.raciones_por_comida) : undefined],
         ['Días preferidos',       frecuenciaLabel],
         ['Preferencia de chef',   wd?.preferencia_chef ?? undefined],
         ['Preferencias culinarias', wd?.preferencias_culinarias ?? undefined],
-      ]) : section('Solicitud', [
-        ['Tipo de servicio',   SERVICE_TYPE_LABELS[req.service_type] ?? req.service_type],
-        ['Ocasión',            OCCASION_LABELS[req.occasion] ?? req.occasion],
-        ['Horario',            mealTimeLabel],
-        ['Comensales',         req.cuantas_personas != null ? String(req.cuantas_personas) : undefined],
-        ['Tipo de cocina',     req.cuisine_type ? (CUISINE_LABELS[req.cuisine_type] ?? req.cuisine_type) : undefined],
-        ['Presupuesto',        budget],
+        ['Restricciones alimentarias', req.restricciones ?? undefined],
       ])}
       ${section('Descripción', [
         ['Notas', req.descripcion_evento ?? undefined],
       ])}
     </div>
-    ${cta(`${SITE_URL}/dashboard/requests`, 'Ver solicitud en el dashboard')}
-  `)
+    ${ctaBlock}`)
+  }
+
+  // single / multiple — misma estructura y labels que el detailsBlock del
+  // email del cliente (client-emails.ts), con la ciudad en lugar de la
+  // dirección completa (no se expone el lugar exacto antes de reservar).
+  const comensales = req.cuantas_personas != null
+    ? `${req.cuantas_personas} ${req.cuantas_personas === 1 ? 'persona' : 'personas'}`
+    : undefined
+  const precio = req.budget_min && req.budget_max
+    ? `desde $${req.budget_min} a $${req.budget_max} USD`
+    : undefined
+
+  return shell(`${intro}
+    <div style="margin-top:8px;">
+      ${section('Dónde y cuándo', [
+        ['Ciudad', req.city ?? undefined],
+        ['Hora',   req.event_time ?? undefined],
+        ['Fecha',  req.event_date_start ? fmtDate(req.event_date_start) : undefined],
+      ])}
+      ${req.mealSlots?.length ? mealSlotsTableChef(req.mealSlots) : ''}
+      ${section('Presupuesto', [
+        ['Número de comensales', comensales],
+        ['Precio por persona',   precio],
+        ['Tipo de experiencia',  req.experiencia ?? undefined],
+      ])}
+      ${section('Evento', [
+        ['Preferencias gastronómicas', req.cuisine_type ? (CUISINE_LABELS[req.cuisine_type] ?? req.cuisine_type) : undefined],
+        ['Restricciones alimentarias', req.restricciones ?? undefined],
+        ['Ocasión',                    OCCASION_LABELS[req.occasion] ?? req.occasion],
+        ['Tipo de servicio',           SERVICE_TYPE_LABELS[req.service_type] ?? req.service_type],
+      ])}
+      ${section('Algo que añadir', [
+        ['Notas', req.descripcion_evento ?? undefined],
+      ])}
+    </div>
+    ${ctaBlock}`)
 }
 
 const DAYS_ES_CHEF     = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
@@ -232,6 +259,8 @@ export type RequestData = {
   budget_min: number | null
   budget_max: number | null
   descripcion_evento: string | null
+  experiencia?: string | null
+  restricciones?: string | null
   mealSlots?: MealSlot[]
   weeklyDetails?: WeeklyDetails
 }
@@ -247,7 +276,7 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
   // Siempre busca los datos frescos desde la DB — evita depender del caller
   const { data: requestRow, error: reqError } = await admin
     .from('service_requests')
-    .select('service_type, occasion, city, country, event_date_start, event_date_end, event_time, guests_adults, cuisine_type, budget_min, budget_max, descripcion_evento')
+    .select('service_type, occasion, city, country, event_date_start, event_date_end, event_time, guests_adults, guests_teens, guests_kids, cuisine_type, budget_min, budget_max, descripcion_evento')
     .eq('id', requestId)
     .single()
 
@@ -276,6 +305,39 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
     if (wd) weeklyDetails = wd as WeeklyDetails
   }
 
+  const totalGuests =
+    (requestRow.guests_adults ?? 0) + (requestRow.guests_teens ?? 0) + (requestRow.guests_kids ?? 0)
+
+  // Restricciones: satélite request_restrictions (misma fuente que el detalle
+  // del client-dashboard). Query aparte para que un error de permisos no
+  // tumbe la notificación completa — sin restricciones el email igual sale.
+  const { data: restrRow, error: restrError } = await admin
+    .from('request_restrictions')
+    .select('vegetariano, vegano, sin_gluten, sin_lactosa, sin_mariscos, sin_frutos_secos, alergias_adicionales')
+    .eq('request_id', requestId)
+    .maybeSingle()
+  if (restrError) {
+    console.warn('[notify-chefs] No se pudieron leer restricciones:', restrError.message)
+  }
+  const restrictionLabels = restrRow
+    ? ([
+        restrRow.vegetariano      && 'Vegetariano',
+        restrRow.vegano           && 'Vegano',
+        restrRow.sin_gluten       && 'Sin gluten',
+        restrRow.sin_lactosa      && 'Sin lactosa',
+        restrRow.sin_mariscos     && 'Sin mariscos',
+        restrRow.sin_frutos_secos && 'Sin frutos secos',
+      ].filter(Boolean) as string[])
+    : []
+  if (restrRow?.alergias_adicionales) {
+    restrictionLabels.push(`Alergias: ${restrRow.alergias_adicionales}`)
+  }
+
+  const experiencia =
+    requestRow.budget_min != null && requestRow.budget_max != null
+      ? EXPERIENCE_BY_BUDGET[`${requestRow.budget_min}-${requestRow.budget_max}`] ?? null
+      : null
+
   const req: RequestData = {
     service_type:       requestRow.service_type,
     occasion:           requestRow.occasion,
@@ -283,11 +345,17 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
     event_date_start:   requestRow.event_date_start,
     event_date_end:     requestRow.event_date_end,
     event_time:         requestRow.event_time,
-    cuantas_personas:   requestRow.guests_adults,
+    // Total de comensales: multiple desglosa en adultos/teens/niños; single y
+    // weekly guardan todo en guests_adults (teens/kids quedan en 0).
+    cuantas_personas:   totalGuests > 0 ? totalGuests : null,
     cuisine_type:       requestRow.cuisine_type,
     budget_min:         requestRow.budget_min,
     budget_max:         requestRow.budget_max,
     descripcion_evento: requestRow.descripcion_evento,
+    experiencia,
+    // Mismo fallback que el email del cliente ('No'); si la fila no se pudo
+    // leer (GRANT pendiente) se omite la fila en vez de afirmar "No".
+    restricciones:      restrRow ? (restrictionLabels.join(', ') || 'No') : null,
     mealSlots,
     weeklyDetails,
   }

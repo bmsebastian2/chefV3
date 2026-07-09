@@ -367,7 +367,10 @@ export async function submitServiceRequest(
   const clientEmail = data.contact.email!
   const clientName  = data.contact.name!
 
-  const restrictionLabels = restrictions.filter((r) => r !== 'Otras (Conversar con Chef)')
+  // Sin los centinelas "Sí"/"Ninguna" de StepDietarySimple ni la opción "Otras"
+  const restrictionLabels = restrictions.filter(
+    (r) => r !== 'Otras (Conversar con Chef)' && r !== 'Sí' && r !== 'Ninguna'
+  )
   const requestSummary: RequestSummary = {
     lugar:        data.location?.name,
     hora:         data.mealTime ? (MEAL_TIME_MAP[data.mealTime] ?? undefined) : undefined,
