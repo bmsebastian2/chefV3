@@ -18,7 +18,7 @@ export type Answers = {
   mealsPerWeek: string | null;
   guestsRange: string | null;
   guestsNum: number | null;
-  dietary: string[];
+  dietary: string[] | null; // null = aún no respondió; [] = respondió "sin restricciones"
 };
 
 export type Step = { key: Exclude<Phase, "results">; label: string; question: string };
@@ -111,7 +111,7 @@ export const DIETARY_OPTIONS = [
 
 export const INITIAL_ANSWERS: Answers = {
   serviceType: null, wizardService: null, occasion: null,
-  cuisine: null, mealsPerWeek: null, guestsRange: null, guestsNum: null, dietary: [],
+  cuisine: null, mealsPerWeek: null, guestsRange: null, guestsNum: null, dietary: null,
 };
 
 export type HistoryEntry = { label: string; answer: string };
@@ -125,7 +125,9 @@ export function buildWizardUrl(a: Answers, source?: string): string {
   if (a.guestsRange)   p.set("guests", a.guestsRange);
   if (a.cuisine)       p.set("cuisine", a.cuisine);
   if (a.mealsPerWeek)  p.set("meals", a.mealsPerWeek);
-  if (a.dietary.length) p.set("dietary", a.dietary.join(","));
+  // "none" = respondió explícitamente "sin restricciones" (el wizard salta el paso);
+  // sin param = nunca llegó a la pregunta (el wizard la hace).
+  if (a.dietary) p.set("dietary", a.dietary.length ? a.dietary.join(",") : "none");
   if (source)          p.set("source", source);
   const qs = p.toString();
   return qs ? `/wizard?${qs}` : "/wizard";

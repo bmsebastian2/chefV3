@@ -53,7 +53,12 @@ function parseInitialState(
   // Origen para medición: solo aceptamos el valor conocido del piloto para que
   // la columna quede limpia (no free-text arbitrario desde la URL).
   if (params.get("source") === "assistant") data.source = "assistant";
-  if (dietary) {
+  // "none" = el asistente ya preguntó y la respuesta fue "sin restricciones";
+  // se siembra como ["Ninguna"] (mismo valor que escribe StepDietarySimple)
+  // para que el paso se salte igual que cuando hay restricciones.
+  if (dietary === "none") {
+    data.dietaryRestrictions = ["Ninguna"];
+  } else if (dietary) {
     const list = dietary.split(",").map((s) => s.trim()).filter(Boolean);
     if (list.length) data.dietaryRestrictions = ["Sí", ...list];
   }
