@@ -22,6 +22,7 @@ export const viewport: Viewport = {
   themeColor: "#18181B",
   width: "device-width",
   initialScale: 1,
+  viewportFit: 'cover',   // <- permite usar env(safe-area-inset-*)
   maximumScale: 1,
   userScalable: false,
 };
