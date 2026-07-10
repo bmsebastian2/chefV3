@@ -258,32 +258,92 @@ export function WeeklyStepConfirm({ nextStep }: StepProps) {
   );
 }
 
-// ── Comidas por semana (rama de fechas/frecuencia, 1 de 2) ────────────────────
-export function WeeklyStepMeals({ data, updateData, nextStep }: StepProps) {
-  const [comidas, setComidas] = useState(data.weeklyDetails?.comidasPorSemana ?? 7);
+// ── Momentos por día (rama de volumen) ────────────────────────────────────────
+// Chips Desayuno/Almuerzo/Cena (selección 1–3, iguales para todos los días).
+// El total de comidas se DERIVA: días × momentos → comidasPorSemana (mismo campo
+// que consumen email/resumen). Ya no hay input directo del total.
+const MOMENTOS_OPTS = [
+  { id: "desayuno", label: "Desayuno" },
+  { id: "almuerzo", label: "Almuerzo" },
+  { id: "cena",     label: "Cena" },
+];
 
-  const handleContinue = () => {
-    updateData({ weeklyDetails: { ...data.weeklyDetails, comidasPorSemana: comidas } });
-    nextStep();
+export function WeeklyStepMoments({ data, updateData, nextStep }: StepProps) {
+  const dias        = data.weeklyDetails?.frecuenciaCocina?.length ?? 0;
+  const momentos    = data.weeklyDetails?.momentos ?? [];
+  const personas    = data.weeklyDetails?.racionesPorComida;
+  const total       = dias * momentos.length;
+  const canContinue = momentos.length >= 1;
+
+  const toggle = (id: string) => {
+    const updated = momentos.includes(id)
+      ? momentos.filter((m) => m !== id)
+      : [...momentos, id];
+    updateData({
+      weeklyDetails: {
+        ...data.weeklyDetails,
+        momentos: updated,
+        comidasPorSemana: dias && updated.length ? dias * updated.length : undefined,
+      },
+    });
   };
 
   return (
     <div className="flex flex-col w-full max-w-md mx-auto">
-      <div className="mb-8">
-        <Stepper label="Comidas por semana" value={comidas} min={4} max={14} onChange={setComidas} />
+      <p className="text-[10px] tracking-[0.2em] uppercase text-zinc-400 mb-1.5">
+        Momentos por día
+      </p>
+      <p className="text-sm text-zinc-500 mb-5">
+        ¿Qué comidas preparará el chef cada día de visita?
+      </p>
+
+      <div className="flex flex-col gap-2 mb-8">
+        {MOMENTOS_OPTS.map(({ id, label }) => {
+          const active = momentos.includes(id);
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => toggle(id)}
+              className={[
+                "flex items-center justify-between px-4 h-14 rounded-xl border text-sm font-medium transition-all duration-150",
+                active
+                  ? "border-accent/40 bg-accent/5 text-zinc-900"
+                  : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300",
+              ].join(" ")}
+            >
+              <span>{label}</span>
+              <span
+                className={[
+                  "flex-shrink-0 w-[22px] h-[22px] rounded-md border-2 flex items-center justify-center transition-all duration-150",
+                  active ? "bg-accent border-accent text-white" : "bg-white border-zinc-300",
+                ].join(" ")}
+              >
+                {active && <CheckIcon />}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 mb-10">
-        <p className="text-sm text-zinc-700 leading-relaxed">
-          Tu chef preparará{" "}
-          <span className="font-semibold text-accent">
-            {comidas} {comidas === 1 ? "comida" : "comidas"}
-          </span>{" "}
-          cada semana.
-        </p>
+        {momentos.length === 0 ? (
+          <p className="text-sm text-zinc-500">Elegí al menos un momento del día.</p>
+        ) : (
+          <p className="text-sm text-zinc-700 leading-relaxed">
+            <span className="font-semibold text-accent">{dias} {dias === 1 ? "día" : "días"}</span>
+            {" × "}
+            <span className="font-semibold text-accent">{momentos.length} {momentos.length === 1 ? "comida" : "comidas"}</span>
+            {" = "}
+            <span className="font-semibold text-accent">{total} {total === 1 ? "comida semanal" : "comidas semanales"}</span>
+            {personas ? (
+              <> para <span className="font-semibold text-accent">{personas} {personas === 1 ? "persona" : "personas"}</span></>
+            ) : null}.
+          </p>
+        )}
       </div>
 
-      <button type="button" onClick={handleContinue} className={BTN_NEXT}>
+      <button type="button" onClick={nextStep} disabled={!canContinue} className={BTN_NEXT}>
         Continuar
       </button>
     </div>
@@ -300,7 +360,15 @@ export function WeeklyStepSchedule({ data, updateData, nextStep }: StepProps) {
     const updated = selectedDays.includes(id)
       ? selectedDays.filter((d) => d !== id)
       : [...selectedDays, id];
-    updateData({ weeklyDetails: { ...data.weeklyDetails, frecuenciaCocina: updated } });
+    // El total se deriva de días × momentos; recalcularlo al cambiar los días.
+    const moms = data.weeklyDetails?.momentos?.length ?? 0;
+    updateData({
+      weeklyDetails: {
+        ...data.weeklyDetails,
+        frecuenciaCocina: updated,
+        comidasPorSemana: updated.length && moms ? updated.length * moms : undefined,
+      },
+    });
   };
 
   return (
@@ -314,11 +382,18 @@ export function WeeklyStepSchedule({ data, updateData, nextStep }: StepProps) {
 
       <div className="h-px bg-zinc-100 mb-8" />
 
-      <p className="text-[10px] tracking-[0.2em] uppercase text-zinc-400 mb-1.5">
-        Día preferido para la sesión
-      </p>
+      <div className="flex items-baseline justify-between mb-1.5">
+        <p className="text-[10px] tracking-[0.2em] uppercase text-zinc-400">
+          {selectedDays.length === 1 ? "Día preferido" : "Días preferidos"} para la sesión
+        </p>
+        {selectedDays.length > 0 && (
+          <p className="text-[10px] tabular-nums text-zinc-400">
+            {selectedDays.length} {selectedDays.length === 1 ? "día" : "días"}/sem
+          </p>
+        )}
+      </div>
       <p className="text-sm text-zinc-500 mb-4">
-        ¿Qué día preferís que el chef vaya a cocinar?
+        ¿Qué días preferís que el chef vaya a cocinar?
       </p>
       <div
         className="overflow-x-auto pb-1 mb-10"
@@ -359,8 +434,17 @@ export function WeeklyStepSchedule({ data, updateData, nextStep }: StepProps) {
 // ── Personas por comida (variante semanal del paso de personas del tronco) ────
 // Mismo lugar del tronco que StepGuestsCount, pero escribe racionesPorComida
 // (→ raciones_por_comida; el submit además lo persiste en guests_adults).
+const GUESTS_RANGE_LABELS: Record<string, string> = {
+  "2": "2 personas",
+  "3-6": "3 a 6 personas",
+  "7-12": "7 a 12 personas",
+  "13+": "13 o más personas",
+};
+
 export function WeeklyStepGuests({ data, updateData, nextStep }: StepProps) {
   const [raciones, setRaciones] = useState(data.weeklyDetails?.racionesPorComida ?? 2);
+  // Si viene del asistente, ya eligió un rango: acá se confirma el número exacto.
+  const rangoLabel = data.assistantGuests ? GUESTS_RANGE_LABELS[data.assistantGuests] : undefined;
 
   const handleContinue = () => {
     updateData({ weeklyDetails: { ...data.weeklyDetails, racionesPorComida: raciones } });
@@ -369,11 +453,20 @@ export function WeeklyStepGuests({ data, updateData, nextStep }: StepProps) {
 
   return (
     <div className="flex flex-col w-full max-w-md mx-auto">
+      {rangoLabel && (
+        <div className="border-l-2 border-accent bg-accent/5 rounded-xl p-4 mb-8">
+          <p className="text-sm text-zinc-700 leading-relaxed">
+            En el asistente indicaste{" "}
+            <span className="font-semibold text-zinc-900">{rangoLabel}</span>. Confirmá la cantidad
+            exacta para tu servicio.
+          </p>
+        </div>
+      )}
       <div className="mb-10">
         <Stepper label="Personas por comida" value={raciones} min={1} max={10} onChange={setRaciones} />
       </div>
       <button type="button" onClick={handleContinue} className={BTN_NEXT}>
-        Continuar
+        {rangoLabel ? "Confirmar" : "Continuar"}
       </button>
     </div>
   );

@@ -33,7 +33,7 @@ import {
 } from "./Steps";
 import {
   WeeklyStepConfirm,
-  WeeklyStepMeals,
+  WeeklyStepMoments,
   WeeklyStepSchedule,
   WeeklyStepGuests,
   WeeklyStepIngredients,
@@ -109,8 +109,8 @@ const flowService3: FlowStep[] = [
   serviceType,
   { id: "confirm",     component: WeeklyStepConfirm,     title: "¿Todo claro?" },
   { id: "location",    component: StepLocationWeekly,    title: "¿Dónde cocinamos?" },
-  { id: "meals",       component: WeeklyStepMeals,       title: "¿Cuántas comidas por semana?" },
   { id: "schedule",    component: WeeklyStepSchedule,    title: "¿Cuándo empezamos?" },
+  { id: "moments",     component: WeeklyStepMoments,     title: "¿Qué comidas por día?" },
   { id: "guests",      component: WeeklyStepGuests,      title: "¿Para cuántas personas?" },
   dietary,
   { id: "ingredients", component: WeeklyStepIngredients, title: "Compra de ingredientes" },

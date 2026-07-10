@@ -75,6 +75,8 @@ function parseInitialState(
     if (guests) {
       const raciones: Record<string, number> = { "2": 2, "3-6": 6, "7-12": 10, "13+": 10 };
       if (raciones[guests]) wd.racionesPorComida = raciones[guests];
+      // Rango crudo del asistente para confirmar el número exacto en el wizard.
+      if (data.source === "assistant" && raciones[guests]) data.assistantGuests = guests;
     }
     if (Object.keys(wd).length) data.weeklyDetails = wd;
   }

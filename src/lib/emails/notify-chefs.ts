@@ -101,9 +101,16 @@ function section(title: string, rows: [string, string | undefined][]): string {
 }
 
 const DAY_NAMES_CHEF: Record<number, string> = {
-  1: 'Lunes', 2: 'Martes', 3: 'Miércoles',
-  4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 7: 'Domingo',
+  1: 'lunes', 2: 'martes', 3: 'miércoles',
+  4: 'jueves', 5: 'viernes', 6: 'sábado', 7: 'domingo',
 }
+
+// "a" · "a y b" · "a, b y c" — enumeración natural en español.
+function joinNatural(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? ''
+  return `${items.slice(0, -1).join(', ')} y ${items[items.length - 1]}`
+}
+const capFirst = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
 function buildEmailHtml(chef: string, req: RequestData): string {
   const fmtDate = (d: string) =>
@@ -119,13 +126,20 @@ function buildEmailHtml(chef: string, req: RequestData): string {
 
   if (req.service_type === 'weekly') {
     const wd = req.weeklyDetails
-    const frecuenciaLabel = wd?.frecuencia_cocina
-      ? wd.frecuencia_cocina
-          .split(',')
-          .map((n) => DAY_NAMES_CHEF[Number(n.trim())] ?? n.trim())
-          .filter(Boolean)
-          .join(', ')
+    const diasArr = wd?.frecuencia_cocina
+      ? wd.frecuencia_cocina.split(',').map((n) => n.trim()).filter(Boolean)
+      : []
+    const frecuenciaLabel = diasArr.length
+      ? joinNatural(diasArr.map((n) => DAY_NAMES_CHEF[Number(n)] ?? n))
       : undefined
+    const frecuenciaNum = diasArr.length
+      ? `${diasArr.length} ${diasArr.length === 1 ? 'día' : 'días'} por semana`
+      : undefined
+
+    const momsArr = wd?.momentos
+      ? wd.momentos.split(',').map((m) => m.trim()).filter(Boolean)
+      : []
+    const momentosLabel = momsArr.length ? capFirst(joinNatural(momsArr)) : undefined
 
     return shell(`${intro}
     <div style="margin-top:8px;">
@@ -134,15 +148,16 @@ function buildEmailHtml(chef: string, req: RequestData): string {
         ['Fecha de inicio', req.event_date_start ? fmtDate(req.event_date_start) : undefined],
       ])}
       ${section('Servicio semanal', [
-        ['Tipo de servicio',      SERVICE_TYPE_LABELS['weekly']],
-        ['Comidas por semana',    wd?.comidas_por_semana != null ? String(wd.comidas_por_semana) : undefined],
-        ['Raciones por comida',   wd?.raciones_por_comida != null ? String(wd.raciones_por_comida) : undefined],
-        ['Días preferidos',       frecuenciaLabel],
-        ['Preferencia de chef',   wd?.preferencia_chef ?? undefined],
-        ['Preferencias culinarias', wd?.preferencias_culinarias ?? undefined],
+        ['Frecuencia',          frecuenciaNum],
+        ['Días',                frecuenciaLabel],
+        ['Momentos por día',    momentosLabel],
+        ['Personas por comida', wd?.raciones_por_comida != null ? String(wd.raciones_por_comida) : undefined],
+        ['Total de comidas',    wd?.comidas_por_semana != null ? `${wd.comidas_por_semana} comidas semanales` : undefined],
+      ])}
+      ${section('Evento', [
         ['Restricciones alimentarias', req.restricciones ?? undefined],
       ])}
-      ${section('Descripción', [
+      ${section('Algo que añadir', [
         ['Notas', req.descripcion_evento ?? undefined],
       ])}
     </div>
@@ -243,6 +258,7 @@ type WeeklyDetails = {
   comidas_por_semana: number | null
   raciones_por_comida: number | null
   frecuencia_cocina: string | null
+  momentos: string | null
   preferencia_chef: string | null
   preferencias_culinarias: string | null
 }
@@ -287,21 +303,27 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
 
   let mealSlots: MealSlot[] = incomingReq?.mealSlots ?? []
   if (!mealSlots.length && requestRow.service_type === 'multiple') {
-    const { data: dates } = await admin
+    const { data: dates, error: datesError } = await admin
       .from('request_dates')
       .select('fecha, desayuno, almuerzo, cena')
       .eq('request_id', requestId)
       .order('fecha')
+    if (datesError) {
+      console.warn('[notify-chefs] No se pudieron leer request_dates (¿falta GRANT a service_role?):', datesError.message)
+    }
     mealSlots = (dates ?? []) as MealSlot[]
   }
 
   let weeklyDetails: WeeklyDetails | undefined
   if (requestRow.service_type === 'weekly') {
-    const { data: wd } = await admin
+    const { data: wd, error: wdError } = await admin
       .from('weekly_meal_details')
-      .select('comidas_por_semana, raciones_por_comida, frecuencia_cocina, preferencia_chef, preferencias_culinarias')
+      .select('comidas_por_semana, raciones_por_comida, frecuencia_cocina, momentos, preferencia_chef, preferencias_culinarias')
       .eq('request_id', requestId)
       .single()
+    if (wdError) {
+      console.warn('[notify-chefs] No se pudieron leer weekly_meal_details (¿falta GRANT a service_role?):', wdError.message)
+    }
     if (wd) weeklyDetails = wd as WeeklyDetails
   }
 

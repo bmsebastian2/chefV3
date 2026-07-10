@@ -35,11 +35,15 @@ export interface WizardData {
   details?: string;
   // Origen de la solicitud para medición del piloto ('assistant' | undefined)
   source?: string;
+  // Rango de personas que el asistente ya preguntó (crudo: "2" | "3-6" | ...).
+  // Solo para confirmar la cantidad exacta en el wizard; no se persiste.
+  assistantGuests?: string;
   weeklyDetails?: {
     codigoPostal?: string;
     comidasPorSemana?: number;
     racionesPorComida?: number;
     frecuenciaCocina?: number[];
+    momentos?: string[];
     preferenciaChef?: string;
     preferenciasCulinarias?: string;
   };

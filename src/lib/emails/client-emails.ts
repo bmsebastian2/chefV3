@@ -36,6 +36,14 @@ export interface RequestSummary {
   ocasion?: string
   notas?: string
   mealSlots?: MealSlotSummary[]
+  // Detalle del servicio semanal (strings ya formateados en ES desde actions.ts)
+  semanal?: {
+    frecuencia?: string   // "2 días por semana"
+    dias?: string         // "lunes y jueves"
+    momentos?: string     // "Almuerzo y cena"
+    personas?: string     // "4 personas"
+    total?: string        // "4 comidas semanales"
+  }
 }
 
 // ── HTML shell ────────────────────────────────────────────────────────────────
@@ -156,6 +164,13 @@ function detailsBlock(r: RequestSummary): string {
       ['Hora', r.hora],
       ['Fecha', r.fecha],
     ])}
+    ${r.semanal ? section('Servicio semanal', [
+      ['Frecuencia',          r.semanal.frecuencia],
+      ['Días',                r.semanal.dias],
+      ['Momentos por día',    r.semanal.momentos],
+      ['Personas por comida', r.semanal.personas],
+      ['Total de comidas',    r.semanal.total],
+    ]) : ''}
     ${r.mealSlots?.length ? mealSlotsTable(r.mealSlots) : ''}
     ${section('Presupuesto', [
       ['Número de comensales', r.comensales],

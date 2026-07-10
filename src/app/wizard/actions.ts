@@ -80,6 +80,14 @@ const BUDGET_DISPLAY: Record<string, string> = {
 
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
 
+// Formato semanal en ES natural (mismo criterio que el email del chef).
+const WEEKDAYS_ES: Record<number, string> = {
+  1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado', 7: 'domingo',
+}
+const joinNatural = (items: string[]): string =>
+  items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} y ${items[items.length - 1]}`
+const capFirst = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+
 function formatLocalDate(date: Date): string {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -420,18 +428,19 @@ export async function submitServiceRequest(
 // ─── submitWeeklyRequest ──────────────────────────────────────────────────────
 // Requires two DB changes before this runs:
 //   1. ALTER TABLE weekly_meal_details ALTER COLUMN frecuencia_cocina TYPE text;
-//   2. CREATE FUNCTION insert_weekly_meal_details(...) SECURITY DEFINER — see below:
+//   2. ALTER TABLE weekly_meal_details ADD COLUMN momentos text;  -- CSV "almuerzo,cena"
+//   3. CREATE FUNCTION insert_weekly_meal_details(...) SECURITY DEFINER — see below:
 //
 //   create or replace function insert_weekly_meal_details(
 //     p_request_id uuid, p_codigo_postal text, p_comidas_por_semana int,
-//     p_raciones_por_comida int, p_frecuencia_cocina text,
+//     p_raciones_por_comida int, p_frecuencia_cocina text, p_momentos text,
 //     p_preferencia_chef text, p_preferencias_culinarias text
 //   ) returns void language plpgsql security definer as $$
 //   begin
 //     insert into weekly_meal_details (request_id, codigo_postal, comidas_por_semana,
-//       raciones_por_comida, frecuencia_cocina, preferencia_chef, preferencias_culinarias)
+//       raciones_por_comida, frecuencia_cocina, momentos, preferencia_chef, preferencias_culinarias)
 //     values (p_request_id, p_codigo_postal, p_comidas_por_semana, p_raciones_por_comida,
-//       p_frecuencia_cocina, p_preferencia_chef, p_preferencias_culinarias);
+//       p_frecuencia_cocina, p_momentos, p_preferencia_chef, p_preferencias_culinarias);
 //   end; $$;
 
 export async function submitWeeklyRequest(
@@ -507,13 +516,18 @@ export async function submitWeeklyRequest(
   }
 
   // Insertar weekly_meal_details (requiere RPC definida arriba)
-  const diasStr = (data.weeklyDetails?.frecuenciaCocina ?? []).join(',')
+  const dias      = data.weeklyDetails?.frecuenciaCocina ?? []
+  const momentos  = data.weeklyDetails?.momentos ?? []
+  const diasStr   = dias.join(',')
+  // Total autoritativo: se DERIVA de días × momentos (no del input del cliente).
+  const comidasTotal = dias.length && momentos.length ? dias.length * momentos.length : null
   const { error: weeklyError } = await supabase.rpc('insert_weekly_meal_details', {
     p_request_id:              newRequestId,
     p_codigo_postal:           data.weeklyDetails?.codigoPostal           ?? null,
-    p_comidas_por_semana:      data.weeklyDetails?.comidasPorSemana        ?? null,
+    p_comidas_por_semana:      comidasTotal,
     p_raciones_por_comida:     data.weeklyDetails?.racionesPorComida       ?? null,
     p_frecuencia_cocina:       diasStr || null,
+    p_momentos:                momentos.join(',') || null,
     p_preferencia_chef:        data.weeklyDetails?.preferenciaChef         ?? null,
     p_preferencias_culinarias: data.weeklyDetails?.preferenciasCulinarias  ?? null,
   })
@@ -523,10 +537,16 @@ export async function submitWeeklyRequest(
   const requestSummary: RequestSummary = {
     lugar:         data.location.name,
     fecha:         `${eventDate.getDate()} de ${MONTHS_ES[eventDate.getMonth()]} de ${eventDate.getFullYear()}`,
-    comensales:    `${raciones} ${raciones === 1 ? 'persona' : 'personas'}`,
     // Sin los centinelas "Sí"/"Ninguna" que agrega StepDietarySimple
     restricciones: restrictions.filter((r) => r !== 'Sí' && r !== 'Ninguna').join(', ') || 'No',
     notas:         data.weeklyDetails?.preferenciasCulinarias ?? undefined,
+    semanal: {
+      frecuencia: dias.length ? `${dias.length} ${dias.length === 1 ? 'día' : 'días'} por semana` : undefined,
+      dias:       dias.length ? joinNatural(dias.map((d) => WEEKDAYS_ES[d] ?? String(d))) : undefined,
+      momentos:   momentos.length ? capFirst(joinNatural(momentos)) : undefined,
+      personas:   `${raciones} ${raciones === 1 ? 'persona' : 'personas'}`,
+      total:      comidasTotal != null ? `${comidasTotal} ${comidasTotal === 1 ? 'comida semanal' : 'comidas semanales'}` : undefined,
+    },
   }
 
   const notifyPayload = {
