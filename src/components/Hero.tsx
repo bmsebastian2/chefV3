@@ -19,7 +19,7 @@ const chefPins = [
 function HeroVideoCard({ className, videoWhen }: { className: string; videoWhen: string }) {
   return (
     <Link
-      href="/wizard"
+      href="/asistente"
       className={`hero-anim group relative block overflow-hidden rounded-2xl shadow-lg shadow-zinc-900/10 ring-1 ring-black/5 transition-[transform,box-shadow] duration-500 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-900/15 hover:ring-amber-300/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${className}`}
       style={{ animationDelay: "560ms" }}
     >
@@ -45,8 +45,10 @@ function HeroVideoCard({ className, videoWhen }: { className: string; videoWhen:
             <ChefHat className="h-3.5 w-3.5" />
             Catering & cenas privadas
           </span>
+          
           <h2 className="font-serif text-xl font-semibold leading-tight text-white sm:text-2xl">
             Comida de chef, en tu mesa
+            
           </h2>
           <span className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-white/90">
             Reserva experiencia
@@ -108,7 +110,7 @@ export function Hero() {
           <div className="flex flex-col justify-start">
 
             {/* Eyebrow */}
-            <div className="hero-anim flex items-center gap-3 mb-4" style={{ animationDelay: "0ms" }}>
+            <div className="hero-anim flex items-center justify-center sm:justify-start gap-3 mb-4" style={{ animationDelay: "0ms" }}>
               <span className="h-px w-10 bg-amber-500/70" aria-hidden="true" />
               <svg
                 viewBox="0 0 21 14"
@@ -121,22 +123,26 @@ export function Hero() {
               </svg>
               <span className="text-[11px] font-semibold tracking-[0.28em] uppercase text-amber-700">
                 Chefs privados en tu hogar
+                
               </span>
+              
             </div>
 
             {/* Titular display */}
             <h1
-              className="hero-anim font-serif text-5xl md:text-6xl lg:text-[4rem] font-semibold text-zinc-900 tracking-tight mb-6 leading-[1.05]"
+              className="hero-anim font-serif text-5xl md:text-6xl lg:text-[4rem] font-semibold text-zinc-900 tracking-tight mb-6 leading-[1.05] text-center sm:text-left"
               style={{ animationDelay: "120ms" }}
             >
+              
               Alta cocina.
               <br />
               Donde tú estés.
+               
             </h1>
 
             {/* Subtítulo */}
             <p
-              className="hero-anim font-sans text-base md:text-lg text-zinc-500 mb-8 max-w-md font-light leading-relaxed"
+              className="hero-anim font-sans text-base md:text-lg text-zinc-500 mb-8 max-w-md font-light leading-relaxed text-center sm:text-left mx-auto sm:mx-0"
               style={{ animationDelay: "240ms" }}
             >
               Disfruta experiencias gastronómicas únicas con chefs de élite, sin
@@ -148,10 +154,10 @@ export function Hero() {
               className="hero-anim flex flex-col sm:flex-row gap-4 items-stretch sm:items-center"
               style={{ animationDelay: "360ms" }}
             >
-              <Link href="/asistente" className="w-full sm:w-auto">
+              <Link href="/asistente" className="w-fit mx-auto sm:mx-0 sm:w-auto">
                 <Button
                   size="lg"
-                  className="group/cta relative w-full sm:w-auto overflow-hidden rounded-full border-none bg-accent text-white h-12 px-8 text-base font-medium shadow-xl shadow-green-500/25 ring-1 ring-inset ring-white/10 transform-gpu transition-all duration-300 ease-out hover:bg-green-600 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-green-500/40"
+                  className="group/cta relative w-auto overflow-hidden rounded-full border-none bg-accent text-white h-12 px-8 text-base font-medium shadow-xl shadow-green-500/25 ring-1 ring-inset ring-white/10 transform-gpu transition-all duration-300 ease-out hover:bg-green-600 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-green-500/40"
                 >
                   {/* Brillo superior — acabado pulido y tactil */}
                   <span
