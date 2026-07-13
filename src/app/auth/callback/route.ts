@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
-import type { EmailOtpType } from '@supabase/supabase-js'
+import type { EmailOtpType, User } from '@supabase/supabase-js'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -13,12 +13,16 @@ export async function GET(request: Request) {
 
   const supabase = await createClient()
   let userId: string | null = null
+  let authUser: User | null = null
 
   // PKCE flow: el code se puede intercambiar directamente (server-generated magic links)
   if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (error) console.error('[callback] exchangeCodeForSession:', error.message)
-    else userId = data.session?.user?.id ?? null
+    else {
+      authUser = data.session?.user ?? data.user ?? null
+      userId = authUser?.id ?? null
+    }
   }
 
   // OTP flow: token_hash + type (magic link en proyectos con PKCE habilitado)
@@ -28,11 +32,39 @@ export async function GET(request: Request) {
       type: type as EmailOtpType,
     })
     if (error) console.error('[callback] verifyOtp:', error.message)
-    else userId = data.session?.user?.id ?? null
+    else {
+      authUser = data.session?.user ?? data.user ?? null
+      userId = authUser?.id ?? null
+    }
   }
 
   if (userId) {
     const admin = createAdminClient()
+
+    // Usuario OAuth (Google) sin fila en public.users → crearla con rol 'client'.
+    // El RPC es idempotente: si ya existe (p. ej. un chef que linkea su Google),
+    // no la pisa, así conserva su rol/perfil y el gate de bloqueo sigue aplicando.
+    const { data: existing } = await admin
+      .from('users')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (!existing) {
+      const meta = (authUser?.user_metadata ?? {}) as Record<string, string>
+      const full = (meta.full_name ?? meta.name ?? '').trim()
+      const [firstToken, ...restTokens] = full.split(/\s+/).filter(Boolean)
+      const firstName = meta.given_name?.trim() || firstToken || (authUser?.email?.split('@')[0] ?? '')
+      const firstSurname = meta.family_name?.trim() || restTokens.join(' ') || null
+
+      const { error: regErr } = await admin.rpc('register_oauth_user', {
+        p_user_id:       userId,
+        p_email:         authUser?.email ?? '',
+        p_first_name:    firstName,
+        p_first_surname: firstSurname,
+      })
+      if (regErr) console.error('[callback] register_oauth_user:', regErr.message)
+    }
 
     // Activa las solicitudes pendientes y devuelve las activadas en una sola
     // operación atómica (UPDATE ... RETURNING dentro de la RPC SECURITY DEFINER).

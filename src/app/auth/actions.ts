@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { TERMS_VERSION } from '@/lib/terms'
 
@@ -23,7 +24,7 @@ export async function signup(prevState: { error: string } | null, formData: Form
     email: formData.get('email') as string,
     password: formData.get('password') as string,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
     },
   })
 
@@ -37,7 +38,7 @@ export async function loginWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
     },
   })
 
@@ -48,6 +49,9 @@ export async function loginWithGoogle() {
 export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
+  // Limpiar la marca de auto-entrada para que el próximo login vuelva a
+  // caer directo en su panel al abrir la app.
+  ;(await cookies()).delete('gc_home_auto')
   redirect('/')
 }
 
@@ -87,7 +91,7 @@ export async function requestPasswordReset(
   // El enlace del email vuelve por /auth/callback, que intercambia el code y
   // redirige a /reset-password gracias al parámetro `next`.
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/reset-password`,
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`,
   })
 
   if (error) return { error: error.message, success: false }
@@ -137,7 +141,7 @@ export async function registerChef(prevState: { error: string } | null, formData
       email,
       password,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
       },
     })
 

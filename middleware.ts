@@ -72,7 +72,13 @@ export async function middleware(request: NextRequest) {
         client: '/client-dashboard',
       }
 
-      // En la raíz con sesión (bypass con ?home=1 para ver la landing logueado),
+      // Auto-entrada al panel: solo la PRIMERA vez que la sesión de navegación
+      // aterriza en "/". Tras redirigir dejamos esta cookie (de sesión, muere al
+      // cerrar el browser); mientras exista, "/" se puede ver logueado (logo,
+      // links, URL tipeada) sin rebotar al panel.
+      const HOME_COOKIE = 'gc_home_auto'
+
+      // En la raíz con sesión (bypass explícito con ?home=1),
       // o en cualquier panel protegido → necesitamos el rol.
       const onRoot = pathname === '/' && !searchParams.has('home')
       const onDashboard =
@@ -89,8 +95,13 @@ export async function middleware(request: NextRequest) {
 
         const home = userData?.role ? HOME_BY_ROLE[userData.role] : undefined
 
-        // En la raíz → mandar a su panel según rol.
-        if (onRoot && home) return redirectTo(home)
+        // En la raíz → auto-entrada al panel solo si aún no redirigimos en esta
+        // sesión. Con la cookie ya puesta, el usuario logueado ve el home normal.
+        if (onRoot && home && !request.cookies.get(HOME_COOKIE)) {
+          const res = redirectTo(home)
+          res.cookies.set(HOME_COOKIE, '1', { path: '/', httpOnly: true, sameSite: 'lax' })
+          return res
+        }
 
         // En un panel que no es el de su rol → mandarlo al suyo.
         // (No bloquea acceder a un recurso ajeno DENTRO del panel propio:
