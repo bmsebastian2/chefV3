@@ -12,7 +12,7 @@
 // de filtros (que recargan la página) vuelvan a la misma pestaña.
 // ============================================================================
 
-import { useState, useEffect, useRef, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 
 export type AdminTab = {
   id:       string
@@ -36,8 +36,14 @@ export function AdminTabs({
   // primera vez que se activa (lazy-mount) y luego queda montado para conservar
   // su estado. Esto hace que el contenido lazy (Solicitudes) recién dispare su
   // carga cuando el admin entra a esa pestaña.
-  const activated = useRef<Set<string>>(new Set([first]))
-  activated.current.add(active)
+  const [activated, setActivated] = useState<Set<string>>(() => new Set([first]))
+
+  // Cambiar de pestaña + registrar su activación (en el handler, no en render).
+  // El bail-out evita recrear el Set y remontar al reseleccionar una ya abierta.
+  const selectTab = (id: string) => {
+    setActive(id)
+    setActivated((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
+  }
 
   // Refleja la pestaña en la URL sin recargar, para que un submit de filtro
   // (form GET) regrese a la misma pestaña vía ?tab=.
@@ -61,7 +67,7 @@ export function AdminTabs({
                 key={t.id}
                 role="tab"
                 aria-selected={on}
-                onClick={() => setActive(t.id)}
+                onClick={() => selectTab(t.id)}
                 className={`relative flex items-center gap-2 whitespace-nowrap px-3.5 py-3.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 sm:px-4 ${
                   on ? 'text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'
                 }`}
@@ -95,7 +101,7 @@ export function AdminTabs({
           hidden={t.id !== active}
           className={t.id === active ? '' : 'hidden'}
         >
-          {activated.current.has(t.id) ? t.content : null}
+          {activated.has(t.id) ? t.content : null}
         </div>
       ))}
     </>

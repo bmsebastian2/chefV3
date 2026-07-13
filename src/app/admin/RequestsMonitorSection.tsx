@@ -148,7 +148,6 @@ export function RequestsMonitorSection() {
   // Carga lazy: al montarse (la pestaña "Solicitudes" se abrió por primera vez).
   useEffect(() => {
     load(DEFAULT_FILTERS, 0, true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function applyFilter(patch: Partial<Filters>) {

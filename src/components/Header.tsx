@@ -15,6 +15,23 @@ const navLinks = [
   { href: "/chef-registration", label: "Registro de Chef" },
 ];
 
+// Enlace real (<a href>) en vez de window.location.assign: hace una navegación
+// de verdad que corre middleware + layout en el server y no puede "fallar en
+// silencio". `panelHref` ya es el destino directo del rol, así que no depende de
+// ningún redirect intermedio.
+function PanelButton({ panelHref, onClick }: { panelHref: string; onClick?: () => void }) {
+  return (
+    <a href={panelHref} onClick={onClick} className="contents">
+      <Button
+        className="bg-accent text-white border-none rounded-full gap-2 hover:scale-105 transition-transform"
+      >
+        <LayoutDashboard className="w-4 h-4" />
+        Mi panel
+      </Button>
+    </a>
+  );
+}
+
 export function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -63,21 +80,6 @@ export function Header() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Enlace real (<a href>) en vez de window.location.assign: hace una navegación
-  // de verdad que corre middleware + layout en el server y no puede "fallar en
-  // silencio". `panelHref` ya es el destino directo del rol, así que no depende de
-  // ningún redirect intermedio.
-  const PanelButton = ({ onClick }: { onClick?: () => void }) => (
-    <a href={panelHref} onClick={onClick} className="contents">
-      <Button
-        className="bg-accent text-white border-none rounded-full gap-2 hover:scale-105 transition-transform"
-      >
-        <LayoutDashboard className="w-4 h-4" />
-        Mi panel
-      </Button>
-    </a>
-  );
-
   return (
     <>
     <header
@@ -117,7 +119,7 @@ export function Header() {
         <div className="flex items-center gap-3">
           <div className="hidden md:flex items-center gap-3">
             <InstallButton />
-            {loggedIn ? <PanelButton /> : <LoginDialog />}
+            {loggedIn ? <PanelButton panelHref={panelHref} /> : <LoginDialog />}
           </div>
 
           {/* Hamburger */}
@@ -166,7 +168,7 @@ export function Header() {
 
             <div className="mt-auto flex flex-col gap-3">
               <InstallButton className="justify-center py-2 border border-border rounded-lg hover:bg-secondary" />
-              {loggedIn ? <PanelButton onClick={() => setOpen(false)} /> : <LoginDialog />}
+              {loggedIn ? <PanelButton panelHref={panelHref} onClick={() => setOpen(false)} /> : <LoginDialog />}
               <Link href="/wizard" onClick={() => setOpen(false)}>
                 <Button className="w-full bg-accent text-white border-none h-12 text-base rounded-full transition-all duration-200 hover:scale-105 hover:shadow-lg hover:shadow-accent/50">
                   Reservar experiencia

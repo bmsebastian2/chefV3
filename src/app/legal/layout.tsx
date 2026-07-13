@@ -15,6 +15,64 @@ const legalPages = [
 
 type Heading = { id: string; text: string };
 
+function PageNav({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
+  return (
+    <nav className="flex flex-col gap-1">
+      <span className="px-3 mb-2 text-[10px] font-black tracking-[0.22em] uppercase text-zinc-400">
+        Documentos legales
+      </span>
+      {legalPages.map((p) => {
+        const active = pathname === p.href;
+        return (
+          <Link
+            key={p.href}
+            href={p.href}
+            onClick={onNavigate}
+            className={`rounded-lg px-3 py-2 text-sm transition-colors ${
+              active
+                ? "bg-accent/10 text-accent font-medium"
+                : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+            }`}
+          >
+            {p.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+function Toc({ headings, activeId, onNavigate }: {
+  headings: Heading[];
+  activeId: string;
+  onNavigate: () => void;
+}) {
+  return headings.length > 0 ? (
+    <div className="mt-8 border-t border-zinc-200 pt-6">
+      <span className="px-3 mb-2 block text-[10px] font-black tracking-[0.22em] uppercase text-zinc-400">
+        En esta página
+      </span>
+      <ul className="flex flex-col gap-0.5">
+        {headings.map((h) => (
+          <li key={h.id}>
+            <a
+              href={`#${h.id}`}
+              onClick={onNavigate}
+              className={`block rounded-lg border-l-2 px-3 py-1.5 text-sm leading-snug transition-colors ${
+                activeId === h.id
+                  ? "border-accent text-accent font-medium"
+                  : "border-transparent text-zinc-500 hover:text-zinc-900"
+              }`}
+            >
+              {h.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : null;
+}
+
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [headings, setHeadings] = useState<Heading[]>([]);
@@ -47,57 +105,6 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
     return () => observer.disconnect();
   }, [headings]);
 
-  const PageNav = () => (
-    <nav className="flex flex-col gap-1">
-      <span className="px-3 mb-2 text-[10px] font-black tracking-[0.22em] uppercase text-zinc-400">
-        Documentos legales
-      </span>
-      {legalPages.map((p) => {
-        const active = pathname === p.href;
-        return (
-          <Link
-            key={p.href}
-            href={p.href}
-            onClick={() => setTocOpen(false)}
-            className={`rounded-lg px-3 py-2 text-sm transition-colors ${
-              active
-                ? "bg-accent/10 text-accent font-medium"
-                : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-            }`}
-          >
-            {p.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-
-  const Toc = () =>
-    headings.length > 0 ? (
-      <div className="mt-8 border-t border-zinc-200 pt-6">
-        <span className="px-3 mb-2 block text-[10px] font-black tracking-[0.22em] uppercase text-zinc-400">
-          En esta página
-        </span>
-        <ul className="flex flex-col gap-0.5">
-          {headings.map((h) => (
-            <li key={h.id}>
-              <a
-                href={`#${h.id}`}
-                onClick={() => setTocOpen(false)}
-                className={`block rounded-lg border-l-2 px-3 py-1.5 text-sm leading-snug transition-colors ${
-                  activeId === h.id
-                    ? "border-accent text-accent font-medium"
-                    : "border-transparent text-zinc-500 hover:text-zinc-900"
-                }`}
-              >
-                {h.text}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    ) : null;
-
   return (
     <main className="flex min-h-screen flex-col bg-background">
       <Header />
@@ -107,8 +114,8 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
           {/* Sidebar — desktop sticky */}
           <aside className="hidden lg:block">
             <div className="sticky top-28">
-              <PageNav />
-              <Toc />
+              <PageNav pathname={pathname} onNavigate={() => setTocOpen(false)} />
+              <Toc headings={headings} activeId={activeId} onNavigate={() => setTocOpen(false)} />
             </div>
           </aside>
 
@@ -130,8 +137,8 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
             </button>
             {tocOpen && (
               <div className="mt-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <PageNav />
-                <Toc />
+                <PageNav pathname={pathname} onNavigate={() => setTocOpen(false)} />
+                <Toc headings={headings} activeId={activeId} onNavigate={() => setTocOpen(false)} />
               </div>
             )}
           </div>

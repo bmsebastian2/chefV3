@@ -15,6 +15,10 @@ export function AuthHashHandler() {
     const refresh = params.get('refresh_token')
     if (access && refresh) {
       window.history.replaceState(null, '', window.location.pathname)
+      // Lectura de un valor solo-navegador (hash) tras la hidratación: el estado
+      // dispara el effect de setSession y habilita el overlay. No se puede derivar
+      // en render (SSR no tiene window → hydration mismatch). Uso legítimo.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTokens({ access, refresh })
     }
   }, [])

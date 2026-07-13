@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { Loader2, Plus, Trash2, AlertCircle } from "lucide-react";
 import { createClient } from "@/utils/supabase/clients";
 import { addGalleryPhoto, deleteGalleryPhoto } from "@/app/dashboard/fotos/actions";
@@ -102,10 +103,12 @@ export function GaleriaUpload({
             key={photo.id}
             className="relative group aspect-square rounded-2xl overflow-hidden bg-zinc-100 shadow-sm"
           >
-            <img
+            <Image
               src={photo.url}
               alt=""
-              className="w-full h-full object-cover"
+              fill
+              sizes="(min-width: 640px) 33vw, 50vw"
+              className="object-cover"
             />
             {/* Hover overlay */}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-150 rounded-2xl" />

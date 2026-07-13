@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { Camera, Loader2, MoreHorizontal, AlertCircle } from "lucide-react";
 import { createClient } from "@/utils/supabase/clients";
 import { saveProfilePhotoUrl } from "@/app/dashboard/fotos/actions";
@@ -75,9 +76,11 @@ export function FotoPerfilUpload({
         {/* Photo container */}
         <div className="w-52 h-52 rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 shadow-sm">
           {currentUrl ? (
-            <img
+            <Image
               src={currentUrl}
               alt="Foto de perfil"
+              width={208}
+              height={208}
               className="w-full h-full object-cover"
             />
           ) : (

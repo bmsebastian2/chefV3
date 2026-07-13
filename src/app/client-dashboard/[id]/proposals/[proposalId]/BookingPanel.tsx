@@ -143,8 +143,11 @@ export function BookingPanel({ bookingId, requestId, bookingStatus, hasReview, c
   // pasó. Comparamos en la zona horaria local del navegador (la real del cliente):
   // medianoche del día del servicio vs. ahora. El guard server-side (complete_booking)
   // es la protección real; esto es UX para no ofrecer una acción que será rechazada.
+  // "Ahora" capturado una vez al montar: mantiene el render puro (no leemos el
+  // reloj en cada render). Sigue siendo la hora local del cliente.
+  const [now] = useState(() => Date.now())
   const serviceDay  = new Date(serviceDate + "T00:00:00")
-  const serviceOccurred = serviceDay.getTime() <= Date.now()
+  const serviceOccurred = serviceDay.getTime() <= now
   const serviceDateLabel = serviceDay.toLocaleDateString("es-AR", {
     day: "numeric", month: "short", year: "numeric",
   })

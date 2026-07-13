@@ -18,11 +18,6 @@ import { getChefsForAdmin, setChefBlock } from './actions'
 
 type ChefRow = NonNullable<Awaited<ReturnType<typeof getChefsForAdmin>>['data']>[number]
 
-function fmtDate(iso: string | null) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
 // Estado visible: el bloqueo admin gana sobre is_active.
 function chefState(c: ChefRow): { label: string; chip: string } {
   if (c.admin_blocked) return { label: 'Bloqueado', chip: 'bg-red-100 text-red-700' }
@@ -64,7 +59,6 @@ export function ChefsManagementSection() {
   // Carga lazy al montarse (la pestaña se abrió por primera vez).
   useEffect(() => {
     load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function openDialog(chef: ChefRow, block: boolean) {
