@@ -34,28 +34,20 @@ export async function GET(request: Request) {
   if (userId) {
     const admin = createAdminClient()
 
-    // 1. Obtener los IDs de solicitudes pendientes ANTES de actualizar
-    const { data: pending, error: pendingErr } = await admin
-      .from('service_requests')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('status', 'pending_confirmation')
+    // Activa las solicitudes pendientes y devuelve las activadas en una sola
+    // operación atómica (UPDATE ... RETURNING dentro de la RPC SECURITY DEFINER).
+    // Idempotente: una segunda apertura del enlace no matchea ninguna fila y
+    // devuelve [], así el after() no vuelve a notificar.
+    const { data: activated, error: activateErr } = await admin
+      .rpc('activate_pending_requests', { p_user_id: userId })
 
-    console.log('[callback] pending select:', JSON.stringify(pending), 'err:', pendingErr?.message)
-
-    // 2. Actualizar el status a 'new'
-    const { error: updateErr } = await admin
-      .from('service_requests')
-      .update({ status: 'new' })
-      .eq('user_id', userId)
-      .eq('status', 'pending_confirmation')
-
-    if (updateErr) {
-      console.error('[callback] update service_requests:', updateErr.message)
+    if (activateErr) {
+      console.error('[callback] activate_pending_requests:', activateErr.message)
     }
 
-    const requestIds = (pending ?? []).map((r) => r.id as string).filter(Boolean)
-    console.log('[callback] requestIds a notificar:', requestIds)
+    const requestIds = ((activated ?? []) as { id: string }[])
+      .map((r) => r.id)
+      .filter(Boolean)
 
     if (requestIds.length > 0) {
       after(async () => {
