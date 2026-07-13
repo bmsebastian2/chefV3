@@ -1380,6 +1380,10 @@ const RESTRICTION_OPTIONS = [
 ] as const;
 
 export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
+  // useRef debe llamarse SIEMPRE y en el mismo orden en cada render (rules-of-hooks).
+  // Va antes del return temprano de `!hasRestrictions`; en esa rama el ref queda
+  // sin usar, sin efecto visible. Lo consume el textarea auto-resize de más abajo.
+  const notasRef = useRef<HTMLTextAreaElement>(null);
   const hasRestrictions = (data.dietaryRestrictions ?? [])[0] === "Sí";
 
   const toggleRestriction = (val: string) => {
@@ -1418,8 +1422,6 @@ export function StepDietarySimple({ data, updateData, nextStep }: StepProps) {
       </div>
     );
   }
-
-  const notasRef = useRef<HTMLTextAreaElement>(null);
 
   const handleNotas = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateData({ dietaryOtras: e.target.value });
