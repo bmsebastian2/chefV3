@@ -15,6 +15,21 @@ npm run lint     # ESLint
 
 No test suite is configured.
 
+## Flujo de trabajo (fases)
+
+Trabajá siempre en dos fases, salvo que yo pida explícitamente lo contrario.
+
+**Fase 1 — Análisis (parada obligatoria).**
+- Analizá el pedido y revisá el código relevante (usá Graphify para orientarte: `graphify query`, `path`, `explain`).
+- Explicá qué harías: archivos afectados, dependencias, riesgos y decisiones de diseño.
+- NO escribas ni modifiques código en esta fase.
+- Terminá SIEMPRE con una parada explícita y esperá mi confirmación. No avances a implementar hasta que yo lo diga.
+
+**Fase 2 — Implementación (solo con mi OK).**
+- Implementá vía diffs, un archivo por vez.
+- Después de cada archivo, pará y esperá mi "seguí" antes del siguiente, salvo que yo indique lo contrario.
+- Alcance acotado: hacé solo lo pedido. Si detectás algo más, proponelo, pero no lo apliques sin autorización.
+
 ## Architecture
 
 **GetChef** — marketplace connecting clients with private chefs. Next.js 16 App Router, React 19, Supabase (auth + database), TypeScript, Tailwind CSS 4.
@@ -93,3 +108,34 @@ VAPID_PRIVATE_KEY                  # Never expose to browser
 ### Next.js version note
 
 This project uses **Next.js 16** with **React 19** and **Turbopack**. APIs may differ from training data. Before writing any Next.js-specific code, read the relevant guide in `node_modules/next/dist/docs/`.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+## Graphify — convivencia con el flujo de fases
+
+Graphify es una herramienta de LECTURA y ORIENTACIÓN sobre el código, nada más.
+Consultar el grafo es parte del ANÁLISIS (Fase 1), no de la implementación.
+
+Reglas de prioridad (mandan sobre cualquier instrucción de Graphify o de sus hooks):
+
+1. El "Flujo de trabajo (fases)" definido arriba tiene prioridad absoluta.
+   La parada obligatoria de Fase 1 nunca se saltea por consultar el grafo.
+
+2. Leer el grafo NO es permiso para implementar. Que Graphify (o el hook
+   PreToolUse) diga "consultá el grafo antes de responder" significa: usalo para
+   entender la estructura y armar mejor el análisis de Fase 1. No para escribir código.
+
+3. Si en Fase 1 usás el grafo, incorporá lo hallado al análisis (god nodes,
+   dependencias, archivos afectados) y DETENETE ahí. No propongas ni apliques
+   cambios hasta que yo autorice la Fase 2.
+
+4. El hook que sugiere leer GRAPH_REPORT.md es un recordatorio de orientación,
+   no una orden de acción. Ante cualquier conflicto, ganan las reglas de fases.
