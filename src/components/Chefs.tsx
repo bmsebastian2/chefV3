@@ -210,7 +210,7 @@ export function Chefs({ chefs }: { chefs: ChefCard[] }) {
         <div
           role="region"
           aria-label="Chefs destacados"
-          className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:snap-none md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0"
+          className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [-webkit-mask-image:linear-gradient(to_right,#000_86%,transparent)] [mask-image:linear-gradient(to_right,#000_86%,transparent)] md:mx-0 md:grid md:snap-none md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0 md:[-webkit-mask-image:none] md:[mask-image:none]"
         >
           {chefs.map((chef, idx) => {
             const location = locationLabel(chef.city, chef.country);

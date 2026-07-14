@@ -142,7 +142,7 @@ export function Hero() {
 
             {/* Subtítulo */}
             <p
-              className="hero-anim font-sans text-base md:text-lg text-zinc-500 mb-8 max-w-md font-light leading-relaxed text-center sm:text-left mx-auto sm:mx-0"
+              className="hero-anim font-sans text-base md:text-lg text-zinc-600 mb-8 max-w-md font-light leading-relaxed text-center sm:text-left mx-auto sm:mx-0"
               style={{ animationDelay: "240ms" }}
             >
               Disfruta experiencias gastronómicas únicas con chefs de élite, sin

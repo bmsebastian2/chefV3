@@ -175,7 +175,7 @@ export function SaboresEnCasa() {
           {/* ── Mosaico (mobile): protagonista + tira con scroll-snap ── */}
           <div className="lg:hidden">
             <DishCard dish={dishes[0]} priority onSelect={setSelected} className={`aspect-[4/3] ${animCls}`} style={animStyle(1)} />
-            <div className="-mx-6 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="-mx-6 mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [-webkit-mask-image:linear-gradient(to_right,#000_86%,transparent)] [mask-image:linear-gradient(to_right,#000_86%,transparent)]">
               {dishes.slice(1).map((dish, i) => (
                 <DishCard
                   key={dish.img}
