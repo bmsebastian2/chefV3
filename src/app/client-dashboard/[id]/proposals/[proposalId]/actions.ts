@@ -118,6 +118,7 @@ export async function cancelBooking(
 export async function submitReview(
   bookingId: string,
   requestId: string,
+  proposalId: string,
   ratings: { chef: number; food: number; presentation: number; cleanliness: number },
   comment?: string,
 ): Promise<{ error?: string }> {
@@ -141,7 +142,7 @@ export async function submitReview(
     return { error: 'No se pudo enviar la reseña' }
   }
 
-  revalidatePath(`/client-dashboard/${requestId}/proposals/${bookingId}`)
+  revalidatePath(`/client-dashboard/${requestId}/proposals/${proposalId}`)
   revalidatePath(`/client-dashboard/${requestId}/proposals`)
   return {}
 }

@@ -33,6 +33,7 @@ type MatchChefsRow = {
   tagline: string | null
   city: string | null
   rating_avg: number | string | null
+  rating_count: number | null
   total_services: number | null
   photo_url: string | null
   cuisines: string[] | null
@@ -61,6 +62,7 @@ export async function matchChefs(filters: MatchFilters): Promise<MatchResult> {
     tagline:       r.tagline,
     city:          r.city,
     ratingAvg:     Number(r.rating_avg) || 0,
+    ratingCount:   r.rating_count ?? 0,
     totalServices: r.total_services ?? 0,
     photoUrl:      r.photo_url,
     cuisines:      r.cuisines ?? [],

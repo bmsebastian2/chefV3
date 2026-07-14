@@ -476,7 +476,7 @@ function ChefCard({
               {chef.city}
             </span>
           )}
-          {chef.ratingAvg > 0 && (
+          {chef.ratingCount > 0 && (
             <span className="inline-flex items-center gap-1">
               <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
               {chef.ratingAvg.toFixed(1)}

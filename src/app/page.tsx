@@ -25,6 +25,7 @@ type ChefProfileRow = {
   country: string | null;
   experience_years: number | null;
   rating_avg: number | null;
+  rating_count: number | null;
   is_pro: boolean | null;
   users: {
     first_name: string | null;
@@ -49,6 +50,7 @@ async function getFeaturedChefs(): Promise<ChefCard[]> {
       country,
       experience_years,
       rating_avg,
+      rating_count,
       is_pro,
       users:user_id ( first_name, first_surname, second_surname, avatar_url )
     `
@@ -93,8 +95,9 @@ async function getFeaturedChefs(): Promise<ChefCard[]> {
       experienceYears: row.experience_years,
       isPro: !!row.is_pro,
       imageUrl: photoByChef.get(row.id) ?? u?.avatar_url ?? null,
-      // count = 0 hasta que exista la tabla de reviews; solo cambia la fuente aquí.
-      rating: { average: Number(row.rating_avg ?? 0), count: 0 },
+      // count = reseñas reales (chef_profiles.rating_count, mantenido por trigger).
+      // Si es 0, RatingLine ignora rating_avg y muestra "Chef nuevo".
+      rating: { average: Number(row.rating_avg ?? 0), count: row.rating_count ?? 0 },
     };
   });
 }

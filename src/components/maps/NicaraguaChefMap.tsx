@@ -16,6 +16,7 @@ export type ChefMarker = {
   photo_url: string | null
   city: string | null
   rating_avg: number | null
+  rating_count: number | null
   tagline: string | null
 }
 
@@ -495,7 +496,7 @@ function ChefRow({
           </span>
         )}
         <span className="mt-0.5 flex items-center gap-2 text-[11px] text-zinc-400">
-          {typeof chef.rating_avg === 'number' && chef.rating_avg > 0 && (
+          {(chef.rating_count ?? 0) > 0 && typeof chef.rating_avg === 'number' && (
             <span className="flex items-center gap-0.5 text-amber-600">
               <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
               {chef.rating_avg.toFixed(1)}

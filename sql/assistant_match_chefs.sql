@@ -57,6 +57,10 @@ $$;
 --      p_cuisine      : enum de cocina (p.ej. 'italian') | null
 --      p_guests       : nº representativo de comensales (2,6,12,13...) | null
 -- ----------------------------------------------------------------------------
+-- Cambia el tipo de retorno (agrega rating_count) → CREATE OR REPLACE no basta,
+-- hay que dropear la función previa primero (firma por argumentos, no por retorno).
+drop function if exists public.match_chefs(text, text, int);
+
 create or replace function public.match_chefs(
   p_service_type text default null,
   p_cuisine      text default null,
@@ -68,6 +72,7 @@ returns table (
   tagline        text,
   city           text,
   rating_avg     numeric,
+  rating_count   int,
   total_services int,
   photo_url      text,
   cuisines       text[],
@@ -91,6 +96,7 @@ begin
         cp.tagline,
         cp.city,
         cp.rating_avg,
+        cp.rating_count,
         cp.total_services,
         rs.accepts_single,
         rs.accepts_multiple,
@@ -144,6 +150,7 @@ begin
       f.tagline,
       f.city,
       f.rating_avg,
+      f.rating_count,
       f.total_services,
       (
         select ph.url

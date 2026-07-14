@@ -10,6 +10,7 @@ import { completeBooking, cancelBooking, submitReview } from "./actions"
 type Props = {
   bookingId:     string
   requestId:     string
+  proposalId:    string
   bookingStatus: string          // 'confirmed' | 'completed' | 'cancelled'
   hasReview:     boolean
   chefName:      string
@@ -53,13 +54,14 @@ function StarRow({
 // ── Review modal ─────────────────────────────────────────────────────────────
 
 function ReviewModal({
-  bookingId, requestId, chefName, onClose, onDone,
+  bookingId, requestId, proposalId, chefName, onClose, onDone,
 }: {
-  bookingId: string
-  requestId: string
-  chefName:  string
-  onClose:   () => void
-  onDone:    () => void
+  bookingId:  string
+  requestId:  string
+  proposalId: string
+  chefName:   string
+  onClose:    () => void
+  onDone:     () => void
 }) {
   const [chef, setChef] = useState(0)
   const [food, setFood] = useState(0)
@@ -76,7 +78,7 @@ function ReviewModal({
     setError(null)
     startTransition(async () => {
       const res = await submitReview(
-        bookingId, requestId,
+        bookingId, requestId, proposalId,
         { chef, food, presentation, cleanliness },
         comment.trim() || undefined,
       )
@@ -135,7 +137,7 @@ function ReviewModal({
 
 // ── Main panel ───────────────────────────────────────────────────────────────
 
-export function BookingPanel({ bookingId, requestId, bookingStatus, hasReview, chefName, serviceDate }: Props) {
+export function BookingPanel({ bookingId, requestId, proposalId, bookingStatus, hasReview, chefName, serviceDate }: Props) {
   const router = useRouter()
   const [status, setStatus] = useState(bookingStatus)
 
@@ -225,6 +227,7 @@ export function BookingPanel({ bookingId, requestId, bookingStatus, hasReview, c
           <ReviewModal
             bookingId={bookingId}
             requestId={requestId}
+            proposalId={proposalId}
             chefName={chefName}
             onClose={() => setModalOpen(false)}
             onDone={() => { setModalOpen(false); setReviewed(true); router.refresh() }}

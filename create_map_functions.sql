@@ -38,6 +38,7 @@ BEGIN
                          ),
         'city',          cp.city,
         'rating_avg',    cp.rating_avg,
+        'rating_count',  cp.rating_count,
         'tagline',       cp.tagline
       )
     ),

@@ -31,6 +31,7 @@ export type ChefResult = {
   tagline: string | null
   city: string | null
   ratingAvg: number
+  ratingCount: number
   totalServices: number
   photoUrl: string | null
   cuisines: string[]

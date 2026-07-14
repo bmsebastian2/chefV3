@@ -77,10 +77,10 @@ function Stars({ rating, className = "" }: { rating: number; className?: string 
   );
 }
 
-// Línea de rating con tres estados, lista para la futura tabla de reviews:
+// Línea de rating con dos estados. Regla permanente: nunca mostrar promedio sin
+// reseñas reales que lo respalden (el count es el único gate).
 // - count > 0  → estrellas + "4.9 · 12 reseñas"
-// - solo average (sin reseñas aún) → estrellas + "4.9 · Nuevo"
-// - sin datos  → chip "Chef nuevo"
+// - count = 0  → chip "Chef nuevo" (se ignora rating.average por completo)
 function RatingLine({
   rating,
   size = "sm",
@@ -94,17 +94,7 @@ function RatingLine({
       <span className="flex items-center gap-2">
         <Stars rating={rating.average} />
         <span className={`${textClass} font-medium text-zinc-500`}>
-          {rating.average.toFixed(1)} · {rating.count} reseñas
-        </span>
-      </span>
-    );
-  }
-  if (rating.average > 0) {
-    return (
-      <span className="flex items-center gap-2">
-        <Stars rating={rating.average} />
-        <span className={`${textClass} font-medium text-zinc-500`}>
-          {rating.average.toFixed(1)} · Nuevo
+          {rating.average.toFixed(1)} · {rating.count} {rating.count === 1 ? "reseña" : "reseñas"}
         </span>
       </span>
     );

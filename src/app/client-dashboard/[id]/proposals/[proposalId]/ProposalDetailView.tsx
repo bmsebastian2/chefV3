@@ -345,6 +345,7 @@ export function ProposalDetailView({
           <BookingPanel
             bookingId={booking.id}
             requestId={requestId}
+            proposalId={proposal.id}
             bookingStatus={booking.status}
             hasReview={booking.hasReview}
             chefName={chef.name}
@@ -604,6 +605,7 @@ export function ProposalDetailView({
               <BookingPanel
                 bookingId={booking.id}
                 requestId={requestId}
+                proposalId={proposal.id}
                 bookingStatus={booking.status}
                 hasReview={booking.hasReview}
                 chefName={chef.name}
