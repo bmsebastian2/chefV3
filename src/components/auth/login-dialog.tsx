@@ -104,21 +104,10 @@ export function LoginDialog({ trigger }: { trigger?: React.ReactNode }) {
     return () => cancelAnimationFrame(id)
   }, [open])
 
-  // Cerrar con Escape y bloquear el scroll del fondo mientras está abierto.
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleOpenChange(false)
-    }
-    document.addEventListener('keydown', onKey)
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
+  // Escape, scroll de fondo, foco atrapado y foco devuelto: los pone
+  // DialogContent (useModalBehavior en ui/dialog.tsx). Escape entra por
+  // onOpenChange, o sea por handleOpenChange, así que respeta la animación de
+  // cierre igual que el botón.
 
   const hasLoginError = Boolean(loginState?.error)
 

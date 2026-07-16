@@ -93,22 +93,6 @@ export function Menus() {
     revealed ? "opacity-100 scale-100" : "motion-safe:opacity-0 motion-safe:scale-95"
   }`;
 
-  // Cierre con Escape + bloqueo de scroll del body mientras el detalle está abierto
-  // (el Dialog base solo maneja click-fuera, no estas dos cosas).
-  useEffect(() => {
-    if (!selected) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelected(null);
-    };
-    document.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [selected]);
-
   return (
     <section ref={sectionRef} className="relative overflow-hidden bg-white py-24">
       {/* Animaciones del detalle (respetan prefers-reduced-motion) */}

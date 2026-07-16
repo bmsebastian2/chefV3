@@ -6,15 +6,17 @@ import Link from "next/link";
 import { ArrowLeft, X, UtensilsCrossed } from "lucide-react";
 import { WizardData } from "@/components/wizard/types";
 import { getStepsForService } from "@/components/wizard/flows";
+import { parseMomento, parseSeleccion, textoDeCarta } from "@/components/menu-builder/carta";
 import { WizardSummaryBar } from "@/components/wizard/WizardSummaryBar";
 import { submitServiceRequest, submitWeeklyRequest } from "@/app/wizard/actions";
 import { ClientExtras } from "@/components/wizard/types";
 import { createClient } from "@/utils/supabase/clients";
 
 // Estado inicial del wizard a partir de los query params.
-// Incluye el contacto (comportamiento previo) y el pre-llenado que envía
-// el asistente de búsqueda de la home (servicio, ocasión, personas, cocina,
-// restricciones). Cuando el tipo de servicio ya viene elegido, se arranca
+// Incluye el contacto (comportamiento previo) y el pre-llenado que envían las
+// dos puertas de entrada de la home: el asistente de búsqueda (servicio,
+// ocasión, personas, cocina, restricciones) y el constructor de carta
+// (momento + platos). Cuando el tipo de servicio ya viene elegido, se arranca
 // saltando ese primer paso.
 function parseInitialState(
   params: { get(key: string): string | null }
@@ -50,9 +52,26 @@ function parseInitialState(
   if (guests && GUESTS_RANGE_SEED[guests]) data.guestsAdults = GUESTS_RANGE_SEED[guests];
   if (cuisine)  data.cuisine     = cuisine;
 
-  // Origen para medición: solo aceptamos el valor conocido del piloto para que
-  // la columna quede limpia (no free-text arbitrario desde la URL).
-  if (params.get("source") === "assistant") data.source = "assistant";
+  // Origen para medición: solo aceptamos los valores conocidos para que la
+  // columna quede limpia (no free-text arbitrario desde la URL).
+  const source = params.get("source");
+  if (source === "assistant" || source === "menu_builder") data.source = source;
+
+  // Constructor de carta de la home. Solo aplica al Servicio 1: es el único
+  // flujo con paso de momento (mealTime) y el único cuyo submit persiste
+  // data.details — el semanal guarda su descripción desde weeklyDetails, así
+  // que sembrar la carta ahí la perdería en silencio.
+  if (service === "1") {
+    const meal = parseMomento(params.get("meal"));
+    if (meal) {
+      data.mealTime = meal;
+      const carta = textoDeCarta(parseSeleccion(params.get("menu"), meal), meal);
+      // La carta viaja como texto en la descripción: el chef la lee en su email
+      // y el usuario la edita en el paso "describe tu evento", que por eso NO
+      // se saltea. Es el punto de edición final antes de enviar.
+      if (carta) data.details = carta;
+    }
+  }
   // "none" = el asistente ya preguntó y la respuesta fue "sin restricciones";
   // se siembra como ["Ninguna"] (mismo valor que escribe StepDietarySimple)
   // para que el paso se salte igual que cuando hay restricciones.
@@ -95,7 +114,7 @@ function WizardContent() {
   const [currentStep, setCurrentStep] = useState(initial.step);
   const [data, setData] = useState<WizardData>(initial.data);
 
-  // Pasos a saltar porque el asistente de la home ya los respondió.
+  // Pasos a saltar porque una puerta de entrada de la home ya los respondió.
   // Se calcula del pre-llenado inicial (no del estado vivo) para que el flujo
   // sea estable aunque el usuario edite valores en el resumen.
   const skipStepIds = useMemo(() => {
@@ -106,6 +125,16 @@ function WizardContent() {
     if (initial.data.guestsAdults !== undefined && data.serviceType === "1") ids.add("guests");
     if (initial.data.cuisine)                        ids.add("cuisine");
     if (initial.data.dietaryRestrictions?.length)    ids.add("dietary");
+    // El constructor de carta ya eligió el momento (es la luz de su sala).
+    if (initial.data.mealTime)                       ids.add("mealTime");
+    // Quien compuso una carta ya contestó qué le apetece: preguntárselo nombra
+    // la misma decisión dos veces y con vocabularios que no coinciden. La
+    // cocina queda sin elegir y el submit la persiste NULL (mismo valor que ya
+    // manda el semanal); el chef lee la carta en las notas, que dicen más que
+    // cualquier etiqueta. Se exige la carta y no solo el origen para que un
+    // link armado a mano (?source=menu_builder sin platos) siga preguntando en
+    // vez de mandar una solicitud muda.
+    if (initial.data.source === "menu_builder" && initial.data.details) ids.add("cuisine");
     return ids;
   }, [initial, data.serviceType]);
   const [submitted, setSubmitted] = useState<false | "active" | "pending">(false);

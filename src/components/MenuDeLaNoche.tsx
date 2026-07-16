@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { MenuBuilderDialog } from "@/components/menu-builder/MenuBuilderDialog";
 
-// Menú degustación de muestra — lo que un chef compone para ti en casa
+// Carta de muestra. Los tres platos existen en el catálogo del constructor
+// (menu-builder/dishes.ts): quien entra desde acá encuentra elegible lo que vio.
 const tastingMenu = [
   { course: "I", name: "Tartar de atún rojo", note: "palta, cítricos y aceite de oliva virgen" },
   { course: "II", name: "Lomo madurado al carbón", note: "jugo de su cocción y papas confitadas" },
@@ -14,6 +15,7 @@ const tastingMenu = [
 export function MenuDeLaNoche() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [revealed, setRevealed] = useState(false);
+  const [componiendo, setComponiendo] = useState(false);
 
   // Reveal al entrar en viewport (equivale al ScrollTrigger start "top 70%"),
   // sin el forced reflow de ScrollTrigger ni el peso de GSAP.
@@ -68,11 +70,12 @@ export function MenuDeLaNoche() {
               La experiencia
             </span>
             <h2 className={`mb-4 font-serif text-4xl font-semibold text-zinc-900 md:text-5xl ${introCls}`} style={introStyle(1)}>
-              Un menú pensado solo para ti
+              Un menú pensado solo para vos
             </h2>
             <p className={`max-w-md font-sans text-lg leading-relaxed text-zinc-500 ${introCls}`} style={introStyle(2)}>
-              No eliges de una carta fija: tu chef diseña cada plato según tu ocasión,
-              tus gustos y tus alergias, y lo cocina en tu propia cocina.
+              Elegí los platos que te tientan y dejale al chef los que prefieras que
+              decida él. Los cocina en tu casa, a la medida de tu ocasión, tus gustos
+              y tus alergias.
             </p>
           </div>
 
@@ -89,7 +92,7 @@ export function MenuDeLaNoche() {
                   El menú de esta noche
                 </span>
                 <h3 className="mt-1 font-serif text-xl font-semibold tracking-tight text-zinc-900">
-                  Lo compone tu chef, a tu medida
+                  Esta es de muestra. Componé la tuya.
                 </h3>
               </div>
 
@@ -139,17 +142,20 @@ export function MenuDeLaNoche() {
                 </span>
                 Cocinado en tu hogar
               </span>
-              <Link
-                href="/wizard"
-                className="group/cta inline-flex shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-600"
+              <button
+                type="button"
+                onClick={() => setComponiendo(true)}
+                className="group/cta inline-flex shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
               >
-                Diseñar mi menú
+                Componer mi carta
                 <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover/cta:translate-x-0.5" />
-              </Link>
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      <MenuBuilderDialog open={componiendo} onClose={() => setComponiendo(false)} />
     </section>
   );
 }

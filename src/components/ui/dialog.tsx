@@ -19,6 +19,103 @@ export function useDialogContext() {
   return context
 }
 
+const FOCUSABLE = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",")
+
+// Solo lo que se puede ver y enfocar: un elemento oculto no debe recibir el
+// foco al tabular.
+function focusables(root: HTMLElement): HTMLElement[] {
+  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+    (el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0
+  )
+}
+
+/**
+ * Lo que un modal necesita y el navegador no da gratis: Escape, foco atrapado
+ * dentro del panel, foco devuelto al cerrar y scroll de fondo bloqueado.
+ *
+ * Vive suelto y exportado —y no dentro de DialogContent— para que los modales
+ * con caparazón propio (los que no pueden usar este primitivo por su layout)
+ * compartan esta implementación en vez de escribir la suya.
+ */
+export function useModalBehavior({
+  open,
+  onClose,
+  panelRef,
+}: {
+  open: boolean
+  onClose: () => void
+  panelRef: React.RefObject<HTMLElement | null>
+}) {
+  // Por referencia: si `onClose` entrara en las dependencias, un callback
+  // recreado en cada render (el caso normal: onClose={() => setX(false)})
+  // reejecutaría el efecto entero y devolvería el foco al panel mientras el
+  // usuario tipea.
+  const onCloseRef = React.useRef(onClose)
+  React.useEffect(() => {
+    onCloseRef.current = onClose
+  })
+
+  React.useEffect(() => {
+    if (!open) return
+    const panel = panelRef.current
+    // A quién le devolvemos el foco cuando esto se cierre.
+    const abridor = document.activeElement as HTMLElement | null
+
+    panel?.focus()
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCloseRef.current()
+        return
+      }
+      if (e.key !== "Tab" || !panel) return
+      // Sin trampa, tabular se va a la página de atrás —que el overlay tapa— y
+      // se termina navegando a ciegas.
+      const items = focusables(panel)
+      if (!items.length) {
+        e.preventDefault()
+        panel.focus()
+        return
+      }
+      const primero = items[0]
+      const ultimo = items[items.length - 1]
+      const activo = document.activeElement
+      const fuera = !panel.contains(activo)
+      if (e.shiftKey && (activo === primero || fuera)) {
+        e.preventDefault()
+        ultimo.focus()
+      } else if (!e.shiftKey && (activo === ultimo || fuera)) {
+        e.preventDefault()
+        primero.focus()
+      }
+    }
+    document.addEventListener("keydown", onKeyDown)
+
+    // Scroll bloqueado, compensando el ancho de la barra para que la página de
+    // atrás no pegue un salto lateral al abrir.
+    const { overflow, paddingRight } = document.body.style
+    const barra = window.innerWidth - document.documentElement.clientWidth
+    document.body.style.overflow = "hidden"
+    if (barra > 0) document.body.style.paddingRight = `${barra}px`
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown)
+      document.body.style.overflow = overflow
+      document.body.style.paddingRight = paddingRight
+      // Solo si sigue vivo: al desmontar por navegación el abridor ya no está
+      // en el documento y enfocarlo le robaría el foco a la página nueva.
+      if (abridor && document.contains(abridor)) abridor.focus()
+    }
+  }, [open, panelRef])
+}
+
 export function Dialog({
   children,
   open: controlledOpen,
@@ -132,6 +229,9 @@ export function DialogContent({
   className?: string
 } & React.HTMLAttributes<HTMLDivElement>) {
   const { open, setOpen } = useDialogContext()
+  const panelRef = React.useRef<HTMLDivElement>(null)
+
+  useModalBehavior({ open, onClose: () => setOpen(false), panelRef })
 
   if (!open) return null
 
@@ -145,10 +245,15 @@ export function DialogContent({
         onClick={() => setOpen(false)}
       />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
+        // tabIndex -1: el panel no entra en el orden de tabulación, pero puede
+        // recibir el foco al abrir. outline-none porque el anillo va en los
+        // controles de adentro, no en el contenedor.
+        tabIndex={-1}
         className={cn(
-          "relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border border-border bg-background p-6 shadow-xl shadow-slate-950/10",
+          "relative z-10 w-full max-w-lg overflow-hidden rounded-3xl border border-border bg-background p-6 shadow-xl shadow-slate-950/10 outline-none",
           className
         )}
         {...props}

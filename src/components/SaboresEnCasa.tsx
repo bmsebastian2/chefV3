@@ -99,22 +99,6 @@ export function SaboresEnCasa() {
     return () => io.disconnect();
   }, []);
 
-  // Cierre con Escape + bloqueo de scroll del body mientras el detalle está abierto
-  // (el Dialog base solo maneja click-fuera, no estas dos cosas).
-  useEffect(() => {
-    if (!selected) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelected(null);
-    };
-    document.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [selected]);
-
   // Entrada (fade + slide) con stagger por índice.
   // prefers-reduced-motion: las variantes motion-safe evitan ocultar el contenido
   // y motion-reduce elimina la transición → aparición directa.
