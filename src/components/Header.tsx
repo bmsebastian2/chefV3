@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, UtensilsCrossed, X, LayoutDashboard } from "lucide-react";
+import { Menu, X, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginDialog } from "../components/auth/login-dialog";
 import { InstallButton } from "@/components/InstallButton";
@@ -93,10 +93,31 @@ export function Header() {
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 font-serif text-2xl font-bold tracking-tight text-zinc-900 group"
+          className="flex items-baseline gap-2.5 font-serif text-2xl font-bold tracking-tight text-zinc-900 group"
         >
-          <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors duration-300">
-            <UtensilsCrossed className="w-4 h-4 text-accent" />
+          {/* Cloche + vapor — el vapor lo anima .menu-steam (globals.css).
+              El contenedor mide lo que el cloche y nada más, y el vapor se sale
+              hacia arriba (bottom-full) sin entrar en el layout. Sumado al
+              items-baseline del Link, eso hace que el plato del cloche apoye en
+              la misma baseline que el texto; el -mb ajusta ese apoyo. */}
+          <div className="relative -mb-1 h-7 w-11 flex-shrink-0 text-accent" aria-hidden="true">
+            <svg className="menu-steam absolute bottom-full left-1/2 -mb-1.5 h-3 w-5 -translate-x-1/2" viewBox="0 0 26 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+              <path d="M7 15c0-3 2-3 2-6s-2-3-2-6" opacity=".7" />
+              <path d="M13 15c0-3 2-3 2-6s-2-3-2-6" opacity=".7" />
+              <path d="M19 15c0-3 2-3 2-6s-2-3-2-6" opacity=".7" />
+            </svg>
+            <svg className="absolute inset-0" viewBox="0 0 56 34" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 30h48" />
+              {/* La tapa se levanta al hover — mismo gesto que el cloche del CTA
+                  del hero. El plato queda fijo. El translate va en unidades del
+                  viewBox, no en px de pantalla. */}
+              <g className="transform-gpu transition-transform duration-300 ease-out group-hover:-translate-y-[3px] motion-reduce:transition-none">
+                {/* Relleno opaco: tapa la cola del vapor central que pasa por detrás */}
+                <path d="M8 30a20 20 0 0 1 40 0" className="fill-green-50" />
+                <path d="M28 10V6" />
+                <circle cx="28" cy="5" r="2" className="fill-green-50" />
+              </g>
+            </svg>
           </div>
           <span>GetChef</span>
           <span className="text-zinc-400 text-base font-normal">.com</span>

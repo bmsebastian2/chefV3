@@ -55,21 +55,6 @@ export function MenuDeLaNoche() {
 
   return (
     <section id="menu-noche" ref={sectionRef} className="relative overflow-hidden bg-[#FAFAFA] py-28">
-      {/* Vapor (respeta prefers-reduced-motion) */}
-      <style>{`
-        @keyframes menuSteam {
-          0%   { opacity: 0; transform: translateY(2px) scaleY(.7); }
-          25%  { opacity: .6; }
-          100% { opacity: 0; transform: translateY(-12px) scaleY(1.25); }
-        }
-        .menu-steam > path { transform-origin: center bottom; animation: menuSteam 3.2s ease-in-out infinite; }
-        .menu-steam > path:nth-child(2) { animation-delay: 1s; }
-        .menu-steam > path:nth-child(3) { animation-delay: 2s; }
-        @media (prefers-reduced-motion: reduce) {
-          .menu-steam > path { animation: none !important; }
-        }
-      `}</style>
-
       {/* Glows cálidos de fondo */}
       <div className="pointer-events-none absolute -left-32 top-10 h-[420px] w-[420px] rounded-full bg-amber-100/40 blur-3xl" aria-hidden="true" />
       <div className="pointer-events-none absolute -right-32 bottom-0 h-[380px] w-[380px] rounded-full bg-green-100/30 blur-3xl" aria-hidden="true" />

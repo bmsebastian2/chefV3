@@ -126,3 +126,19 @@
     }
   }
 }
+
+/* Vapor del cloche (logo del header + tarjeta del menú de la noche).
+   Vive acá y no en un <style> de componente porque el header se renderiza en
+   todas las páginas: definirlo dentro de una sección lo dejaría animado solo
+   donde esa sección se monta. */
+@keyframes menuSteam {
+  0%   { opacity: 0; transform: translateY(2px) scaleY(.7); }
+  25%  { opacity: .6; }
+  100% { opacity: 0; transform: translateY(-12px) scaleY(1.25); }
+}
+.menu-steam > path { transform-origin: center bottom; animation: menuSteam 3.2s ease-in-out infinite; }
+.menu-steam > path:nth-child(2) { animation-delay: 1s; }
+.menu-steam > path:nth-child(3) { animation-delay: 2s; }
+@media (prefers-reduced-motion: reduce) {
+  .menu-steam > path { animation: none !important; }
+}
