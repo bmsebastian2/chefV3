@@ -6,6 +6,21 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { TERMS_VERSION } from '@/lib/terms'
 
+// Errores de acceso que puede provocar quien intenta entrar. Se mapea por
+// `code` y no por `message`: el código es estable entre versiones de Supabase,
+// el texto no.
+const LOGIN_ERROR_MESSAGES: Record<string, string> = {
+  // Deliberadamente genérico: no revela si el email existe.
+  invalid_credentials: 'Email o contraseña incorrectos.',
+  email_not_confirmed: 'Confirmá tu email antes de acceder. Revisá tu bandeja de entrada y el spam.',
+  user_banned: 'Esta cuenta está suspendida. Escribinos para revisarla.',
+  over_request_rate_limit: 'Demasiados intentos. Esperá unos minutos y volvé a intentar.',
+  email_address_invalid: 'Ese email no tiene un formato válido.',
+  validation_failed: 'Revisá el email y la contraseña: falta algún dato.',
+}
+
+const LOGIN_ERROR_FALLBACK = 'No pudimos iniciar sesión. Intentá de nuevo en unos minutos.'
+
 export async function login(prevState: { error: string } | null, formData: FormData) {
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword({
@@ -13,7 +28,13 @@ export async function login(prevState: { error: string } | null, formData: FormD
     password: formData.get('password') as string,
   })
 
-  if (error) return { error: error.message }
+  if (error) {
+    // El detalle crudo queda en el servidor: al usuario no le sirve y los
+    // códigos desconocidos caen al fallback.
+    console.error('login error:', error.code, error.message)
+    const message = error.code ? LOGIN_ERROR_MESSAGES[error.code] : undefined
+    return { error: message ?? LOGIN_ERROR_FALLBACK }
+  }
 
   redirect('/dashboard')
 }

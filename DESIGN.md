@@ -13,9 +13,18 @@ Paleta de Colores:
 
 Primario: Carbón/Cinc (#18181B) para profundidad y lujo.
 
-Acento: Ocre Dorado (#E09F3E) para CTAs, resaltados y estados activos.
+Acento: Verde (#22c55e) para CTAs, resaltados y estados activos.
 
 Fondos: Blanco Piedra/Cinc (#FAFAFA) para una sensación limpia, similar a una galería.
+
+La fuente de verdad del acento es el token `--accent` en `src/app/globals.css`.
+Consumilo siempre como token (`bg-accent`, `text-accent`, `shadow-accent/25`) y
+nunca hardcodees el hex ni clases `green-*` para color de marca: eso es
+precisamente lo que hoy impide moverlo.
+
+Foreground del acento: usar `text-accent-foreground` (#18181B). Texto blanco
+sobre el verde da ~2.1:1 de contraste y no cumple accesibilidad; el carbón da
+7.8:1.
 
 Tipografía:
 
@@ -24,6 +33,34 @@ Titulares: Newsreader (Serif) – Usada para narrativas, títulos de sección y 
 Cuerpo/UI: Manrope (Sans-Serif) – Usada para navegación, etiquetas de formularios e información densa para asegurar legibilidad.
 
 Forma y Estilo: Radio de borde de 4px (Round Four) para un aspecto moderno, nítido y sutilmente tradicional.
+
+#### Decisión sobre el acento (2026-07-16)
+
+Este documento decía Ocre Dorado (#E09F3E). Se evaluó migrar y **se descartó**.
+No lo reabras sin leer esto primero:
+
+- El verde no es un token suelto, es lo que la marca es hoy: el logo y el
+  favicon (`src/app/icon.svg`) son `fill="#22c55e"`, y las plantillas de
+  `src/lib/emails/` también.
+- Hay ~200 referencias verdes hardcodeadas en ~45 archivos (125 clases
+  `green-*`/`emerald-*` y 73 hexes) que el token no alcanza. Cambiar `--accent`
+  solo no repinta la app: la deja mitad ocre y mitad verde. El CTA del Hero es
+  el caso testigo — `bg-accent` con `hover:bg-green-600`, o sea que quedaría
+  ocre en reposo y verde al pasar el mouse.
+- El logo no se recolorea con buscar y reemplazar: sus trazos son blancos sobre
+  verde y sobre ocre serían ilegibles. Requiere rediseño del mark.
+
+Migrar al ocre es un rebrand por etapas, no un cambio de token.
+
+#### Deuda viva: marca y estado comparten el verde
+
+El verde significa hoy dos cosas a la vez: marca (CTAs, acentos) y éxito
+(chips "pagado", "activo", "aprobado" en admin, payments y RequestCard). Un chip
+de estado y un botón de marca son indistinguibles.
+
+Si algún día se mueve la marca, el verde queda libre para significar solo
+"éxito". Ese es el argumento fuerte a favor del cambio, más que el gusto. Al
+tocar esto, separar marca de semántico es el primer paso, no el último.
 
 3. Reglas Globales de UI
 Navegación:

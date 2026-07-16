@@ -136,7 +136,10 @@ export function DialogContent({
   if (!open) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    // z-100: capa propia del modal, por encima del tier z-50 que comparten
+    // header, toasts y prompts. Con z-50 el ganador lo decidía el orden de
+    // montaje en el DOM y el toast de push llegaba a tapar el diálogo.
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
         onClick={() => setOpen(false)}
