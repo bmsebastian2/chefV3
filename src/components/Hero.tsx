@@ -1,17 +1,8 @@
 import ReactDOM from "react-dom";
 import Link from "next/link";
-import { ChefHat, MapPin, ArrowRight, Sparkles } from "lucide-react";
+import { ChefHat, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroVideo } from "@/components/HeroVideo";
-
-// Posiciones de los chefs en el radar (en %)
-const chefPins = [
-  { top: "30%", left: "34%", delay: "0s" },
-  { top: "24%", left: "64%", delay: ".5s" },
-  { top: "62%", left: "28%", delay: "1s" },
-  { top: "66%", left: "60%", delay: ".7s" },
-  { top: "46%", left: "80%", delay: "1.3s" },
-];
 
 // Banner gastronómico con video — comunica el servicio de chef/comida.
 // Se renderiza en dos posiciones: arriba en móvil (primera pantalla) y en la
@@ -75,17 +66,12 @@ export function Hero() {
           from { opacity: 0; transform: translateY(18px); }
           to   { opacity: 1; transform: none; }
         }
-        @keyframes radarSweep { to { transform: rotate(360deg); } }
-        @keyframes radarPing {
-          0%        { transform: scale(.5); opacity: .7; }
-          70%, 100% { transform: scale(2.4); opacity: 0; }
-        }
         @keyframes heroCaret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
         .hero-anim { opacity: 0; animation: heroFade .7s cubic-bezier(.22,.61,.36,1) both; }
         .hero-caret { animation: heroCaret 1.1s step-end infinite; }
         @media (prefers-reduced-motion: reduce) {
           .hero-anim { animation: none; opacity: 1; transform: none; }
-          .radar-sweep, .chef-pin > span, .hero-caret { animation: none !important; }
+          .hero-caret { animation: none !important; }
         }
       `}</style>
 
@@ -297,11 +283,11 @@ export function Hero() {
           
           </div>
 
-          {/* ── Columna derecha: mapa arriba + experiencias debajo ── */}
-          <div className="flex flex-col gap-8">
-
+          {/* ── Columna derecha: video protagonista + asistente como segunda fila liviana ── */}
+          <div className="flex flex-col justify-center gap-5">
             {/* Banner gastronómico — solo desktop; en móvil sube junto al título */}
-            <HeroVideoCard className="hidden lg:block mt-10" videoWhen="(min-width: 1024px)" />
+            <HeroVideoCard className="hidden lg:block" videoWhen="(min-width: 1024px)" />
+
             <a
               href="#asistente"
               className="hero-anim group relative block w-full overflow-hidden rounded-2xl border border-zinc-200/80 bg-white/70 px-5 py-4 shadow-lg shadow-zinc-900/5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-xl hover:shadow-green-500/10"
@@ -338,104 +324,6 @@ export function Hero() {
                 </span>
               </div>
             </a>
-            <div
-              className="hero-anim rounded-3xl border border-zinc-200/80 bg-white/70 p-6 shadow-xl shadow-zinc-900/5 backdrop-blur-xl"
-              style={{ animationDelay: "300ms" }}
-            >
-              {/* Encabezado */}
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <span className="mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-amber-700">
-                    <span className="h-px w-5 bg-amber-500/70" aria-hidden="true" />
-                    Cerca tuyo
-                  </span>
-                  <h2 className="font-serif text-xl md:text-2xl font-semibold text-zinc-900 tracking-tight">
-                    Descubre chefs cerca de ti
-                  </h2>
-                </div>
-                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
-                  </span>
-                  Activos
-                </span>
-              </div>
-
-              {/* Ubicación */}
-              <span className="mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700">
-                <MapPin className="h-4 w-4 text-amber-600" />
-                Managua, Nicaragua
-              </span>
-
-              {/* Radar */}
-              <div className="relative mt-5 h-52 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br from-amber-50/70 via-white to-zinc-50 shadow-inner lg:h-[210px]">
-                {/* Anillos concéntricos */}
-                <svg
-                  className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                  width="340" height="340" viewBox="0 0 340 340" fill="none" aria-hidden="true"
-                >
-                  {[44, 88, 132, 168].map((r) => (
-                    <circle key={r} cx="170" cy="170" r={r} stroke="#e4e4e7" strokeWidth="1" />
-                  ))}
-                  <line x1="170" y1="2" x2="170" y2="338" stroke="#f4f4f5" strokeWidth="1" />
-                  <line x1="2" y1="170" x2="338" y2="170" stroke="#f4f4f5" strokeWidth="1" />
-                </svg>
-
-                {/* Barrido giratorio */}
-                <div
-                  className="radar-sweep pointer-events-none absolute left-1/2 top-1/2 h-[340px] w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-                  style={{
-                    background:
-                      "conic-gradient(from 0deg, rgba(217,119,6,0) 0deg, rgba(217,119,6,0.18) 55deg, rgba(217,119,6,0) 95deg)",
-                    animation: "radarSweep 6s linear infinite",
-                  }}
-                />
-
-                {/* Glow central */}
-                <div className="pointer-events-none absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-200/40 blur-2xl" />
-
-                {/* Pines de chef */}
-                {chefPins.map((p, i) => (
-                  <div
-                    key={i}
-                    className="chef-pin absolute -translate-x-1/2 -translate-y-1/2"
-                    style={{ top: p.top, left: p.left }}
-                  >
-                    <span
-                      className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-400/40"
-                      style={{ animation: `radarPing 2.8s ease-out ${p.delay} infinite` }}
-                    />
-                    <span className="relative flex h-7 w-7 items-center justify-center rounded-full border border-amber-400/80 bg-white shadow-[0_4px_12px_rgba(217,119,6,0.25)]">
-                      <ChefHat className="h-3.5 w-3.5 text-amber-600" />
-                    </span>
-                  </div>
-                ))}
-
-                {/* Marcador central (tú) */}
-                <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow-xl ring-2 ring-amber-500/50">
-                  <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-600">
-                    <ChefHat className="h-6 w-6 text-white" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Pie: stat + CTA */}
-              <div className="mt-5 flex items-center justify-between gap-3">
-                <p className="text-xs text-zinc-500">Chefs verificados en tu zona</p>
-                <Link
-                  href="#mapa"
-                  className="group inline-flex w-fit items-center gap-2 rounded-full border border-zinc-300 bg-transparent px-5 py-2 text-sm font-medium text-zinc-800 transition-colors hover:border-zinc-900 hover:bg-zinc-900 hover:text-white"
-                >
-                  Ver mapa completo
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </Link>
-              </div>
-            </div>
-                 <div className="flex flex-1 items-center pt-8">
-            
-            </div>
-          
           </div>
         </div>
       </div>
