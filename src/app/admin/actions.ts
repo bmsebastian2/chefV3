@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { applyPaypalOrderStatus } from '@/lib/paypal-verify'
+import { applyDlocalgoPaymentStatus } from '@/lib/dlocalgo-verify'
 
 // Verifica que el usuario logueado sea admin antes de cualquier acción que use el
 // service-role client (que bypassea RLS). Sin este guard, cualquiera podría girar.
@@ -144,6 +146,60 @@ export async function markOrphanRefund(
 
   revalidatePath('/admin')
   return {}
+}
+
+// ── Reconciliar pagos 'pending' colgados ─────────────────────────────────────
+// Un pago que quedó 'pending' cuando el usuario abandonó la pasarela no lo
+// re-consulta nadie: el webhook nunca llega (no hubo cobro) y la reconciliación
+// del front solo corre si alguien vuelve a la pantalla de pago, cosa que no pasa
+// una vez que el request está reservado o cancelado. Esas filas se acumulan como
+// ruido en el panel.
+//
+// Este botón le pregunta a la pasarela el estado REAL de cada pending y aplica el
+// resultado (VOIDED/expirado → cancelled/expired). No marca por edad: si un pago
+// se hubiera completado de verdad, acá se detectaría y crearía su booking, en vez
+// de esconderlo. Idempotente y de solo lectura contra nuestra base salvo el
+// update de estado que ya hacen las funciones de verificación.
+export async function reconcilePendingPayments(): Promise<{ reconciled?: number; error?: string }> {
+  if (!(await isAdmin())) return { error: 'No autorizado' }
+
+  const admin = createAdminClient()
+
+  // Margen de 30 min: un pago recién creado puede ser un usuario que AHORA mismo
+  // está en la pasarela. No lo tocamos para no interferir con una sesión activa
+  // (igual sería inofensivo: APPROVED/CREATED mapean a 'pending', no cancelarían).
+  const cutoff = new Date(Date.now() - 30 * 60_000).toISOString()
+
+  const { data: pendings, error: fetchError } = await admin
+    .from('payments')
+    .select('dlocalgo_payment_id, provider')
+    .eq('status', 'pending')
+    .lt('created_at', cutoff)
+
+  if (fetchError) {
+    console.error('reconcilePendingPayments: fallo al listar pendientes', fetchError)
+    return { error: 'No se pudieron listar los pagos pendientes' }
+  }
+
+  let changed = 0
+  for (const p of pendings ?? []) {
+    const ref = p.dlocalgo_payment_id as string | null
+    if (!ref) continue
+    // Una falla puntual (timeout de la pasarela) no debe abortar el lote: se
+    // loguea y se sigue con el resto.
+    const result = p.provider === 'paypal'
+      ? await applyPaypalOrderStatus(ref)
+      : await applyDlocalgoPaymentStatus(ref)
+    if (result.error) {
+      console.warn('reconcilePendingPayments: no se pudo reconciliar', { ref, provider: p.provider, error: result.error })
+      continue
+    }
+    // Cuenta las que dejaron de estar 'pending' (la señal de que algo se limpió).
+    if (result.status && result.status !== 'pending') changed++
+  }
+
+  revalidatePath('/admin')
+  return { reconciled: changed }
 }
 
 // ── Monitoreo de solicitudes (lazy) ──────────────────────────────────────────

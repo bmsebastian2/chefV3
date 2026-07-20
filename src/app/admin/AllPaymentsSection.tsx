@@ -15,6 +15,7 @@ import { formatPrice } from '@/lib/format'
 import { StateInfoButton } from './StateInfoButton'
 import { InitRefundButton } from './InitRefundButton'
 import { PaymentRefChip } from './PaymentRefChip'
+import { ReconcilePendingButton } from './ReconcilePendingButton'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   'Servicio Único',
@@ -184,6 +185,9 @@ export function AllPaymentsSection({
         <span className="text-[10px] font-semibold text-zinc-400 bg-zinc-100 px-2.5 py-1 rounded-full">
           {payments.length}
         </span>
+        <div className="ml-auto">
+          <ReconcilePendingButton />
+        </div>
       </div>
 
       {payments.length === 0 ? (
