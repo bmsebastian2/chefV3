@@ -12,6 +12,10 @@ type Props = {
   proposalId:  string
   total:       number   // solo para mostrar; el monto real lo recalcula el servidor
   guests:      number
+  // Mensaje ya traducido que viene de un retorno fallido de la pasarela (ej.
+  // tarjeta rechazada). El server lo arma desde el ?error=... del redirect; acá
+  // solo se muestra en el slot de error que ya existe.
+  initialError?: string
 }
 
 const FAQ_ITEMS = [
@@ -80,11 +84,13 @@ const METHODS: { id: PaymentMethod; label: string; Icon: React.FC }[] = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function PaymentView({ requestId, proposalId, total, guests }: Props) {
+export function PaymentView({ requestId, proposalId, total, guests, initialError }: Props) {
   const router = useRouter()
   const [method, setMethod]   = useState<PaymentMethod>("card")
   const [isPaying, startTransition] = useTransition()
-  const [error, setError]     = useState<string | null>(null)
+  // Arranca con el error del retorno fallido (si lo hay); cualquier intento nuevo
+  // lo limpia con setError(null) antes de disparar el pago.
+  const [error, setError]     = useState<string | null>(initialError ?? null)
 
   const buttonLabel = method === "card"      ? "Pagar con tarjeta"
     : method === "paypal"                    ? "Pagar con PayPal"

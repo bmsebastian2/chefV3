@@ -191,6 +191,7 @@ export default async function ProposalDetailPage({
       currentUserId={user.id}
       booking={booking}
       reservedElsewhere={reservedElsewhere}
+      duplicateNotice={paymentReturn === 'duplicate'}
       proposal={{
         id:               proposal.id as string,
         message:          proposal.message as string | null,

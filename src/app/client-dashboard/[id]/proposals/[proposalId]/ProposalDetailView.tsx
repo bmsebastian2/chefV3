@@ -34,6 +34,10 @@ type Props = {
   requestId:   string
   currentUserId: string
   reservedElsewhere: boolean
+  // El usuario volvió de la pasarela con ?payment=duplicate: intentó pagar algo
+  // que ya estaba reservado. NO hubo segundo cobro; el banner lo tranquiliza en
+  // vez de dejarlo sin explicación de por qué no avanzó su pago.
+  duplicateNotice?: boolean
   booking: {
     id:        string
     status:    string
@@ -225,6 +229,7 @@ export function ProposalDetailView({
   requestId,
   currentUserId,
   reservedElsewhere,
+  duplicateNotice,
   booking,
   proposal,
   chef,
@@ -244,6 +249,7 @@ export function ProposalDetailView({
   const [msgError, setMsgError] = useState<string | null>(null)
   const [loadingProposalId, setLoadingProposalId] = useState<string | null>(null)
   const [backLoading, setBackLoading] = useState(false)
+  const [showDuplicate, setShowDuplicate] = useState(duplicateNotice ?? false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -325,6 +331,26 @@ export function ProposalDetailView({
           Mis propuestas
         </Link>
       </div>
+
+      {/* Aviso de pago duplicado: la solicitud ya estaba reservada, no hubo
+          segundo cobro. Descartable; solo informativo. */}
+      {showDuplicate && (
+        <div className="mx-6 mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <CheckCircle2 className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0 text-sm text-amber-900">
+            <p className="font-semibold">Esta solicitud ya tenía una reserva.</p>
+            <p className="text-amber-700 mt-0.5">No se realizó ningún cobro adicional.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowDuplicate(false)}
+            className="text-amber-500 hover:text-amber-800 transition-colors shrink-0"
+            aria-label="Cerrar aviso"
+          >
+            <XCircle className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Mobile price strip */}
       <div className="lg:hidden mx-6 mt-4 p-4 bg-white border border-zinc-200 rounded-xl">

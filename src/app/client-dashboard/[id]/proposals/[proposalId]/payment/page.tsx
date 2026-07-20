@@ -12,10 +12,22 @@ export default async function PaymentPage({
   searchParams,
 }: {
   params:       Promise<{ id: string; proposalId: string }>
-  searchParams: Promise<{ guests?: string }>
+  searchParams: Promise<{ guests?: string; error?: string }>
 }) {
   const { id: requestId, proposalId } = await params
-  const { guests: guestsParam } = await searchParams
+  const { guests: guestsParam, error: errorParam } = await searchParams
+
+  // Retorno fallido de la pasarela (PayPal). La ruta de captura redirige acá con
+  // ?error=... cuando el cobro no se concretó. Se traduce a un mensaje para el
+  // usuario; códigos desconocidos caen a uno genérico (nunca se muestra el código
+  // crudo). El pago no se movió en ninguno de estos casos.
+  const ERROR_MESSAGES: Record<string, string> = {
+    declined:      'Tu tarjeta fue rechazada. Probá con otro método de pago.',
+    capture_failed: 'No se pudo completar el pago. No se realizó ningún cobro; intentá de nuevo.',
+  }
+  const initialError = errorParam
+    ? (ERROR_MESSAGES[errorParam] ?? 'No se pudo completar el pago. Intentá de nuevo.')
+    : undefined
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -93,6 +105,7 @@ export default async function PaymentPage({
       proposalId={proposalId}
       total={total}
       guests={guests}
+      initialError={initialError}
     />
   )
 }
