@@ -91,15 +91,23 @@ export function PaymentView({ requestId, proposalId, total, guests }: Props) {
     : "Pagar con Google Pay"
 
   const handlePay = () => {
-    if (method !== "card") {
+    if (method === "googlepay") {
       setError("Método de pago no disponible aún")
       return
     }
+    // Ambos endpoints exponen A PROPÓSITO el mismo contrato
+    // ({ redirect_url } | { error } | { alreadyPaid }), así que el manejo de la
+    // respuesta de abajo es idéntico para tarjeta y PayPal: el medio de cobro
+    // cambia adónde se hace el POST, nada más.
+    const endpoint = method === "paypal"
+      ? "/api/paypal/create-order"
+      : "/api/dlocalgo/create-payment"
+
     startTransition(async () => {
       setError(null)
       // No mandamos el monto: el servidor lo recalcula desde price_per_person × guests
       // para no confiar en un total manipulable por el cliente.
-      const res = await fetch("/api/dlocalgo/create-payment", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ proposalId, requestId, guests }),

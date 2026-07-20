@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { applyDlocalgoPaymentStatus } from '@/lib/dlocalgo-verify'
+import { applyPaypalOrderStatus } from '@/lib/paypal-verify'
 import { ProposalDetailView } from './ProposalDetailView'
 
 export default async function ProposalDetailPage({
@@ -30,21 +31,30 @@ export default async function ProposalDetailPage({
 
   const admin = createAdminClient()
 
-  // Retorno de éxito de dLocalGo. NO confiamos en el query param `?payment=success`
-  // (cualquiera podría falsearlo): re-consultamos el estado real del pago a dLocalGo y,
-  // solo si está realmente PAID, marcamos payments=completed y proposals=accepted.
+  // Retorno de éxito de la pasarela. NO confiamos en el query param `?payment=success`
+  // (cualquiera podría falsearlo): re-consultamos el estado real del pago a la pasarela
+  // y, solo si está realmente cobrado, marcamos payments=completed y proposals=accepted.
   // Esto cierra el pago aunque el webhook no haya llegado (preview protegido) o se demore.
+  //
+  // La rama por `provider` NO es opcional: `dlocalgo_payment_id` guarda un payment id de
+  // dLocalGo o un ORDER id de PayPal según el medio de cobro (ver COMMENT de la columna).
+  // Mandar un id de PayPal a la API de dLocalGo es un lookup que siempre falla.
   if (paymentReturn === 'success') {
     const { data: lastPayment } = await admin
       .from('payments')
-      .select('dlocalgo_payment_id')
+      .select('dlocalgo_payment_id, provider')
       .eq('proposal_id', proposalId)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
     if (lastPayment?.dlocalgo_payment_id) {
-      await applyDlocalgoPaymentStatus(lastPayment.dlocalgo_payment_id as string)
+      const providerRef = lastPayment.dlocalgo_payment_id as string
+      if (lastPayment.provider === 'paypal') {
+        await applyPaypalOrderStatus(providerRef)
+      } else {
+        await applyDlocalgoPaymentStatus(providerRef)
+      }
     }
   }
 

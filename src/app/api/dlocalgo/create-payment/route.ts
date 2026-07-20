@@ -1,8 +1,11 @@
 import { dlocalgoRequest } from '@/lib/dlocalgo';
 import { applyDlocalgoPaymentStatus } from '@/lib/dlocalgo-verify';
+import { assertRequestPayable, computeTotal, resolveAppUrl } from '@/lib/payment-guards';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
+
+const LABEL = 'create-payment';
 
 export async function POST(req: Request) {
   try {
@@ -27,100 +30,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Cantidad de comensales inválida' }, { status: 400 });
     }
 
-    // Verify the client owns this request
-    const { data: request } = await supabase
-      .from('service_requests')
-      .select('id')
-      .eq('id', requestId)
-      .eq('user_id', user.id)
-      .single();
-    if (!request) return NextResponse.json({ error: 'Solicitud no encontrada' }, { status: 403 });
-
-    // ── Monto AUTORITATIVO: calculado en el servidor desde el precio de la propuesta ──
-    // Nunca se confía en un total mandado por el cliente (si no, podría pagar $1 por un
-    // servicio de $378). total = price_per_person × guests.
-    const { data: proposal } = await supabase
-      .from('proposals')
-      .select('price_per_person, status')
-      .eq('id', proposalId)
-      .eq('request_id', requestId)
-      .single();
-    const pricePerPerson = Number(proposal?.price_per_person);
-    if (!proposal || !Number.isFinite(pricePerPerson) || pricePerPerson <= 0) {
-      console.error('🛑 create-payment: propuesta sin precio válido', { proposalId, pricePerPerson });
-      return NextResponse.json({ error: 'Propuesta sin precio válido' }, { status: 400 });
-    }
-
-    // ── Guard anti re-pago (la UI bloquea, pero la API también debe hacerlo) ──
-    // 1) Si la propuesta ya no está 'pending' (ej. ya 'accepted'), no se vuelve a pagar.
-    if (proposal.status !== 'pending') {
-      console.warn('create-payment: pago rechazado, propuesta no-pending', { proposalId, status: proposal.status });
-      return NextResponse.json({ error: 'La propuesta ya no está disponible para pago' }, { status: 409 });
-    }
-    // 2) Si ya existe un pago completado para esta propuesta, rechazar (cubre la ventana
-    //    entre que el pago se completa y que el webhook marque la propuesta como accepted).
+    // ── Embudo anti-duplicados COMPARTIDO con PayPal ──────────────────────────
+    // Propiedad del request, propuesta pagable con precio válido, sin pago
+    // completado (por CUALQUIER medio) y sin booking activo. La lógica vivía
+    // inline acá; se movió a lib/payment-guards.ts sin cambios de comportamiento
+    // para que todos los medios de cobro pasen por el mismo candado.
     const admin = createAdminClient();
-    const { data: paidRow } = await admin
-      .from('payments')
-      .select('id')
-      .eq('proposal_id', proposalId)
-      .eq('status', 'completed')
-      .limit(1)
-      .maybeSingle();
-    if (paidRow) {
-      console.warn('create-payment: pago rechazado, ya existe un payment completado', { proposalId });
-      return NextResponse.json({ error: 'Esta propuesta ya fue pagada' }, { status: 409 });
-    }
-    // 3) Doble-pago por REQUEST — CHECK PRINCIPAL: si la solicitud ya tiene CUALQUIER
-    //    pago 'completed' (de esta o de OTRA propuesta), no se permite otro cobro.
-    //    `payments.status='completed'` es la señal CONFIABLE: se setea al confirmar
-    //    el cobro, exista o no el booking. Mirar `bookings` NO alcanza (bug confirmado
-    //    con datos: 2 pagos completed para un request con 0/1 bookings → el guard que
-    //    miraba bookings quedaba ciego porque el booking no se crea / llega tarde).
-    const { data: paidRequest } = await admin
-      .from('payments')
-      .select('id')
-      .eq('request_id', requestId)
-      .eq('status', 'completed')
-      .limit(1)
-      .maybeSingle();
-    if (paidRequest) {
-      console.warn('create-payment: pago rechazado, el request ya tiene un pago completado', { requestId });
-      return NextResponse.json({ error: 'Esta solicitud ya tiene una reserva pagada' }, { status: 409 });
-    }
-    // 4) Respaldo: booking activo (red secundaria; el índice DB es la red final).
-    const { data: activeBooking } = await admin
-      .from('bookings')
-      .select('id')
-      .eq('request_id', requestId)
-      .neq('booking_status', 'cancelled')
-      .limit(1)
-      .maybeSingle();
-    if (activeBooking) {
-      console.warn('create-payment: pago rechazado, el request ya tiene reserva activa', { requestId });
-      return NextResponse.json({ error: 'Esta solicitud ya tiene una reserva activa' }, { status: 409 });
+    const gate  = await assertRequestPayable({
+      supabase, admin,
+      userId: user.id, requestId, proposalId,
+      label:  LABEL,
+    });
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
-    const amountNumber = pricePerPerson * guestsNumber;
-    const currency = 'USD';
-    if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
-      console.error('🛑 create-payment: monto calculado inválido', { pricePerPerson, guestsNumber, amountNumber });
+    const currency     = 'USD';
+    const amountNumber = computeTotal(gate.pricePerPerson, guestsNumber);
+    if (amountNumber === null) {
+      console.error(`🛑 ${LABEL}: monto calculado inválido`, {
+        pricePerPerson: gate.pricePerPerson, guestsNumber,
+      });
       return NextResponse.json({ error: 'Monto de pago inválido' }, { status: 400 });
     }
 
     // Base URL para success/back/notification. dLocalGo recibe la notification_url
     // por pago, así que si esto queda en localhost el webhook NUNCA llega en prod.
-    // Fallback a NEXT_PUBLIC_URL (seteada a prod) y strip del "/" final para no
-    // generar "//api/...". Mismo patrón que client-emails.ts / wizard/actions.ts.
-    const appUrl = (
-      process.env.NEXT_PUBLIC_APP_URL ??
-      process.env.NEXT_PUBLIC_URL ??
-      'http://localhost:3000'
-    ).replace(/\/$/, '');
-
-    if (appUrl.includes('localhost')) {
-      console.warn('⚠️ create-payment: appUrl apunta a localhost — webhook y URLs de retorno no funcionarán en producción. Configurá NEXT_PUBLIC_APP_URL en Vercel.');
-    }
+    const appUrl = resolveAppUrl(LABEL);
 
     // NO mandamos `payer.name`: dLocalGo pre-carga Y bloquea ese campo, y si el
     // titular real de la tarjeta es distinto al usuario logueado (nombre del payer
@@ -165,6 +101,10 @@ export async function POST(req: Request) {
           .from('payments')
           .select('dlocalgo_payment_id')
           .eq('request_id', requestId)
+          // Filtro por proveedor OBLIGATORIO: sin él, un pago PayPal más reciente
+          // del mismo request sería el "último" y le mandaríamos un order id de
+          // PayPal a la API de dLocalGo.
+          .eq('provider', 'dlocalgo')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -183,6 +123,9 @@ export async function POST(req: Request) {
 
     const { error: insertError } = await admin.from('payments').insert({
       user_id: user.id,
+      // Explícito aunque la columna tenga DEFAULT 'dlocalgo': que el medio de cobro
+      // se lea en el código y no dependa de un default de esquema.
+      provider: 'dlocalgo',
       dlocalgo_payment_id: result.id,
       proposal_id: proposalId,
       request_id: requestId,

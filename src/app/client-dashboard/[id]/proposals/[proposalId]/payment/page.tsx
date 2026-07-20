@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { applyDlocalgoPaymentStatus } from '@/lib/dlocalgo-verify'
+import { applyPaypalOrderStatus } from '@/lib/paypal-verify'
 import { PaymentView } from './PaymentView'
 
 export default async function PaymentPage({
@@ -42,19 +43,29 @@ export default async function PaymentPage({
 
   // Cerrar de raíz la ventana de confusión: si existe un pago 'pending' para este
   // request (ej. el usuario pagó y volvió a mano antes de que llegara el webhook /
-  // el retorno de éxito), reconciliamos su estado real con dLocalGo ANTES de decidir
+  // el retorno de éxito), reconciliamos su estado real con la pasarela ANTES de decidir
   // si mostramos el formulario. Si ya estaba pagado, el chequeo de abajo lo detecta y
   // redirige a "Reservada" — así el botón "Pagar" nunca aparece habilitado de más.
+  //
+  // Se ramifica por `provider` porque esta reconciliación es la que sostiene el
+  // chequeo de doble-pago de más abajo: si un pago PayPal 'pending' pero ya capturado
+  // no se reconcilia (id de PayPal enviado a la API de dLocalGo → lookup fallido),
+  // el formulario se muestra igual y el usuario puede arrancar un segundo cobro.
   const { data: pendingPayment } = await admin
     .from('payments')
-    .select('dlocalgo_payment_id')
+    .select('dlocalgo_payment_id, provider')
     .eq('request_id', requestId)
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
   if (pendingPayment?.dlocalgo_payment_id) {
-    await applyDlocalgoPaymentStatus(pendingPayment.dlocalgo_payment_id as string)
+    const providerRef = pendingPayment.dlocalgo_payment_id as string
+    if (pendingPayment.provider === 'paypal') {
+      await applyPaypalOrderStatus(providerRef)
+    } else {
+      await applyDlocalgoPaymentStatus(providerRef)
+    }
   }
 
   // Doble-pago: si la solicitud ya tiene un pago 'completed' (de esta o de otra
