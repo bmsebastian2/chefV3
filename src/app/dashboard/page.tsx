@@ -2,7 +2,7 @@ import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
-import { CheckCircle2, Circle, ArrowRight } from 'lucide-react'
+import { CheckCircle2, Circle, ArrowRight, Wallet } from 'lucide-react'
 import { ActiveToggle } from '@/components/dashboard/ActiveToggle'
 
 type CompletionRow = {
@@ -29,7 +29,7 @@ const ITEMS: {
   { key: 'gallery_done',        label: 'Fotos de Galería',            href: '/dashboard/fotos',            desc: 'Añade fotos de tus platos.' },
   { key: 'menus_done',          label: 'Menús',                       href: '/dashboard/menus',            desc: 'Crea al menos 1 menú.' },
   { key: 'request_prefs_done',  label: 'Preferencias de Solicitudes', href: '/dashboard/request-settings', desc: 'Elige los tipos de servicio que aceptas.' },
-  { key: 'payments_done',       label: 'Pagos',                       href: null,                          desc: 'Próximamente disponible.' },
+  { key: 'payments_done',       label: 'Pagos',                       href: '/dashboard/pagos',            desc: 'Cargá tu cuenta para recibir tus ganancias.' },
 ]
 
 export default async function DashboardPage() {
@@ -45,6 +45,7 @@ export default async function DashboardPage() {
   let completion: CompletionRow | null = null
   let profilePhotoUrl: string | null = null
   let meetsRequirements = false
+  let heldBookings = 0
 
   if (chefProfile) {
     const [
@@ -54,6 +55,7 @@ export default async function DashboardPage() {
       { count: galleryCount },
       { count: menuCount },
       { count: dishCount },
+      { count: heldCount },
     ] = await Promise.all([
       supabase
         .from('profile_completion')
@@ -86,9 +88,18 @@ export default async function DashboardPage() {
         .select('*', { count: 'exact', head: true })
         .eq('chef_id', chefProfile.id)
         .eq('is_active', true),
+      // Dinero ya cobrado al cliente y todavía retenido para este chef.
+      // "Escrow" = payment_status 'paid' + payout_status 'pending'.
+      supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .eq('chef_id', chefProfile.id)
+        .eq('payment_status', 'paid')
+        .eq('payout_status', 'pending'),
     ])
     completion = completionData
     profilePhotoUrl = photoData?.url ?? null
+    heldBookings = heldCount ?? 0
     meetsRequirements =
       (profilePhotoCount ?? 0) >= 1 &&
       (galleryCount ?? 0) >= 12 &&
@@ -100,8 +111,36 @@ export default async function DashboardPage() {
   const pct = Math.round((doneCount / ITEMS.length) * 100)
   const firstName = userData?.first_name || user.email?.split('@')[0] || 'Chef'
 
+  // Aviso de datos de pago pendientes. Se muestra SOLO si además hay dinero
+  // retenido: sin cuenta cargada no podemos liquidarle, y el chef no tiene otra
+  // forma de enterarse (el checklist ya no lo mira una vez que se registró).
+  const payoutBlocked = !completion?.payments_done && heldBookings > 0
+
   return (
     <div className="p-6 md:p-10 max-w-3xl">
+
+      {payoutBlocked && (
+        <Link
+          href="/dashboard/pagos"
+          className="flex items-start gap-3.5 bg-amber-50 border border-amber-200 rounded-2xl p-4 md:p-5 mb-6 hover:bg-amber-100/70 transition-colors group"
+        >
+          <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+            <Wallet className="w-4 h-4 text-amber-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-900 mb-0.5">
+              Completá tus datos de pago
+            </p>
+            <p className="text-sm text-amber-800/90 leading-relaxed">
+              {heldBookings === 1
+                ? 'Tenés 1 servicio con el pago retenido.'
+                : `Tenés ${heldBookings} servicios con el pago retenido.`}{' '}
+              No podemos depositarte hasta que cargues tu cuenta bancaria.
+            </p>
+          </div>
+          <ArrowRight className="w-4 h-4 text-amber-500 shrink-0 mt-1 group-hover:translate-x-0.5 transition-transform" />
+        </Link>
+      )}
 
       {/* ── Profile hero card ── */}
       <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-zinc-100 mb-8">

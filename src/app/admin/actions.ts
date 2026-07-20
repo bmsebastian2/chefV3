@@ -274,14 +274,24 @@ export async function getChefsForAdmin(): Promise<{ error?: string; data?: Admin
   const chefIds = rows.map((r) => r.id as string)
 
   // Datos de contacto (users) y datos bancarios (chef_payout_accounts) en lote.
-  const [{ data: users }, { data: accounts }] = await Promise.all([
+  const [
+    { data: users,    error: usersError },
+    { data: accounts, error: accountsError },
+  ] = await Promise.all([
     userIds.length
       ? admin.from('users').select('id, first_name, first_surname, email, phone').in('id', userIds)
-      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+      : Promise.resolve({ data: [] as Record<string, unknown>[], error: null }),
     chefIds.length
       ? admin.from('chef_payout_accounts').select('chef_id, account_holder, bank_name, account_number, account_type, document_id').in('chef_id', chefIds)
-      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+      : Promise.resolve({ data: [] as Record<string, unknown>[], error: null }),
   ])
+
+  // Estas dos consultas NO cortan el listado (el panel sigue siendo útil sin
+  // ellas), pero su error tiene que quedar en el log: si falla la de payout, la
+  // tabla se ve igual que si ningún chef hubiera cargado su cuenta — un GRANT
+  // revocado o una policy rota pasarían por "nadie completó sus datos".
+  if (usersError)    console.error('getChefsForAdmin (users):', usersError)
+  if (accountsError) console.error('getChefsForAdmin (payout accounts):', accountsError)
 
   const userById = Object.fromEntries((users ?? []).map((u) => [u.id as string, u]))
   const acctByChef = Object.fromEntries((accounts ?? []).map((a) => [a.chef_id as string, a]))

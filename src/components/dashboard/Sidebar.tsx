@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Home, User, UtensilsCrossed,
-  Settings, ChevronDown, Menu, X, ClipboardList, SlidersHorizontal, Zap, MapPinned,
+  Settings, ChevronDown, Menu, X, ClipboardList, SlidersHorizontal, Zap, MapPinned, Wallet,
 } from "lucide-react";
 import { logout } from "@/app/auth/actions";
 import { LogoutButton } from "@/components/auth/LogoutButton";
@@ -33,6 +33,7 @@ const NAV = [
     ],
   },
   { href: "/dashboard/request-settings", label: "Config. Solicitudes", icon: SlidersHorizontal },
+  { href: "/dashboard/pagos", label: "Pagos", icon: Wallet },
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
 ];
 
