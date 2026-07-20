@@ -4,6 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { Banknote, Undo2, ShieldCheck, CheckCircle2, Trophy, Wallet, ClipboardList, Users } from 'lucide-react'
 import { formatPrice } from '@/lib/format'
 import { ProcessButton } from './ProcessButton'
+import { PaymentRefChip } from './PaymentRefChip'
 import { AllPaymentsSection, type AllPayment } from './AllPaymentsSection'
 import { RequestsMonitorSection } from './RequestsMonitorSection'
 import { ChefsManagementSection } from './ChefsManagementSection'
@@ -38,6 +39,10 @@ type PendingRefund = {
   cancelled_at:        string | null
   cancel_reason:       string | null
   created_at:          string | null
+  // Con dos pasarelas, el admin necesita saber DÓNDE reembolsar y con qué id.
+  // El reembolso de PayPal va contra la CAPTURA, no contra la orden.
+  provider:            'dlocalgo' | 'paypal' | null
+  provider_capture_id: string | null
 }
 
 type Released = {
@@ -276,6 +281,11 @@ export default async function AdminPage({
                       : <>Pagado {fmtDate(r.created_at)}</>}
                     {r.cancel_reason && <> · {r.cancel_reason}</>}
                   </p>
+                  <PaymentRefChip
+                    provider={r.provider}
+                    orderId={r.dlocalgo_payment_id}
+                    captureId={r.provider_capture_id}
+                  />
                 </div>
                 <div className="sm:text-right">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">A reembolsar</p>

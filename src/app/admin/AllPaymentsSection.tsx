@@ -14,6 +14,7 @@ import { Wallet } from 'lucide-react'
 import { formatPrice } from '@/lib/format'
 import { StateInfoButton } from './StateInfoButton'
 import { InitRefundButton } from './InitRefundButton'
+import { PaymentRefChip } from './PaymentRefChip'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   'Servicio Único',
@@ -49,6 +50,10 @@ export type AllPayment = {
   cancelled_at:       string | null
   lifecycle_state:    string
   client_confirmed:   boolean | null
+  // Con dos pasarelas, saber cuál es determina DÓNDE se reembolsa. El capture id
+  // es el que PayPal exige para el refund (el order id no le sirve).
+  provider:            'dlocalgo' | 'paypal' | null
+  provider_capture_id: string | null
 }
 
 // Config de cada estado del ciclo: etiqueta + clases del chip.
@@ -273,7 +278,15 @@ export function AllPaymentsSection({
                   <tr key={p.payment_id} className="border-b border-zinc-50 last:border-0">
                     <td className="px-4 py-3 sticky left-0 z-10 bg-white border-r border-zinc-100">
                       <p className="font-semibold text-zinc-900">{p.client_name ?? 'Cliente'}</p>
-                      <p className="text-xs text-zinc-400">{p.chef_name ?? '—'}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs text-zinc-400">{p.chef_name ?? '—'}</p>
+                        <PaymentRefChip
+                          compact
+                          provider={p.provider}
+                          orderId={p.dlocalgo_payment_id}
+                          captureId={p.provider_capture_id}
+                        />
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-zinc-600">
                       {serviceLabel(p)}
