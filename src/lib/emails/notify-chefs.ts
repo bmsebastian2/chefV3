@@ -42,7 +42,7 @@ const CUISINE_LABELS: Record<string, string> = {
 }
 
 // ── HTML shell (idéntico al de client-emails) ─────────────────────────────────
-function shell(body: string): string {
+function shell(body: string, subtitle: string = 'Nueva solicitud de servicio'): string {
   return `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -53,7 +53,7 @@ function shell(body: string): string {
         <tr>
           <td style="background:#18181B;padding:28px 32px;">
             <p style="margin:0;font-size:22px;font-weight:700;color:#22c55e;letter-spacing:-0.5px;">GetChef</p>
-            <p style="margin:6px 0 0;font-size:13px;color:#A1A1AA;">Nueva solicitud de servicio</p>
+            <p style="margin:6px 0 0;font-size:13px;color:#A1A1AA;">${subtitle}</p>
           </td>
         </tr>
         <tr><td style="padding:32px;">${body}</td></tr>
@@ -493,4 +493,130 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
   } else {
     console.log(`[notify-chefs] ${results.length} emails sent for request ${requestId}`)
   }
+}
+
+// ── Email: reserva confirmada (el cliente pagó la propuesta) ────────────────
+function buildBookingConfirmedEmail(opts: {
+  chefName:    string
+  clientName:  string
+  eventDate:   string | null
+  eventTime:   string | null
+  city:        string | null
+  totalAmount: number
+  currency:    string
+}): string {
+  const fmtDate = (d: string) =>
+    new Date(d + 'T00:00:00').toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  return shell(`
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.5;">
+      Hola <strong>${opts.chefName}</strong>, ¡tenés una reserva confirmada!
+    </p>
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
+      <strong>${opts.clientName}</strong> confirmó el pago de tu propuesta. El servicio ya está agendado.
+    </p>
+    ${section('Detalle del servicio', [
+      ['Cliente', opts.clientName],
+      ['Ciudad',  opts.city ?? undefined],
+      ['Hora',    opts.eventTime ?? undefined],
+      ['Fecha',   opts.eventDate ? fmtDate(opts.eventDate) : undefined],
+      ['Monto',   `${opts.totalAmount} ${opts.currency}`],
+    ])}
+    ${cta(`${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard/requests`, 'Ver mi reserva')}
+  `, 'Reserva confirmada')
+}
+
+/**
+ * Notifica al chef que su propuesta fue pagada. La llaman dlocalgo-verify.ts y
+ * paypal-verify.ts, ambos justo después de que create_booking_for_payment()
+ * confirma el booking — es el único choke point común a los dos proveedores.
+ *
+ * Idempotente vía claim atómico sobre bookings.chef_notified_at: el webhook de
+ * pago puede reintentar (o correr en paralelo con el retorno síncrono del
+ * cliente), y solo quien "gana" el UPDATE manda el email.
+ */
+export async function notifyChefOfBookingConfirmed(bookingId: string): Promise<void> {
+  const admin = createAdminClient()
+
+  const { data: booking, error: claimError } = await admin
+    .from('bookings')
+    .update({ chef_notified_at: new Date().toISOString() })
+    .eq('id', bookingId)
+    .is('chef_notified_at', null)
+    .select('chef_id, request_id, total_amount, currency')
+    .maybeSingle()
+
+  if (claimError) {
+    console.error('[notifyChefOfBookingConfirmed] claim failed:', claimError)
+    return
+  }
+  if (!booking) return // ya notificado (otra carrera lo ganó)
+
+  const [chefResult, requestResult] = await Promise.all([
+    admin
+      .from('chef_profiles')
+      .select('users!inner(email, first_name)')
+      .eq('id', booking.chef_id)
+      .single(),
+    admin
+      .from('service_requests')
+      .select('event_date_start, event_time, city, user_id')
+      .eq('id', booking.request_id)
+      .single(),
+  ])
+
+  if (chefResult.error || !chefResult.data) {
+    console.error('[notifyChefOfBookingConfirmed] chef fetch failed:', chefResult.error)
+    return
+  }
+  if (requestResult.error || !requestResult.data) {
+    console.error('[notifyChefOfBookingConfirmed] request fetch failed:', requestResult.error)
+    return
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const chefUsers = (chefResult.data as any).users
+  const chefUser  = Array.isArray(chefUsers) ? chefUsers[0] : chefUsers
+  const req       = requestResult.data
+
+  const { data: clientUser } = await admin
+    .from('users')
+    .select('first_name, first_surname')
+    .eq('id', req.user_id)
+    .maybeSingle()
+
+  const clientName = clientUser
+    ? ([clientUser.first_name, clientUser.first_surname].filter(Boolean).join(' ') || 'Cliente')
+    : 'Cliente'
+
+  if (!resend) {
+    console.warn('[notifyChefOfBookingConfirmed] RESEND_API_KEY no configurado, omitiendo email')
+    return
+  }
+
+  const devEmail          = process.env.RESEND_DEV_EMAIL
+  const hasVerifiedDomain = !!process.env.RESEND_FROM_EMAIL
+  const fromAddress       = hasVerifiedDomain
+    ? `GetChef <${process.env.RESEND_FROM_EMAIL}>`
+    : 'GetChef <onboarding@resend.dev>'
+  const to = hasVerifiedDomain ? chefUser.email : (devEmail ?? chefUser.email)
+
+  const { error } = await resend.emails.send({
+    from:    fromAddress,
+    to,
+    subject: hasVerifiedDomain
+      ? '¡Tenés una reserva confirmada! — GetChef'
+      : `[TEST → ${chefUser.email}] ¡Tenés una reserva confirmada! — GetChef`,
+    html: buildBookingConfirmedEmail({
+      chefName:    chefUser.first_name,
+      clientName,
+      eventDate:   req.event_date_start,
+      eventTime:   req.event_time,
+      city:        req.city,
+      totalAmount: booking.total_amount,
+      currency:    booking.currency,
+    }),
+  })
+
+  if (error) console.error('[notifyChefOfBookingConfirmed] send failed:', error)
 }

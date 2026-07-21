@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { RequestsView } from '@/components/dashboard/RequestsView'
-import type { RequestCard, MissingRequirement, ChefMenu } from '@/components/dashboard/RequestsView'
+import type { RequestCard, MissingRequirement, ChefMenu, ChefBooking } from '@/components/dashboard/RequestsView'
 
 type ChefRequestsState = {
   can_receive: boolean
@@ -30,8 +30,17 @@ export default async function RequestsPage() {
   const proposalMap: Record<string, string> = {}
   const chefMenus: ChefMenu[] = []
   let cancelledApplied: RequestCard[] = []
+  let bookings: ChefBooking[] = []
 
   if (chef) {
+    // Reservas confirmadas/completadas: independiente de state.requests (que solo
+    // trae status='new') y de can_receive — una vez ganado el trabajo, el chef
+    // debe seguir viéndolo aunque después deje de cumplir los mínimos de perfil.
+    const { data: bookingsData } = await supabase.rpc('get_chef_bookings')
+    if (Array.isArray(bookingsData)) {
+      bookings = bookingsData as ChefBooking[]
+    }
+
     const { data: proposals } = await supabase
       .from('proposals')
       .select('request_id, status')
@@ -114,6 +123,7 @@ export default async function RequestsPage() {
       requests={requests}
       chefMenus={chefMenus}
       blocked={state.blocked ?? false}
+      bookings={bookings}
     />
   )
 }

@@ -1,5 +1,6 @@
 import { dlocalgoGetPayment } from '@/lib/dlocalgo';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { notifyChefOfBookingConfirmed } from '@/lib/emails/notify-chefs';
 
 const STATUS_MAP: Record<string, string> = {
   PAID:      'completed',
@@ -120,7 +121,7 @@ export async function applyDlocalgoPaymentStatus(
     // Crear el booking (escrow). Idempotente: un solo booking por propuesta,
     // aunque webhook y retorno de éxito disparen ambos. Acá es donde `bookings`
     // empieza a poblarse — antes nunca se creaba.
-    const { error: bookingError } = await admin.rpc('create_booking_for_payment', {
+    const { data: bookingId, error: bookingError } = await admin.rpc('create_booking_for_payment', {
       p_dlocalgo_payment_id: dlocalgoPaymentId,
     });
     if (bookingError) {
@@ -132,6 +133,18 @@ export async function applyDlocalgoPaymentStatus(
         hint: bookingError.hint,
       });
       return { error: 'booking creation failed' };
+    }
+
+    // bookingId puede venir NULL (booking huérfano, ver create_booking_for_payment).
+    // Sin booking no hay a quién avisar. El claim atómico interno evita duplicados
+    // si el webhook reintenta o corre en paralelo con el retorno síncrono. Se
+    // espera (no fire-and-forget): esta función corre en un Route Handler, y sin
+    // `await` el runtime serverless puede congelar la lambda antes de que el
+    // email salga.
+    if (bookingId) {
+      await notifyChefOfBookingConfirmed(bookingId as string).catch((err) =>
+        console.error('[dlocalgo-verify] notifyChefOfBookingConfirmed failed:', err)
+      );
     }
   }
 

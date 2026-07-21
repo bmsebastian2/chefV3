@@ -13,6 +13,7 @@
 
 import { paypalGet } from '@/lib/paypal';
 import { createAdminClient } from '@/utils/supabase/admin';
+import { notifyChefOfBookingConfirmed } from '@/lib/emails/notify-chefs';
 
 // ── Vocabulario de estados ───────────────────────────────────────────────────
 // Se reusa el MISMO de dLocalGo (pending/completed/failed/expired/cancelled):
@@ -200,7 +201,7 @@ export async function applyPaypalOrderStatus(
     // guardamos en dlocalgo_payment_id y toma el monto autoritativo de payments.
     // Idempotente: un solo booking por propuesta, aunque webhook y captura
     // disparen ambos.
-    const { error: bookingError } = await admin.rpc('create_booking_for_payment', {
+    const { data: bookingId, error: bookingError } = await admin.rpc('create_booking_for_payment', {
       p_dlocalgo_payment_id: orderId,
     });
     if (bookingError) {
@@ -212,6 +213,17 @@ export async function applyPaypalOrderStatus(
         hint:    bookingError.hint,
       });
       return { error: 'booking creation failed' };
+    }
+
+    // bookingId puede venir NULL (booking huérfano, ver create_booking_for_payment).
+    // Se espera (no fire-and-forget): esta función corre en un Route Handler, y
+    // sin `await` el runtime serverless puede congelar la lambda antes de que el
+    // email salga. El claim atómico interno evita duplicados si el webhook
+    // reintenta o corre en paralelo con la ruta de captura.
+    if (bookingId) {
+      await notifyChefOfBookingConfirmed(bookingId as string).catch((err) =>
+        console.error('[paypal-verify] notifyChefOfBookingConfirmed failed:', err)
+      );
     }
   }
 

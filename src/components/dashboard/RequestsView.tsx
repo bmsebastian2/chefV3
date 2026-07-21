@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   CalendarDays, Users, MapPin, ChefHat, UtensilsCrossed,
   Lock, SendHorizonal, Clock, CheckCircle2, XCircle,
-  MessageCircle, Loader2, ArrowRight, AlertCircle,
+  MessageCircle, Loader2, ArrowRight, AlertCircle, Star,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -55,6 +55,47 @@ export type RequestCard = {
   client_name:      string
   proposal_status?: string | null
 }
+
+export type ChefBookingReview = {
+  rating_chef:         number
+  rating_food:         number
+  rating_presentation: number
+  rating_cleanliness:  number
+  comment:             string | null
+}
+
+export type ChefBooking = {
+  id:                     string
+  booking_status:         string // 'confirmed' | 'completed'
+  total_amount:           number
+  currency:               string
+  chef_payout_amount:     number | null
+  payout_status:          string
+  confirmed_at:           string | null
+  completed_at:           string | null
+  request_id:             string
+  service_type:           string
+  event_date_start:       string
+  event_date_end:         string | null
+  event_time:             string | null
+  occasion:               string | null
+  location:               string | null
+  city:                   string | null
+  client_name:            string
+  proposal_message:       string | null
+  proposal_menu:          string | null
+  proposal_price_total:   number | null
+  proposal_price_person:  number | null
+  review:                 ChefBookingReview | null
+}
+
+const GROUP_TABS = [
+  { key: "disponibles", label: "Disponibles" },
+  { key: "reservadas",  label: "Reservadas" },
+  { key: "completadas", label: "Completadas" },
+] as const;
+
+type Group = typeof GROUP_TABS[number]["key"];
 
 const STATUS_TABS = [
   { key: "all",        label: "Todos" },
@@ -593,6 +634,94 @@ function RequestCardItem({ req, chefMenus }: { req: RequestCard; chefMenus: Chef
   );
 }
 
+// ── Reservas (pagadas / completadas) ─────────────────────────────────────────
+
+function StarRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <span className="text-xs text-zinc-500">{label}</span>
+      <div className="flex items-center gap-0.5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star
+            key={i}
+            className={`w-3 h-3 ${i < value ? "fill-amber-400 text-amber-400" : "text-zinc-200"}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BookingCard({ booking }: { booking: ChefBooking }) {
+  const isCompleted = booking.booking_status === "completed";
+  const dateStr = booking.event_date_end && booking.event_date_end !== booking.event_date_start
+    ? `${formatDate(booking.event_date_start)} → ${formatDate(booking.event_date_end)}`
+    : formatDate(booking.event_date_start);
+
+  return (
+    <div
+      className={[
+        "relative bg-white border border-zinc-100 border-l-4 rounded-xl overflow-hidden",
+        isCompleted ? "border-l-zinc-300" : "border-l-emerald-500",
+      ].join(" ")}
+    >
+      <div className="px-4 pt-4 pb-3">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <span className={`inline-flex items-center gap-1.5 ${isCompleted ? "text-zinc-500" : "text-emerald-600"}`}>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCompleted ? "bg-zinc-400" : "bg-emerald-500"}`} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">
+              {isCompleted ? "Completada" : "Reservada"}
+            </span>
+          </span>
+          <span className="text-[11px] text-zinc-400 flex items-center gap-1 shrink-0">
+            <CalendarDays className="w-3 h-3" />
+            {dateStr}
+          </span>
+        </div>
+
+        <p className="font-serif text-[15px] font-semibold text-zinc-900 leading-snug">
+          {booking.client_name}
+        </p>
+        <p className="text-xs text-zinc-500 mt-0.5">
+          {SERVICE_TYPE_LABELS[booking.service_type] ?? booking.service_type}
+          {booking.event_time && <> · {booking.event_time}</>}
+          {" · "}<span className="font-medium text-zinc-700">{formatPrice(booking.total_amount)}</span>
+        </p>
+      </div>
+
+      <div className="border-t border-zinc-50 px-4 py-2">
+        {booking.city && (
+          <DetailRow icon={<MapPin className="w-3 h-3" />} value={booking.city} />
+        )}
+        {booking.occasion && (
+          <DetailRow icon={<ChefHat className="w-3 h-3" />} value={OCCASION_LABELS[booking.occasion] ?? booking.occasion} />
+        )}
+      </div>
+
+      {isCompleted && (
+        <div className="border-t border-zinc-50 px-4 py-3">
+          {booking.review ? (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-1.5">
+                Reseña del cliente
+              </p>
+              <StarRow label="Chef"         value={booking.review.rating_chef} />
+              <StarRow label="Comida"       value={booking.review.rating_food} />
+              <StarRow label="Presentación" value={booking.review.rating_presentation} />
+              <StarRow label="Limpieza"     value={booking.review.rating_cleanliness} />
+              {booking.review.comment && (
+                <p className="text-xs text-zinc-600 mt-2 italic">&ldquo;{booking.review.comment}&rdquo;</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-zinc-400">El cliente todavía no dejó una reseña.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Vista principal ────────────────────────────────────────────────────────────
 
 export function RequestsView({
@@ -601,13 +730,16 @@ export function RequestsView({
   requests,
   chefMenus,
   blocked = false,
+  bookings = [],
 }: {
   canReceive: boolean
   missing:    MissingRequirement[]
   requests:   RequestCard[]
   chefMenus:  ChefMenu[]
   blocked?:   boolean
+  bookings?:  ChefBooking[]
 }) {
+  const [group, setGroup] = useState<Group>("disponibles");
   const [activeTab, setActiveTab] = useState<string>("all");
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -645,6 +777,10 @@ export function RequestsView({
     ? requests
     : requests.filter((r) => r.status === activeTab);
 
+  const reservadas  = bookings.filter((b) => b.booking_status === "confirmed");
+  const completadas = bookings.filter((b) => b.booking_status === "completed");
+  const groupList   = group === "reservadas" ? reservadas : completadas;
+
   return (
     <div className="p-6 md:p-10">
 
@@ -662,30 +798,27 @@ export function RequestsView({
         </p>
       </div>
 
-      {/* ── Tabs ── */}
-      <div className="flex gap-0 border-b border-zinc-100 mb-6 overflow-x-auto">
-        {STATUS_TABS.map((tab) => {
-          const count = tab.key === "all"
-            ? requests.length
-            : requests.filter((r) => r.status === tab.key).length;
-          const active = activeTab === tab.key;
+      {/* ── Grupos ── */}
+      <div className="flex gap-1.5 mb-6">
+        {GROUP_TABS.map((g) => {
+          const count = g.key === "disponibles" ? requests.length
+            : g.key === "reservadas" ? reservadas.length
+            : completadas.length;
+          const active = group === g.key;
           return (
             <button
-              key={tab.key}
+              key={g.key}
               type="button"
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => setGroup(g.key)}
               className={[
-                "flex items-center gap-1.5 px-4 py-2.5 whitespace-nowrap border-b-2 -mb-px",
-                "text-xs font-bold uppercase tracking-[0.1em] transition-all duration-150",
-                active
-                  ? "border-accent text-accent"
-                  : "border-transparent text-zinc-400 hover:text-zinc-700",
+                "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors",
+                active ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-500 hover:text-zinc-800",
               ].join(" ")}
             >
-              {tab.label}
+              {g.label}
               {count > 0 && (
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                  active ? "bg-accent/10 text-accent" : "bg-zinc-100 text-zinc-400"
+                  active ? "bg-white/20 text-white" : "bg-zinc-200 text-zinc-500"
                 }`}>
                   {count}
                 </span>
@@ -695,32 +828,86 @@ export function RequestsView({
         })}
       </div>
 
-      {/* ── Empty state ── */}
-      {filtered.length === 0 ? (
+      {group === "disponibles" ? (
+        <>
+          {/* ── Tabs de estado ── */}
+          <div className="flex gap-0 border-b border-zinc-100 mb-6 overflow-x-auto">
+            {STATUS_TABS.map((tab) => {
+              const count = tab.key === "all"
+                ? requests.length
+                : requests.filter((r) => r.status === tab.key).length;
+              const active = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={[
+                    "flex items-center gap-1.5 px-4 py-2.5 whitespace-nowrap border-b-2 -mb-px",
+                    "text-xs font-bold uppercase tracking-[0.1em] transition-all duration-150",
+                    active
+                      ? "border-accent text-accent"
+                      : "border-transparent text-zinc-400 hover:text-zinc-700",
+                  ].join(" ")}
+                >
+                  {tab.label}
+                  {count > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                      active ? "bg-accent/10 text-accent" : "bg-zinc-100 text-zinc-400"
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Empty state ── */}
+          {filtered.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                <ChefHat className="w-7 h-7 text-zinc-300" />
+              </div>
+              <p className="text-sm font-medium text-zinc-500 mb-1">
+                No hay solicitudes en esta categoría.
+              </p>
+              {activeTab === "all" && (
+                <p className="text-xs text-zinc-400">
+                  Ajustá tu{" "}
+                  <Link
+                    href="/dashboard/request-settings"
+                    className="text-accent font-medium hover:text-accent/80 underline underline-offset-2 transition-colors"
+                  >
+                    configuración de solicitudes
+                  </Link>{" "}
+                  para ver más resultados.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {filtered.map((req) => (
+                <RequestCardItem key={req.id} req={req} chefMenus={chefMenus} />
+              ))}
+            </div>
+          )}
+        </>
+      ) : groupList.length === 0 ? (
         <div className="text-center py-20">
           <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
             <ChefHat className="w-7 h-7 text-zinc-300" />
           </div>
           <p className="text-sm font-medium text-zinc-500 mb-1">
-            No hay solicitudes en esta categoría.
+            {group === "reservadas"
+              ? "Todavía no tenés reservas confirmadas."
+              : "Todavía no tenés servicios completados."}
           </p>
-          {activeTab === "all" && (
-            <p className="text-xs text-zinc-400">
-              Ajustá tu{" "}
-              <Link
-                href="/dashboard/request-settings"
-                className="text-accent font-medium hover:text-accent/80 underline underline-offset-2 transition-colors"
-              >
-                configuración de solicitudes
-              </Link>{" "}
-              para ver más resultados.
-            </p>
-          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filtered.map((req) => (
-            <RequestCardItem key={req.id} req={req} chefMenus={chefMenus} />
+          {groupList.map((b) => (
+            <BookingCard key={b.id} booking={b} />
           ))}
         </div>
       )}
