@@ -142,12 +142,16 @@ type PriceCTAProps = {
   price_per_person:  number | null
   isPending:         boolean
   isAccepted:        boolean
+  // El booking se canceló DESPUÉS de aceptarse la propuesta (ej. admin canceló
+  // por chef bloqueado) — proposal.status se queda en 'accepted' para siempre,
+  // así que esto tiene que primar sobre isAccepted o la UI miente.
+  isCancelled:       boolean
   isAccepting:       boolean
   reservedElsewhere: boolean
   onAccept:          () => void
 }
 
-function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAccepting, reservedElsewhere, onAccept }: PriceCTAProps) {
+function PriceCTA({ compact, price_per_person, isPending, isAccepted, isCancelled, isAccepting, reservedElsewhere, onAccept }: PriceCTAProps) {
   return (
     <>
       {compact ? (
@@ -176,11 +180,13 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
             </span>
           ) : (
             <span className={`px-4 py-2 rounded-xl text-xs font-semibold border flex-shrink-0 ${
-              isAccepted
+              isCancelled
+                ? "bg-red-50 text-red-700 border-red-200"
+                : isAccepted
                 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                 : "bg-zinc-100 text-zinc-500 border-zinc-200"
             }`}>
-              {isAccepted ? "✓ Reservado" : "Rechazada"}
+              {isCancelled ? "Cancelada" : isAccepted ? "✓ Reservado" : "Rechazada"}
             </span>
           )}
         </div>
@@ -210,11 +216,13 @@ function PriceCTA({ compact, price_per_person, isPending, isAccepted, isAcceptin
             </div>
           ) : (
             <div className={`w-full py-3 rounded-xl text-sm font-semibold text-center border ${
-              isAccepted
+              isCancelled
+                ? "bg-red-50 text-red-700 border-red-200"
+                : isAccepted
                 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                 : "bg-zinc-100 text-zinc-500 border-zinc-200"
             }`}>
-              {isAccepted ? "✓ Reservado" : "Propuesta rechazada"}
+              {isCancelled ? "Reserva cancelada" : isAccepted ? "✓ Reservado" : "Propuesta rechazada"}
             </div>
           )}
         </>
@@ -312,6 +320,10 @@ export function ProposalDetailView({
 
   const isPending  = status === "pending"
   const isAccepted = status === "accepted"
+  // El booking pudo cancelarse DESPUÉS de aceptada la propuesta (auto-servicio
+  // del cliente o cancelación admin, ej. chef bloqueado). proposal.status se
+  // queda en 'accepted' para siempre — booking.status es la fuente real.
+  const isCancelled = booking?.status === "cancelled"
   const { dateStr } = request
 
   // Fecha de referencia del servicio (cuándo se considera "ocurrido"):
@@ -359,6 +371,7 @@ export function ProposalDetailView({
           price_per_person={proposal.price_per_person}
           isPending={isPending}
           isAccepted={isAccepted}
+          isCancelled={isCancelled}
           isAccepting={isAccepting}
           reservedElsewhere={reservedElsewhere}
           onAccept={handleAccept}
@@ -437,12 +450,14 @@ export function ProposalDetailView({
           {/* Non-pending status badge */}
           {!isPending && (
             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border mb-4 ${
-              isAccepted
+              isAccepted && !isCancelled
                 ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                 : "bg-red-50 text-red-700 border-red-200"
             }`}>
-              {isAccepted ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-              {isAccepted ? "Propuesta aceptada" : "Propuesta rechazada"}
+              {isAccepted && !isCancelled
+                ? <CheckCircle2 className="w-3 h-3" />
+                : <XCircle className="w-3 h-3" />}
+              {isCancelled ? "Reserva cancelada" : isAccepted ? "Propuesta aceptada" : "Propuesta rechazada"}
             </div>
           )}
 
@@ -611,6 +626,7 @@ export function ProposalDetailView({
                 price_per_person={proposal.price_per_person}
                 isPending={isPending}
                 isAccepted={isAccepted}
+                isCancelled={isCancelled}
                 isAccepting={isAccepting}
                 reservedElsewhere={reservedElsewhere}
                 onAccept={handleAccept}

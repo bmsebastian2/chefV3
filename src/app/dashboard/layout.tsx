@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { BlockedAccount } from '@/components/dashboard/BlockedAccount'
+import type { ChefBooking } from '@/components/dashboard/RequestsView'
 
 export default async function DashboardLayout({
   children,
@@ -32,7 +33,15 @@ export default async function DashboardLayout({
   // backend (get_chef_requests_state, submit_proposal, listados públicos) ya
   // enforza el bloqueo por su cuenta; esto corta la operativa también en la UI.
   if (chefProfile?.admin_blocked) {
-    return <BlockedAccount reason={chefProfile.admin_block_reason} />
+    // Se lee server-side, CON la sesión todavía válida (el signOut de
+    // BlockedAccount corre client-side, después del montaje) — para que un
+    // chef bloqueado siga viendo, en solo lectura, los servicios que ya cobró
+    // y todavía tiene que cumplir. El bloqueo no cancela nada por sí solo.
+    const { data: bookingsData } = await supabase.rpc('get_chef_bookings')
+    const confirmedBookings = (Array.isArray(bookingsData) ? bookingsData as ChefBooking[] : [])
+      .filter((b) => b.booking_status === 'confirmed')
+
+    return <BlockedAccount reason={chefProfile.admin_block_reason} bookings={confirmedBookings} />
   }
 
   let profilePhotoUrl: string | null = null

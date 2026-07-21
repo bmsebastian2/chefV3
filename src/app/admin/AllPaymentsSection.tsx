@@ -31,6 +31,7 @@ export type AllPayment = {
   booking_id:         string | null
   chef_id:            string | null
   chef_name:          string | null
+  chef_blocked:       boolean
   client_name:        string | null
   client_email:       string | null
   service_type:       string | null
@@ -284,6 +285,11 @@ export function AllPaymentsSection({
                       <p className="font-semibold text-zinc-900">{p.client_name ?? 'Cliente'}</p>
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs text-zinc-400">{p.chef_name ?? '—'}</p>
+                        {p.chef_blocked && (
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 whitespace-nowrap">
+                            Bloqueado
+                          </span>
+                        )}
                         <PaymentRefChip
                           compact
                           provider={p.provider}
@@ -340,7 +346,14 @@ export function AllPaymentsSection({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-semibold text-zinc-900 text-sm">{p.client_name ?? 'Cliente'}</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">{p.chef_name ?? '—'}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-xs text-zinc-400">{p.chef_name ?? '—'}</p>
+                      {p.chef_blocked && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 whitespace-nowrap">
+                          Bloqueado
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${stateConf(p.lifecycle_state).chip}`}>
                     {stateConf(p.lifecycle_state).label}

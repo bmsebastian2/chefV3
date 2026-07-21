@@ -306,6 +306,53 @@ export async function sendProposalEmail(opts: {
   if (error) console.error('[client-emails] sendProposalEmail falló:', error)
 }
 
+// ── Email: reserva cancelada (cancelación admin, ej. chef bloqueado) ────────────
+function buildBookingCancelledEmail(opts: {
+  clientName:   string
+  eventDate:    string | null
+  refundAmount: number
+  currency:     string
+}): string {
+  const fmtDate = (d: string) =>
+    new Date(d + 'T00:00:00').toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' })
+
+  return shell(`
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.5;">
+      Hola <strong>${opts.clientName}</strong>, tu reserva fue cancelada.
+    </p>
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
+      Tu chef ya no puede realizar el servicio${opts.eventDate ? ` programado para el <strong>${fmtDate(opts.eventDate)}</strong>` : ''}.
+      Tu pago de <strong>${opts.refundAmount} ${opts.currency}</strong> ya está en proceso de reembolso.
+    </p>
+    ${cta(`${SITE_URL}/client-dashboard`, 'Ver mi cuenta')}
+  `)
+}
+
+export async function sendBookingCancelledEmail(opts: {
+  clientEmail:  string
+  clientName:   string
+  eventDate:    string | null
+  refundAmount: number
+  currency:     string
+}): Promise<void> {
+  if (!resend) {
+    console.warn('[client-emails] RESEND_API_KEY no configurado, omitiendo email de cancelación')
+    return
+  }
+
+  const recipient = to(opts.clientEmail)
+  const prefix    = pfx(opts.clientEmail)
+
+  const { error } = await resend.emails.send({
+    from:    FROM,
+    to:      recipient,
+    subject: `${prefix}Tu reserva fue cancelada — reembolso en proceso — GetChef`,
+    html:    buildBookingCancelledEmail(opts),
+  })
+
+  if (error) console.error('[client-emails] sendBookingCancelledEmail falló:', error)
+}
+
 // ── Punto de entrada ──────────────────────────────────────────────────────────
 export async function sendClientEmails(opts: {
   email: string

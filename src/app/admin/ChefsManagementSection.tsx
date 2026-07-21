@@ -13,8 +13,9 @@
 // ============================================================================
 
 import { useState, useEffect, useTransition } from 'react'
-import { Users, ShieldAlert, ShieldCheck, Ban, AlertCircle, CreditCard } from 'lucide-react'
-import { getChefsForAdmin, setChefBlock } from './actions'
+import { Users, ShieldAlert, ShieldCheck, Ban, AlertCircle, CreditCard, Undo2 } from 'lucide-react'
+import { formatPrice } from '@/lib/format'
+import { getChefsForAdmin, setChefBlock, cancelChefBookingsAndRefund } from './actions'
 
 type ChefRow = NonNullable<Awaited<ReturnType<typeof getChefsForAdmin>>['data']>[number]
 
@@ -42,6 +43,14 @@ export function ChefsManagementSection() {
   const [reason, setReason] = useState('')
   const [acting, setActing] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
+
+  // Diálogo de cancelación masiva (chef bloqueado con reservas activas). Acción
+  // separada y explícita: nunca se dispara sola al bloquear.
+  const [cancelDialog, setCancelDialog] = useState<ChefRow | null>(null)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelActing, setCancelActing] = useState(false)
+  const [cancelError, setCancelError] = useState<string | null>(null)
+  const [cancelResult, setCancelResult] = useState<{ cancelled: number; failed: number } | null>(null)
 
   function load() {
     setError(null)
@@ -79,6 +88,27 @@ export function ChefsManagementSection() {
     }
     setDialog(null)
     load() // refrescar estados
+  }
+
+  function openCancelDialog(chef: ChefRow) {
+    setCancelReason('')
+    setCancelError(null)
+    setCancelResult(null)
+    setCancelDialog(chef)
+  }
+
+  async function confirmCancel() {
+    if (!cancelDialog) return
+    setCancelActing(true)
+    setCancelError(null)
+    const res = await cancelChefBookingsAndRefund(cancelDialog.chef_id, cancelReason.trim())
+    setCancelActing(false)
+    if (res.error) {
+      setCancelError(res.error)
+      return
+    }
+    setCancelResult({ cancelled: res.cancelled ?? 0, failed: res.failed ?? 0 })
+    load() // refrescar conteos de reservas activas
   }
 
   const total   = chefs.length
@@ -169,7 +199,19 @@ export function ChefsManagementSection() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <BlockButton blocked={c.admin_blocked} onClick={() => openDialog(c, !c.admin_blocked)} />
+                        <div className="flex flex-col items-end gap-1.5">
+                          <BlockButton blocked={c.admin_blocked} onClick={() => openDialog(c, !c.admin_blocked)} />
+                          {c.admin_blocked && c.active_bookings_count > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => openCancelDialog(c)}
+                              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors whitespace-nowrap"
+                            >
+                              <Undo2 className="w-3.5 h-3.5" />
+                              Cancelar reservas ({c.active_bookings_count})
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -205,6 +247,16 @@ export function ChefsManagementSection() {
                   <div className="mt-3">
                     <BlockButton blocked={c.admin_blocked} onClick={() => openDialog(c, !c.admin_blocked)} full />
                   </div>
+                  {c.admin_blocked && c.active_bookings_count > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => openCancelDialog(c)}
+                      className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+                    >
+                      <Undo2 className="w-3.5 h-3.5" />
+                      Cancelar reservas ({c.active_bookings_count})
+                    </button>
+                  )}
                 </div>
               )
             })}
@@ -238,6 +290,19 @@ export function ChefsManagementSection() {
                 </>
               )}
             </p>
+
+            {dialog.block && dialog.chef.active_bookings_count > 0 && (
+              <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-4">
+                <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-sm text-amber-800">
+                  Este chef tiene <strong>{dialog.chef.active_bookings_count}</strong> reserva
+                  {dialog.chef.active_bookings_count !== 1 ? 's' : ''} confirmada
+                  {dialog.chef.active_bookings_count !== 1 ? 's' : ''}
+                  {' '}({formatPrice(dialog.chef.active_bookings_amount)}). El bloqueo no las cancela — se
+                  siguen honrando salvo que decidas cancelarlas explícitamente después.
+                </p>
+              </div>
+            )}
 
             {dialog.block && (
               <div className="mb-4">
@@ -278,6 +343,95 @@ export function ChefsManagementSection() {
                 {acting ? 'Aplicando…' : dialog.block ? 'Deshabilitar' : 'Rehabilitar'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Diálogo de cancelación masiva — acción sobre dinero de clientes */}
+      {cancelDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-2.5 mb-3">
+              <Undo2 className="w-5 h-5 text-amber-600" />
+              <h3 className="font-serif text-lg font-semibold text-zinc-900">
+                Cancelar y reembolsar reservas
+              </h3>
+            </div>
+
+            {cancelResult ? (
+              <>
+                <p className="text-sm text-zinc-600 mb-5">
+                  {cancelResult.cancelled} reserva{cancelResult.cancelled !== 1 ? 's' : ''} cancelada
+                  {cancelResult.cancelled !== 1 ? 's' : ''} y enviada{cancelResult.cancelled !== 1 ? 's' : ''} a
+                  reembolsos pendientes.
+                  {cancelResult.failed > 0 && (
+                    <span className="block mt-1.5 text-red-600 font-medium">
+                      {cancelResult.failed} no se pudo{cancelResult.failed !== 1 ? 'ieron' : ''} cancelar — revisá
+                      el panel de reembolsos.
+                    </span>
+                  )}
+                </p>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setCancelDialog(null)}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-zinc-900 hover:bg-zinc-800 transition-colors"
+                  >
+                    Listo
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-zinc-500 mb-4">
+                  Vas a cancelar las <span className="font-semibold text-zinc-700">
+                    {cancelDialog.active_bookings_count}
+                  </span> reserva{cancelDialog.active_bookings_count !== 1 ? 's' : ''} confirmada
+                  {cancelDialog.active_bookings_count !== 1 ? 's' : ''} de{' '}
+                  <span className="font-medium text-zinc-700">{cancelDialog.full_name}</span> —{' '}
+                  <span className="font-semibold text-amber-700">
+                    {formatPrice(cancelDialog.active_bookings_amount)}
+                  </span>{' '}
+                  quedarán a reembolsar a los clientes. Esta acción no se puede deshacer.
+                </p>
+
+                <div className="mb-4">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    Motivo (obligatorio, queda registrado)
+                  </label>
+                  <textarea
+                    value={cancelReason}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    rows={2}
+                    placeholder="Ej: cuenta deshabilitada por incumplimiento…"
+                    className="mt-1 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors"
+                  />
+                </div>
+
+                {cancelError && (
+                  <p className="text-sm text-red-600 mb-3">{cancelError}</p>
+                )}
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCancelDialog(null)}
+                    disabled={cancelActing}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 disabled:opacity-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmCancel}
+                    disabled={cancelActing || !cancelReason.trim()}
+                    className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                  >
+                    {cancelActing ? 'Cancelando…' : 'Cancelar reservas y reembolsar'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
