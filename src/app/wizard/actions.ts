@@ -174,8 +174,12 @@ export async function registerOrVerifyClient(
     return { error: 'Error al crear cuenta' }
   }
 
-  // 4. Registrar en public.users
-  const { error: rpcError } = await supabase.rpc('register_client', {
+  // 4. Registrar en public.users.
+  //    register_client solo es ejecutable por service_role (ver
+  //    MIGRATION_lockdown_register_functions.sql) porque confía en
+  //    p_user_id sin validarlo contra auth.uid() — en este punto el usuario
+  //    fue creado con admin.createUser y todavía no tiene sesión propia.
+  const { error: rpcError } = await admin.rpc('register_client', {
     p_user_id:   adminData.user.id,
     p_email:     email,
     p_first_name: name,

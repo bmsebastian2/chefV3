@@ -1,0 +1,56 @@
+-- ============================================================================
+-- Fix: policies huérfanas de service_requests (más permisivas de lo necesario)
+-- Ejecutar en: Supabase Dashboard → SQL Editor
+--
+-- Hallazgo (auditoría 2026-07-21): tres policies de service_requests no las
+-- usa ningún flujo legítimo de la app y son más permisivas de lo que hace
+-- falta:
+--
+-- 1. "select_service_requests" (SELECT, cualquier chef ve TODAS las filas):
+--    el listado real del chef sale de get_chef_requests_state() /
+--    get_cancelled_applied_requests() (RPCs con filtro real), nunca de un
+--    select directo. El detalle de una request puntual
+--    (dashboard/requests/[id]/page.tsx) YA asume que esta policy no debería
+--    existir: autoriza explícito (chef con proposal en esa request) y después
+--    usa el cliente admin porque "RLS blocks a direct read". Con esta policy
+--    viva, cualquier cuenta chef podía leer el 100% de las solicitudes de
+--    clientes (evento, ciudad, presupuesto) directo por REST, sin importar si
+--    matcheaba o fue notificado.
+--
+-- 2. "requests_public_insert" (INSERT sin restricción, rol public,
+--    with_check=true): nada en la app hace insert directo sobre esta tabla —
+--    todo pasa por create_service_request (SECURITY DEFINER, bypasea RLS).
+--    Dejaba a cualquiera, sin sesión, insertar filas arbitrarias directo por
+--    REST (spam, datos sin validar/normalizar, user_id de otra persona).
+--
+-- 3. "solo clientes insertan solicitudes" (INSERT, authenticated + role=
+--    client): mismo caso — la RPC bypasea RLS, nadie necesita insertar
+--    directo. Se dropea por consistencia con el patrón del proyecto
+--    (mutaciones siempre vía RPC).
+--
+-- Quedan intactas y cubren todo lo que la app usa hoy:
+--   · "cliente ve sus solicitudes"      (SELECT: propia fila, o admin ve todo)
+--   · "cliente actualiza sus solicitudes" (UPDATE: propia fila, solo clientes)
+-- ============================================================================
+
+DROP POLICY IF EXISTS "select_service_requests" ON public.service_requests;
+DROP POLICY IF EXISTS "requests_public_insert" ON public.service_requests;
+DROP POLICY IF EXISTS "solo clientes insertan solicitudes" ON public.service_requests;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- VERIFICACIÓN
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Deben quedar solo estas dos:
+--   SELECT policyname, roles, cmd FROM pg_policies
+--   WHERE tablename = 'service_requests' ORDER BY policyname;
+--
+-- Pruebas positivas (deben seguir funcionando):
+--   · Wizard: crear una solicitud nueva (cliente nuevo y existente).
+--   · Dashboard chef: ver listado de solicitudes y abrir el detalle de una
+--     donde ya se envió propuesta.
+--   · Admin: ver todas las solicitudes en /admin.
+--
+-- Prueba negativa (debe fallar / devolver 0 filas ahora):
+--   -- logueado como un chef cualquiera, vía anon key + su JWT:
+--   GET .../rest/v1/service_requests   (antes devolvía todas, ahora ninguna
+--   salvo que sea su propia fila, que un chef no tiene)

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { TERMS_VERSION } from '@/lib/terms'
 
 // Errores de acceso que puede provocar quien intenta entrar. Se mapea por
@@ -172,8 +173,12 @@ export async function registerChef(prevState: { error: string } | null, formData
 
     const userId = authData.user.id
 
-    // 3. Register chef profile via RPC
-    const { error: rpcError } = await supabase
+    // 3. Register chef profile via RPC.
+    //    register_chef solo es ejecutable por service_role (ver
+    //    MIGRATION_lockdown_register_functions.sql) porque confía en
+    //    p_user_id sin validarlo contra auth.uid() — se llama con el
+    //    cliente admin, nunca con el anon/cookies.
+    const { error: rpcError } = await createAdminClient()
       .rpc('register_chef', {
         p_user_id:        userId,
         p_email:          email,
