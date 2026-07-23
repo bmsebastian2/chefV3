@@ -10,9 +10,10 @@ import {
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
-  DialogDescription, DialogFooter,
+  DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
-import { submitProposal } from "@/app/dashboard/requests/actions";
+import { submitProposal, getChefBookingDetail } from "@/app/dashboard/requests/actions";
+import type { ChefBookingDetail } from "@/app/dashboard/requests/actions";
 import { formatPrice, formatPriceRange } from "@/lib/format";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
@@ -69,9 +70,6 @@ export type ChefBooking = {
   booking_status:         string // 'confirmed' | 'completed'
   total_amount:           number
   currency:               string
-  chef_payout_amount:     number | null
-  payout_status:          string
-  confirmed_at:           string | null
   completed_at:           string | null
   request_id:             string
   service_type:           string
@@ -79,13 +77,8 @@ export type ChefBooking = {
   event_date_end:         string | null
   event_time:             string | null
   occasion:               string | null
-  location:               string | null
   city:                   string | null
   client_name:            string
-  proposal_message:       string | null
-  proposal_menu:          string | null
-  proposal_price_total:   number | null
-  proposal_price_person:  number | null
   review:                 ChefBookingReview | null
 }
 
@@ -96,15 +89,6 @@ const GROUP_TABS = [
 ] as const;
 
 type Group = typeof GROUP_TABS[number]["key"];
-
-const STATUS_TABS = [
-  { key: "all",        label: "Todos" },
-  { key: "new",        label: "Nuevo" },
-  { key: "in_process", label: "En proceso" },
-  { key: "paid",       label: "Pagado" },
-  { key: "completed",  label: "Completado" },
-  { key: "cancelled",  label: "Cancelado" },
-] as const;
 
 const STATUS_LABELS: Record<string, string> = {
   new:        "Nuevo",
@@ -153,6 +137,12 @@ const OCCASION_LABELS: Record<string, string> = {
   friends_gathering: "Reunión de amigos",
   corporate:         "Corporativo",
   other:             "Otro",
+};
+
+const PAYOUT_STATUS_LABELS: Record<string, string> = {
+  pending:  "pendiente de liberar",
+  released: "liberado",
+  failed:   "con problema, contactá a la administración",
 };
 
 const COURSE_LABELS: Record<string, string> = {
@@ -222,6 +212,13 @@ const PROPOSAL_STATUS_CONFIG: Record<string, { label: string; color: string; ico
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("es-AR", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function formatDateTime(isoStr: string) {
+  const d = new Date(isoStr);
+  return d.toLocaleString("es-AR", {
+    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
 }
 
 function formatBudget(min: number | null, max: number | null) {
@@ -658,6 +655,23 @@ function BookingCard({ booking }: { booking: ChefBooking }) {
     ? `${formatDate(booking.event_date_start)} → ${formatDate(booking.event_date_end)}`
     : formatDate(booking.event_date_start);
 
+  const [showDetail, setShowDetail]   = useState(false);
+  const [detail, setDetail]           = useState<ChefBookingDetail | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [loadingDetail, startLoadingDetail] = useTransition();
+
+  function openDetail() {
+    setShowDetail(true);
+    // Cache real: si ya lo cargamos una vez, reabrir no dispara otra query.
+    if (detail || loadingDetail) return;
+    setDetailError(null);
+    startLoadingDetail(async () => {
+      const result = await getChefBookingDetail(booking.id);
+      if (result.error) setDetailError(result.error);
+      else if (result.data) setDetail(result.data);
+    });
+  }
+
   return (
     <div
       className={[
@@ -718,6 +732,148 @@ function BookingCard({ booking }: { booking: ChefBooking }) {
           )}
         </div>
       )}
+
+      <div className="border-t border-zinc-50 px-4 py-2.5">
+        <button
+          type="button"
+          onClick={openDetail}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
+        >
+          Ver detalle
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <Dialog open={showDetail} onOpenChange={setShowDetail}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <BookingDetailContent
+            booking={booking}
+            detail={detail}
+            loading={loadingDetail}
+            error={detailError}
+          />
+          <DialogFooter>
+            <DialogClose className="px-4 py-2 text-sm font-medium text-zinc-500 hover:text-zinc-800 transition-colors">
+              Cerrar
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function BookingDetailContent({ booking, detail, loading, error }: {
+  booking: ChefBooking
+  detail:  ChefBookingDetail | null
+  loading: boolean
+  error:   string | null
+}) {
+  const isCompleted = booking.booking_status === "completed";
+
+  return (
+    <div className="space-y-5">
+      <DialogHeader>
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center gap-1.5 ${isCompleted ? "text-zinc-500" : "text-emerald-600"}`}>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCompleted ? "bg-zinc-400" : "bg-emerald-500"}`} />
+            <span className="text-[10px] font-bold uppercase tracking-wide">
+              {isCompleted ? "Completada" : "Reservada"}
+            </span>
+          </span>
+        </div>
+        <DialogTitle>{booking.client_name}</DialogTitle>
+        <DialogDescription>
+          {SERVICE_TYPE_LABELS[booking.service_type] ?? booking.service_type}
+          {booking.event_time && <> · {booking.event_time}</>}
+          {" · "}{formatPrice(booking.total_amount)}
+        </DialogDescription>
+      </DialogHeader>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="w-5 h-5 text-zinc-300 animate-spin" />
+        </div>
+      ) : error ? (
+        <div className="flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+          <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      ) : detail ? (
+        <>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-1.5">
+              Cliente
+            </p>
+            {detail.location && (
+              <DetailRow icon={<MapPin className="w-3 h-3" />} value={detail.location} />
+            )}
+            {detail.client_phone && (
+              <DetailRow icon={<MessageCircle className="w-3 h-3" />} value={detail.client_phone} />
+            )}
+            {!detail.location && !detail.client_phone && (
+              <p className="text-xs text-zinc-400">Sin datos de contacto adicionales.</p>
+            )}
+          </div>
+
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-1.5">
+              Tu propuesta
+            </p>
+            {detail.proposal_message && (
+              <p className="text-sm text-zinc-700 mb-2">{detail.proposal_message}</p>
+            )}
+            {detail.proposal_menu && (
+              <p className="text-xs text-zinc-500 whitespace-pre-line mb-2">{detail.proposal_menu}</p>
+            )}
+            {(detail.proposal_price_total != null || detail.proposal_price_person != null) && (
+              <p className="text-xs text-zinc-600">
+                {detail.proposal_price_total != null && (
+                  <>Total: <span className="font-medium text-zinc-800">{formatPrice(detail.proposal_price_total)}</span></>
+                )}
+                {detail.proposal_price_person != null && (
+                  <>
+                    {detail.proposal_price_total != null && " · "}
+                    Por persona: <span className="font-medium text-zinc-800">{formatPrice(detail.proposal_price_person)}</span>
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-1.5">
+              Línea de tiempo
+            </p>
+            <div className="space-y-1.5 text-xs text-zinc-500">
+              {detail.proposal_sent_at && (
+                <p>Propuesta enviada · {formatDateTime(detail.proposal_sent_at)}</p>
+              )}
+              {detail.confirmed_at && (
+                <p>Reserva confirmada (pago) · {formatDateTime(detail.confirmed_at)}</p>
+              )}
+              {detail.completed_at && (
+                <p>Servicio completado · {formatDateTime(detail.completed_at)}</p>
+              )}
+            </div>
+          </div>
+
+          {detail.chef_payout_amount != null && (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-1.5">
+                Monto a recibir
+              </p>
+              <p className="text-sm text-zinc-700">
+                <span className="font-semibold text-zinc-900">{formatPrice(detail.chef_payout_amount)}</span>
+                {" · "}
+                <span className="text-zinc-500">
+                  {PAYOUT_STATUS_LABELS[detail.payout_status ?? ""] ?? detail.payout_status}
+                </span>
+              </p>
+            </div>
+          )}
+        </>
+      ) : null}
     </div>
   );
 }
@@ -739,8 +895,9 @@ export function RequestsView({
   blocked?:   boolean
   bookings?:  ChefBooking[]
 }) {
-  const [group, setGroup] = useState<Group>("disponibles");
-  const [activeTab, setActiveTab] = useState<string>("all");
+  const [group, setGroup] = useState<Group>(
+    () => bookings.some((b) => b.booking_status === "confirmed") ? "reservadas" : "disponibles"
+  );
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -772,10 +929,6 @@ export function RequestsView({
   if (!canReceive) {
     return <RequestsGate missing={missing} />;
   }
-
-  const filtered = activeTab === "all"
-    ? requests
-    : requests.filter((r) => r.status === activeTab);
 
   const reservadas  = bookings.filter((b) => b.booking_status === "confirmed");
   const completadas = bookings.filter((b) => b.booking_status === "completed");
@@ -829,70 +982,32 @@ export function RequestsView({
       </div>
 
       {group === "disponibles" ? (
-        <>
-          {/* ── Tabs de estado ── */}
-          <div className="flex gap-0 border-b border-zinc-100 mb-6 overflow-x-auto">
-            {STATUS_TABS.map((tab) => {
-              const count = tab.key === "all"
-                ? requests.length
-                : requests.filter((r) => r.status === tab.key).length;
-              const active = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => setActiveTab(tab.key)}
-                  className={[
-                    "flex items-center gap-1.5 px-4 py-2.5 whitespace-nowrap border-b-2 -mb-px",
-                    "text-xs font-bold uppercase tracking-[0.1em] transition-all duration-150",
-                    active
-                      ? "border-accent text-accent"
-                      : "border-transparent text-zinc-400 hover:text-zinc-700",
-                  ].join(" ")}
-                >
-                  {tab.label}
-                  {count > 0 && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                      active ? "bg-accent/10 text-accent" : "bg-zinc-100 text-zinc-400"
-                    }`}>
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+        requests.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <ChefHat className="w-7 h-7 text-zinc-300" />
+            </div>
+            <p className="text-sm font-medium text-zinc-500 mb-1">
+              No hay solicitudes disponibles por ahora.
+            </p>
+            <p className="text-xs text-zinc-400">
+              Ajustá tu{" "}
+              <Link
+                href="/dashboard/request-settings"
+                className="text-accent font-medium hover:text-accent/80 underline underline-offset-2 transition-colors"
+              >
+                configuración de solicitudes
+              </Link>{" "}
+              para ver más resultados.
+            </p>
           </div>
-
-          {/* ── Empty state ── */}
-          {filtered.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                <ChefHat className="w-7 h-7 text-zinc-300" />
-              </div>
-              <p className="text-sm font-medium text-zinc-500 mb-1">
-                No hay solicitudes en esta categoría.
-              </p>
-              {activeTab === "all" && (
-                <p className="text-xs text-zinc-400">
-                  Ajustá tu{" "}
-                  <Link
-                    href="/dashboard/request-settings"
-                    className="text-accent font-medium hover:text-accent/80 underline underline-offset-2 transition-colors"
-                  >
-                    configuración de solicitudes
-                  </Link>{" "}
-                  para ver más resultados.
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filtered.map((req) => (
-                <RequestCardItem key={req.id} req={req} chefMenus={chefMenus} />
-              ))}
-            </div>
-          )}
-        </>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {requests.map((req) => (
+              <RequestCardItem key={req.id} req={req} chefMenus={chefMenus} />
+            ))}
+          </div>
+        )
       ) : groupList.length === 0 ? (
         <div className="text-center py-20">
           <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
