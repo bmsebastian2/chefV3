@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { StepProps, MealSlot } from "./types";
+import { StepProps, MealSlot, MIN_EVENT_GUESTS, MAX_EVENT_GUESTS } from "./types";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
@@ -429,10 +429,10 @@ export function StepLocationWeekly(props: StepProps) {
 
 // ── CounterRow ────────────────────────────────────────────────────────────────
 interface CounterRowProps {
-  label: string; subtitle: string; value: number; min?: number;
+  label: string; subtitle: string; value: number; min?: number; max?: number;
   onDecrement: () => void; onIncrement: () => void;
 }
-function CounterRow({ label, subtitle, value, min = 0, onDecrement, onIncrement }: CounterRowProps) {
+function CounterRow({ label, subtitle, value, min = 0, max = Infinity, onDecrement, onIncrement }: CounterRowProps) {
   return (
     <div className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-2xl transition-colors hover:border-zinc-300">
       <div>
@@ -450,7 +450,9 @@ function CounterRow({ label, subtitle, value, min = 0, onDecrement, onIncrement 
         <button
           type="button"
           onClick={onIncrement}
-          className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-600 text-lg font-light hover:bg-white hover:shadow-sm transition-all duration-150"
+          disabled={value >= max}
+          aria-label="Aumentar"
+          className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-600 text-lg font-light hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
         >+</button>
       </div>
     </div>
@@ -461,6 +463,7 @@ export function StepGuests({ data, updateData, nextStep }: StepProps) {
   const [adults, setAdults] = useState(data.guestsAdults ?? 1);
   const [teens,  setTeens]  = useState(data.guestsTeens  ?? 0);
   const [kids,   setKids]   = useState(data.guestsKids   ?? 0);
+  const atMax = adults + teens + kids >= MAX_EVENT_GUESTS;
 
   const handleContinue = () => {
     updateData({ guestsAdults: adults, guestsTeens: teens, guestsKids: kids });
@@ -471,25 +474,33 @@ export function StepGuests({ data, updateData, nextStep }: StepProps) {
     <div className="flex flex-col gap-3 max-w-md mx-auto w-full">
       <CounterRow
         label="Adultos" subtitle="Mayores de 16 años"
-        value={adults} min={1}
-        onDecrement={() => setAdults(v => Math.max(1, v - 1))}
-        onIncrement={() => setAdults(v => v + 1)}
+        value={adults} min={MIN_EVENT_GUESTS} max={MAX_EVENT_GUESTS - teens - kids}
+        onDecrement={() => setAdults(v => Math.max(MIN_EVENT_GUESTS, v - 1))}
+        onIncrement={() => setAdults(v => Math.min(MAX_EVENT_GUESTS - teens - kids, v + 1))}
       />
       <CounterRow
         label="Adolescentes" subtitle="12 - 15 años"
-        value={teens}
+        value={teens} max={MAX_EVENT_GUESTS - adults - kids}
         onDecrement={() => setTeens(v => Math.max(0, v - 1))}
-        onIncrement={() => setTeens(v => v + 1)}
+        onIncrement={() => setTeens(v => Math.min(MAX_EVENT_GUESTS - adults - kids, v + 1))}
       />
       <CounterRow
         label="Niños" subtitle="2 - 11 años"
-        value={kids}
+        value={kids} max={MAX_EVENT_GUESTS - adults - teens}
         onDecrement={() => setKids(v => Math.max(0, v - 1))}
-        onIncrement={() => setKids(v => v + 1)}
+        onIncrement={() => setKids(v => Math.min(MAX_EVENT_GUESTS - adults - teens, v + 1))}
       />
       <Button onClick={handleContinue} size="lg" className={BTN_CONTINUE + " mt-2"}>
         Continuar
       </Button>
+      {atMax && (
+        <HintBox text={
+          <>
+            Para eventos de más de {MAX_EVENT_GUESTS} personas,{" "}
+            <a href="/#contacto" className="underline font-medium text-accent">contactanos</a> y lo coordinamos a medida.
+          </>
+        } />
+      )}
     </div>
   );
 }
@@ -1068,7 +1079,7 @@ export function StepMealSlots({ data, updateData, nextStep }: StepProps) {
 }
 
 // ── HintBox reutilizable ──────────────────────────────────────────────────────
-function HintBox({ text = "¿No estás seguro? ¡Puedes cambiarlo más adelante!" }: { text?: string }) {
+function HintBox({ text = "¿No estás seguro? ¡Puedes cambiarlo más adelante!" }: { text?: React.ReactNode }) {
   return (
     <div className="w-full flex items-start gap-3 bg-accent/5 border border-accent/15 rounded-xl px-5 py-3.5">
       <span className="text-accent text-base leading-none mt-0.5 flex-shrink-0 select-none">✦</span>
@@ -1144,6 +1155,7 @@ export function StepOccasion1({ data, updateData, nextStep }: StepProps) {
 export function StepGuestsCount({ data, updateData, nextStep }: StepProps) {
   const [count, setCount] = useState(data.guestsAdults ?? 2);
   const basePrice = getBasePrice(guestsRangeKey(count));
+  const atMax = count >= MAX_EVENT_GUESTS;
 
   const handleContinue = () => {
     updateData({ guestsAdults: count });
@@ -1158,14 +1170,23 @@ export function StepGuestsCount({ data, updateData, nextStep }: StepProps) {
       <CounterRow
         label="Personas"
         subtitle={`desde $${basePrice} por persona`}
-        value={count} min={1}
-        onDecrement={() => setCount(v => Math.max(1, v - 1))}
-        onIncrement={() => setCount(v => v + 1)}
+        value={count} min={MIN_EVENT_GUESTS} max={MAX_EVENT_GUESTS}
+        onDecrement={() => setCount(v => Math.max(MIN_EVENT_GUESTS, v - 1))}
+        onIncrement={() => setCount(v => Math.min(MAX_EVENT_GUESTS, v + 1))}
       />
       <Button onClick={handleContinue} size="lg" className={BTN_CONTINUE + " mt-2"}>
         Continuar
       </Button>
-      <HintBox />
+      {atMax ? (
+        <HintBox text={
+          <>
+            Para eventos de más de {MAX_EVENT_GUESTS} personas,{" "}
+            <a href="/#contacto" className="underline font-medium text-accent">contactanos</a> y lo coordinamos a medida.
+          </>
+        } />
+      ) : (
+        <HintBox />
+      )}
     </div>
   );
 }

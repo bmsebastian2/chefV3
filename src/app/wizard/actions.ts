@@ -5,7 +5,7 @@ import { after } from 'next/server'
 import { Country } from 'country-state-city'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { WizardData, ClientExtras } from '@/components/wizard/types'
+import { WizardData, ClientExtras, MIN_EVENT_GUESTS, MAX_EVENT_GUESTS } from '@/components/wizard/types'
 import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
 import { sendClientEmails, RequestSummary } from '@/lib/emails/client-emails'
 import { canonicalCity } from '@/lib/maps/cities'
@@ -270,6 +270,11 @@ export async function submitServiceRequest(
     guestsKids   = data.guestsKids  ?? 0
   }
 
+  const totalGuests = guestsAdults + guestsTeens + guestsKids
+  if (totalGuests < MIN_EVENT_GUESTS || totalGuests > MAX_EVENT_GUESTS) {
+    return { error: `El número de personas debe estar entre ${MIN_EVENT_GUESTS} y ${MAX_EVENT_GUESTS}` }
+  }
+
   // Mismo país-fuente para persistir y para canonicalizar la ciudad: ambos lados
   // del matching (request y chef) guardan el valor canónico del catálogo.
   const country = resolveCountryName(data.location.countryCode)
@@ -460,6 +465,12 @@ export async function submitWeeklyRequest(
 
   const restrictions = data.dietaryRestrictions ?? []
   const raciones     = data.weeklyDetails?.racionesPorComida ?? 1
+
+  // Mismo rango que el Stepper de WeeklyStepGuests (min=1 max=10 en WeeklyFlowSteps.tsx) —
+  // "personas por comida" de un servicio recurrente, no el tamaño de un evento puntual.
+  if (raciones < 1 || raciones > 10) {
+    return { error: 'La cantidad de personas por comida debe estar entre 1 y 10' }
+  }
 
   const country = resolveCountryName(data.location.countryCode)
 

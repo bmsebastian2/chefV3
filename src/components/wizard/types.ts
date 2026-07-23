@@ -1,3 +1,8 @@
+// Tope de personas para un evento puntual (S1/S2). Por encima de esto, el
+// caso pasa a atención directa (contacto) en vez del stepper del wizard.
+export const MIN_EVENT_GUESTS = 1;
+export const MAX_EVENT_GUESTS = 25;
+
 export interface MealSlot {
   fecha: string; // 'YYYY-MM-DD'
   desayuno: boolean;
