@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/utils/supabase/admin'
 import { resend } from '@/lib/resend'
 import { normalizeCity } from '@/lib/maps/normalizeCity'
+import { tierFromBudget, type PriceTier } from '@/lib/pricing'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   'Servicio Único',
@@ -21,12 +22,13 @@ const OCCASION_LABELS: Record<string, string> = {
   other:             'Otro',
 }
 
-// Mapa inverso del BUDGET_MAP del wizard: el tier no se persiste como columna,
-// se reconoce por el rango exacto de budget_min/budget_max.
-const EXPERIENCE_BY_BUDGET: Record<string, string> = {
-  '210-263': 'Casual',
-  '263-315': 'Gourmet',
-  '315-420': 'Exclusivo',
+// El tier no se persiste como columna: se reconoce por el rango exacto de
+// budget_min/budget_max contra la tabla oficial (tierFromBudget, lib/pricing).
+// Requests con rangos históricos que ya no están en la tabla quedan sin label.
+const TIER_DISPLAY: Record<PriceTier, string> = {
+  casual:    'Casual',
+  gourmet:   'Gourmet',
+  exclusive: 'Exclusivo',
 }
 
 // Mismos labels que CUISINE_DISPLAY del wizard (email del cliente)
@@ -355,10 +357,11 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
     restrictionLabels.push(`Alergias: ${restrRow.alergias_adicionales}`)
   }
 
-  const experiencia =
+  const tier =
     requestRow.budget_min != null && requestRow.budget_max != null
-      ? EXPERIENCE_BY_BUDGET[`${requestRow.budget_min}-${requestRow.budget_max}`] ?? null
+      ? tierFromBudget(requestRow.budget_min, requestRow.budget_max)
       : null
+  const experiencia = tier ? TIER_DISPLAY[tier] : null
 
   const req: RequestData = {
     service_type:       requestRow.service_type,

@@ -66,7 +66,13 @@ export async function saveMenu(input: SaveMenuInput): Promise<{ error?: string; 
       p_price_3_6: input.price36,
       p_price_7_20: input.price720,
     })
-    if (error) { console.error('create_menu:', error); return { error: 'Error al crear el menú' } }
+    if (error) {
+      console.error('create_menu:', error)
+      if (error.message?.includes('menu_price_order')) {
+        return { error: 'Los precios por bracket están al revés: a más personas, el precio por persona baja o queda igual, nunca sube.' }
+      }
+      return { error: 'Error al crear el menú' }
+    }
     menuId = data as string
   } else {
     menuId = input.menuId
@@ -82,7 +88,13 @@ export async function saveMenu(input: SaveMenuInput): Promise<{ error?: string; 
       p_price_3_6: input.price36,
       p_price_7_20: input.price720,
     })
-    if (error) { console.error('update_menu:', error); return { error: 'Error al actualizar el menú' } }
+    if (error) {
+      console.error('update_menu:', error)
+      if (error.message?.includes('menu_price_order')) {
+        return { error: 'Los precios por bracket están al revés: a más personas, el precio por persona baja o queda igual, nunca sube.' }
+      }
+      return { error: 'Error al actualizar el menú' }
+    }
   }
 
   for (const cs of input.courseData) {

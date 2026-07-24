@@ -1,10 +1,13 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, ChevronDown, ShieldCheck } from "lucide-react"
+import { ArrowLeft, ShieldCheck } from "lucide-react"
 import { formatPrice } from "@/lib/format"
+import { Stepper } from "@/components/ui/stepper"
+import { repriceProposal, MIN_BOOKING_GUESTS, type MenuPrices } from "@/lib/pricing"
+import { MAX_EVENT_GUESTS } from "@/components/wizard/types"
 
 type Props = {
   requestId:   string
@@ -18,75 +21,10 @@ type Props = {
     pricePerPerson: number
     dateStr:        string
   }
-  maxGuests: number
-}
-
-// ── Guest dropdown ────────────────────────────────────────────────────────────
-
-function GuestDropdown({
-  value,
-  onChange,
-  maxGuests,
-}: {
-  value:     number | ""
-  onChange:  (v: number | "") => void
-  maxGuests: number
-}) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [])
-
-  const options = Array.from({ length: Math.max(1, maxGuests - 1) }, (_, i) => i + 2)
-  const label   = value ? `${value} personas` : "Seleccionar"
-
-  return (
-    <div ref={ref} className="relative w-full sm:min-w-[175px] sm:w-auto">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 pl-4 pr-3 py-2.5 rounded-xl border border-zinc-200 bg-white text-zinc-800 font-medium text-sm hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all duration-150"
-      >
-        {label}
-        <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open && (
-        <div className="absolute left-0 top-[calc(100%+6px)] w-full bg-white rounded-xl shadow-xl border border-zinc-100 py-1 z-20 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => { onChange(""); setOpen(false) }}
-            className="w-full text-left px-4 py-2.5 text-sm text-zinc-400 hover:bg-zinc-50 transition-colors"
-          >
-            Seleccionar
-          </button>
-          {options.map((n) => {
-            const selected = value === n
-            return (
-              <button
-                key={n}
-                type="button"
-                onClick={() => { onChange(n); setOpen(false) }}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                  selected
-                    ? "bg-accent/10 text-accent"
-                    : "text-zinc-700 hover:bg-zinc-50"
-                }`}
-              >
-                {n} personas
-              </button>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
+  /** Snapshot de precios por bracket del menú; null → el precio queda fijo. */
+  snapshot: MenuPrices | null
+  /** Comensales del request cuando el chef cotizó — valor inicial del stepper. */
+  originalGuests: number
 }
 
 // ── Guarantee items ───────────────────────────────────────────────────────────
@@ -100,13 +38,18 @@ const GUARANTEES = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function BookingView({ requestId, proposalId, chef, menu, maxGuests }: Props) {
+export function BookingView({ requestId, proposalId, chef, menu, snapshot, originalGuests }: Props) {
   const router  = useRouter()
-  const [guests, setGuests] = useState<number | "">(2)
+  const [guests, setGuests] = useState(() =>
+    Math.min(MAX_EVENT_GUESTS, Math.max(MIN_BOOKING_GUESTS, originalGuests)),
+  )
 
-  const total = typeof guests === "number" && guests > 0
-    ? menu.pricePerPerson * guests
-    : null
+  // Al mover los comensales, el por-persona salta al precio real del chef para
+  // el bracket nuevo (snapshot del menú en la propuesta); sin snapshot queda
+  // fijo. Mismo cálculo que cobra el server en create-payment/create-order.
+  const perPerson = repriceProposal(menu.pricePerPerson, snapshot, guests)
+    ?? menu.pricePerPerson
+  const total = perPerson > 0 ? perPerson * guests : null
 
   const handleFinalize = () => {
     if (!guests) return
@@ -171,7 +114,7 @@ export function BookingView({ requestId, proposalId, chef, menu, maxGuests }: Pr
                       <p className="text-sm font-semibold text-zinc-800">{menu.cuisineType}</p>
                     )}
                     <p className="text-sm text-zinc-700">
-                      <span className="font-bold text-zinc-900">{formatPrice(menu.pricePerPerson)}</span>
+                      <span className="font-bold text-zinc-900">{formatPrice(perPerson)}</span>
                       <span className="text-zinc-400"> / persona</span>
                     </p>
                   </div>
@@ -185,7 +128,16 @@ export function BookingView({ requestId, proposalId, chef, menu, maxGuests }: Pr
                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-2">
                     Comensales
                   </p>
-                  <GuestDropdown value={guests} onChange={setGuests} maxGuests={maxGuests} />
+                  <div className="flex items-center gap-3 sm:justify-end">
+                    <Stepper
+                      value={guests}
+                      min={MIN_BOOKING_GUESTS}
+                      max={MAX_EVENT_GUESTS}
+                      onDecrement={() => setGuests((v) => Math.max(MIN_BOOKING_GUESTS, v - 1))}
+                      onIncrement={() => setGuests((v) => Math.min(MAX_EVENT_GUESTS, v + 1))}
+                    />
+                    <span className="text-sm text-zinc-500">persona{guests !== 1 ? "s" : ""}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -227,9 +179,7 @@ export function BookingView({ requestId, proposalId, chef, menu, maxGuests }: Pr
                 </div>
                 <div className="flex justify-between items-baseline">
                   <span className="text-xs text-zinc-500">
-                    {typeof guests === "number" && guests > 0
-                      ? `${guests} × ${formatPrice(menu.pricePerPerson)}`
-                      : "Total"}
+                    {guests > 0 ? `${guests} × ${formatPrice(perPerson)}` : "Total"}
                   </span>
                   <span className="font-serif text-xl font-bold text-zinc-900">
                     {total !== null ? formatPrice(total) : "—"}
@@ -266,7 +216,7 @@ export function BookingView({ requestId, proposalId, chef, menu, maxGuests }: Pr
             <p className="font-serif text-lg font-bold text-zinc-900 leading-none mt-0.5">
               {total !== null ? formatPrice(total) : "—"}
             </p>
-            {typeof guests === "number" && guests > 0 && (
+            {guests > 0 && (
               <p className="text-[11px] text-zinc-400 mt-0.5">
                 {guests} persona{guests !== 1 ? "s" : ""}
               </p>

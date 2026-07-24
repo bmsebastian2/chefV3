@@ -1,6 +1,8 @@
 import { dlocalgoRequest } from '@/lib/dlocalgo';
 import { applyDlocalgoPaymentStatus } from '@/lib/dlocalgo-verify';
 import { assertRequestPayable, computeTotal, resolveAppUrl } from '@/lib/payment-guards';
+import { repriceProposal, MIN_BOOKING_GUESTS } from '@/lib/pricing';
+import { MAX_EVENT_GUESTS } from '@/components/wizard/types';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { NextResponse } from 'next/server';
@@ -25,7 +27,11 @@ export async function POST(req: Request) {
     }
 
     const guestsNumber = Number(guests);
-    if (!Number.isInteger(guestsNumber) || guestsNumber <= 0) {
+    if (
+      !Number.isInteger(guestsNumber) ||
+      guestsNumber < MIN_BOOKING_GUESTS ||
+      guestsNumber > MAX_EVENT_GUESTS
+    ) {
       console.error('🛑 create-payment: guests inválido', { guests });
       return NextResponse.json({ error: 'Cantidad de comensales inválida' }, { status: 400 });
     }
@@ -45,11 +51,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
 
-    const currency     = 'USD';
-    const amountNumber = computeTotal(gate.pricePerPerson, guestsNumber);
+    const currency = 'USD';
+    // Re-precio server-side: precio real del chef para el bracket elegido (snapshot
+    // del menú en la propuesta; sin snapshot el precio queda fijo). Mismo cálculo
+    // que muestra la UI (BookingView/payment) — lo visto y lo cobrado coinciden.
+    const perPerson = repriceProposal(gate.pricePerPerson, gate.snapshot, guestsNumber);
+    const amountNumber = perPerson === null ? null : computeTotal(perPerson, guestsNumber);
     if (amountNumber === null) {
       console.error(`🛑 ${LABEL}: monto calculado inválido`, {
-        pricePerPerson: gate.pricePerPerson, guestsNumber,
+        pricePerPerson: gate.pricePerPerson, snapshot: gate.snapshot, guestsNumber,
       });
       return NextResponse.json({ error: 'Monto de pago inválido' }, { status: 400 });
     }
@@ -132,6 +142,9 @@ export async function POST(req: Request) {
       amount: amountNumber,
       currency,
       status: 'pending',
+      // Comensales con los que se calculó el monto: create_booking_for_payment
+      // los copia al booking y sincroniza el request al confirmarse el pago.
+      guests: guestsNumber,
     });
 
     // Antes este error se tragaba en silencio: si el insert falla, no hay fila en

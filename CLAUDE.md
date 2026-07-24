@@ -77,6 +77,10 @@ Direct `.update()` / `.insert()` fail with RLS `42501` errors inside server acti
 
 All mutations live in `actions.ts` files colocated with their route. They are `'use server'` functions that call Supabase RPCs, then `revalidatePath()`. Return `{ error?: string }` for error propagation to the client.
 
+### Precios
+
+Los precios viven en `src/lib/pricing.ts` — no inventar valores. La tabla oficial (bracket × tier, USD por persona) está documentada en el encabezado de ese archivo y cargada celda por celda en `PRICE_TABLE`: es una matriz de valores definidos, nunca derivar por fórmula ni factor. Brackets: 2 · 3–6 · 7 o más (el último incluye el 7 y es piso: el por-persona se congela). Cualquier constante, rango, validación o label de precios se importa de ese módulo; ningún número de precio puede quedar hardcodeado fuera de él.
+
 ### Auth flow
 
 1. `middleware.ts` runs on every non-static request

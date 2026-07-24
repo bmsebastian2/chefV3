@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { originalGuestsFromRequest } from '@/lib/pricing'
 import { BookingView } from './BookingView'
 
 export default async function BookingPage({
@@ -17,7 +18,7 @@ export default async function BookingPage({
 
   const { data: request } = await supabase
     .from('service_requests')
-    .select('id, event_date_start, cuisine_type, cuantas_personas')
+    .select('id, event_date_start, cuisine_type, cuantas_personas, guests_adults, guests_teens, guests_kids')
     .eq('id', requestId)
     .eq('user_id', user.id)
     .single()
@@ -25,7 +26,7 @@ export default async function BookingPage({
 
   const { data: proposal } = await supabase
     .from('proposals')
-    .select('id, chef_id, price_per_person, status')
+    .select('id, chef_id, price_per_person, status, price_2, price_3_6, price_7_20')
     .eq('id', proposalId)
     .eq('request_id', requestId)
     .single()
@@ -80,6 +81,20 @@ export default async function BookingPage({
     { day: 'numeric', month: 'short', year: 'numeric' },
   )
 
+  const originalGuests = originalGuestsFromRequest(request)
+
+  // Snapshot solo si al menos un bracket tiene precio (propuestas históricas o
+  // sin menú → null → BookingView no re-precia).
+  const hasSnapshot =
+    proposal.price_2 != null || proposal.price_3_6 != null || proposal.price_7_20 != null
+  const snapshot = hasSnapshot
+    ? {
+        price_2:    proposal.price_2    as number | null,
+        price_3_6:  proposal.price_3_6  as number | null,
+        price_7_20: proposal.price_7_20 as number | null,
+      }
+    : null
+
   return (
     <BookingView
       requestId={requestId}
@@ -93,7 +108,8 @@ export default async function BookingPage({
         pricePerPerson: (proposal.price_per_person as number) ?? 0,
         dateStr,
       }}
-      maxGuests={(request.cuantas_personas as number | null) ?? 4}
+      snapshot={snapshot}
+      originalGuests={originalGuests}
     />
   )
 }

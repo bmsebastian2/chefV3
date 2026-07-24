@@ -15,6 +15,10 @@ import {
 import { submitProposal, getChefBookingDetail } from "@/app/dashboard/requests/actions";
 import type { ChefBookingDetail } from "@/app/dashboard/requests/actions";
 import { formatPrice, formatPriceRange } from "@/lib/format";
+import {
+  priceForGuests, proposalPriceRange, cellFromBudget, getBracket,
+  BRACKET_LABELS, TIER_LABELS,
+} from "@/lib/pricing";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -161,11 +165,10 @@ const SELECTION_MODE_LABELS: Record<string, string> = {
 
 const COURSE_ORDER = ["starter", "first_course", "main", "dessert"];
 
-function priceForGuests(menu: ChefMenu, guests: number | null): number | null {
-  if (guests === null) return null;
-  if (guests <= 2)  return menu.price_2;
-  if (guests <= 6)  return menu.price_3_6;
-  return menu.price_7_20;
+// La lógica de brackets vive en lib/pricing (priceForGuests); este wrapper solo
+// tolera el guestCount null de requests sin comensales informados.
+function menuPriceForGuests(menu: ChefMenu, guests: number | null): number | null {
+  return guests === null ? null : priceForGuests(menu, guests);
 }
 
 function buildMenuDescription(menu: ChefMenu): string {
@@ -342,20 +345,43 @@ function RequestsBlocked() {
 
 // ── Formulario de propuesta ────────────────────────────────────────────────────
 
-function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess, onClose }: {
+function ProposalForm({ requestId, clientName, chefMenus, guestCount, budgetMin, budgetMax, onSuccess, onClose }: {
   requestId:  string
   clientName: string
   chefMenus:  ChefMenu[]
   guestCount: number | null
+  budgetMin:  number | null
+  budgetMax:  number | null
   onSuccess:  () => void
   onClose:    () => void
 }) {
+  // Celda tier × bracket del request (tabla oficial), desambiguada por los
+  // comensales. null en requests históricos sin tier reconocible, con budget que
+  // no matchea el bracket de los guests, o sin comensales → fallback legacy: el
+  // precio sale del menú, como antes.
+  const cell = guestCount !== null ? cellFromBudget(budgetMin, budgetMax, guestCount) : null;
+  const priceRange = guestCount !== null ? proposalPriceRange(budgetMin, budgetMax, guestCount) : null;
+  const tier = cell?.tier ?? null;
+
   const [message, setMessage] = useState("");
   const [selectedMenuId, setSelectedMenuId] = useState("");
   const [menuDescription, setMenuDescription] = useState("");
   const [selectedMenu, setSelectedMenu] = useState<ChefMenu | null>(null);
+  const [chosenPrice, setChosenPrice] = useState<number>(priceRange?.min ?? 0);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Sin menús cargados no hay propuesta posible: toda propuesta queda trazada a
+  // un menú del perfil del chef (no se acepta descripción escrita a mano).
+  const hasMenus = chefMenus.length > 0;
+
+  // Validez del formulario, derivada del estado real (no de lo que se ve en el
+  // select): sin menú elegido o con precio fuera de rango el botón queda apagado.
+  const priceOk =
+    !priceRange ||
+    (Number.isFinite(chosenPrice) && chosenPrice >= priceRange.min && chosenPrice <= priceRange.max);
+  const menuOk = hasMenus && selectedMenuId !== "" && menuDescription.trim().length > 0;
+  const canSubmit = menuOk && priceOk;
 
   function handleMenuSelect(menuId: string) {
     setSelectedMenuId(menuId);
@@ -368,14 +394,33 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess,
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setServerError(null);
+    if (!hasMenus) { setServerError('Cargá un menú en tu perfil para poder proponer.'); return; }
+    if (!selectedMenuId) { setServerError('Elegí un menú para la propuesta.'); return; }
     if (!menuDescription.trim()) { setServerError('La descripción del menú es obligatoria.'); return; }
+    if (priceRange && (!Number.isFinite(chosenPrice) || chosenPrice < priceRange.min || chosenPrice > priceRange.max)) {
+      setServerError(`El precio por persona debe estar entre ${formatPrice(priceRange.min)} y ${formatPrice(priceRange.max)}.`);
+      return;
+    }
     startTransition(async () => {
       const result = await submitProposal(
         requestId,
         message.trim() || null,
         menuDescription.trim(),
         null,
-        selectedMenu ? priceForGuests(selectedMenu, guestCount) : null,
+        // Con tier reconocible el precio lo elige el chef DENTRO del rango del
+        // request; el server lo revalida y computa el snapshot de re-precio
+        // desde el tier. El precio del menú queda solo para el fallback legacy.
+        priceRange ? chosenPrice : (selectedMenu ? menuPriceForGuests(selectedMenu, guestCount) : null),
+        // Snapshot de los precios por bracket del menú: solo en el fallback
+        // legacy (permite re-preciar con los valores reales del chef si el
+        // cliente cambia los comensales). Sin menú elegido → precio fijo.
+        priceRange || !selectedMenu
+          ? null
+          : {
+              price_2:    selectedMenu.price_2,
+              price_3_6:  selectedMenu.price_3_6,
+              price_7_20: selectedMenu.price_7_20,
+            },
       );
       if (result.error) {
         setServerError(result.error);
@@ -398,31 +443,46 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess,
           <label className="block text-xs font-bold uppercase tracking-[0.12em] text-zinc-500 mb-2">
             Descripción del menú <span className="text-red-400 normal-case tracking-normal font-normal">*</span>
           </label>
-          {chefMenus.length > 0 && (
-            <div className="relative mb-2">
-              <select
-                value={selectedMenuId}
-                onChange={(e) => handleMenuSelect(e.target.value)}
-                className="w-full h-10 appearance-none px-4 pr-10 border border-zinc-200 rounded-xl text-sm text-zinc-700 bg-white focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all duration-150 cursor-pointer"
-              >
-                <option value="">Elegir un menú para cargar…</option>
-                {chefMenus.map((m) => (
-                  <option key={m.id} value={m.id}>{m.title}</option>
-                ))}
-              </select>
-              <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
+          {hasMenus ? (
+            <>
+              <div className="relative mb-2">
+                <select
+                  value={selectedMenuId}
+                  onChange={(e) => handleMenuSelect(e.target.value)}
+                  required
+                  className="w-full h-10 appearance-none px-4 pr-10 border border-zinc-200 rounded-xl text-sm text-zinc-700 bg-white focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all duration-150 cursor-pointer"
+                >
+                  {/* Opción inicial SIN valor: el select arranca sin selección real
+                      en vez de mostrar el primer menú sin haber disparado onChange. */}
+                  <option value="">Seleccioná un menú</option>
+                  {chefMenus.map((m) => (
+                    <option key={m.id} value={m.id}>{m.title}</option>
+                  ))}
+                </select>
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              <textarea
+                value={menuDescription}
+                onChange={(e) => setMenuDescription(e.target.value)}
+                placeholder="Describí los platos o la propuesta gastronómica..."
+                rows={5}
+                required
+                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent resize-none transition-all duration-150"
+              />
+            </>
+          ) : (
+            <div className="flex items-start gap-2.5 rounded-xl border border-amber-100 bg-amber-50/60 px-4 py-3">
+              <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+              <p className="text-sm text-amber-800">
+                Cargá un menú en tu perfil para poder proponer.{" "}
+                <Link href="/dashboard/menus" className="font-semibold underline underline-offset-2 hover:text-amber-900">
+                  Ir a Mis menús
+                </Link>
+              </p>
             </div>
           )}
-          <textarea
-            value={menuDescription}
-            onChange={(e) => setMenuDescription(e.target.value)}
-            placeholder="Describí los platos o la propuesta gastronómica..."
-            rows={5}
-            required
-            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent resize-none transition-all duration-150"
-          />
         </div>
 
         <div>
@@ -439,8 +499,51 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess,
           />
         </div>
 
-        {selectedMenu && (selectedMenu.price_2 || selectedMenu.price_3_6 || selectedMenu.price_7_20) && (() => {
-          const activePrice = priceForGuests(selectedMenu, guestCount);
+        {priceRange && (
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-[0.12em] text-zinc-500 mb-2">
+              Tu precio por persona (USD) <span className="text-red-400 normal-case tracking-normal font-normal">*</span>
+            </label>
+            <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-3 space-y-3">
+              <p className="text-xs text-zinc-500">
+                {tier ? `El cliente eligió ${TIER_LABELS[tier]}` : "Presupuesto del cliente"}
+                {guestCount !== null && <> · {BRACKET_LABELS[getBracket(guestCount)]}</>}: proponé entre{" "}
+                <span className="font-semibold text-zinc-700">{formatPrice(priceRange.min)}</span> y{" "}
+                <span className="font-semibold text-zinc-700">{formatPrice(priceRange.max)}</span>.
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={priceRange.min}
+                  max={priceRange.max}
+                  step={1}
+                  value={Math.min(Math.max(chosenPrice, priceRange.min), priceRange.max)}
+                  onChange={(e) => setChosenPrice(Number(e.target.value))}
+                  className="flex-1 accent-accent cursor-pointer"
+                />
+                <input
+                  type="number"
+                  min={priceRange.min}
+                  max={priceRange.max}
+                  step={1}
+                  value={Number.isFinite(chosenPrice) ? chosenPrice : ""}
+                  onChange={(e) => setChosenPrice(Number(e.target.value))}
+                  onBlur={() => setChosenPrice((p) => Math.min(Math.max(p || priceRange.min, priceRange.min), priceRange.max))}
+                  className="w-24 h-10 px-3 border border-zinc-200 rounded-xl text-sm font-semibold text-zinc-900 bg-white focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent transition-all duration-150"
+                />
+              </div>
+              {guestCount !== null && Number.isFinite(chosenPrice) && chosenPrice > 0 && (
+                <p className="text-xs text-zinc-500">
+                  Total para {guestCount} {guestCount === 1 ? "persona" : "personas"}:{" "}
+                  <span className="font-semibold text-zinc-900">{formatPrice(chosenPrice * guestCount)}</span>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!priceRange && selectedMenu && (selectedMenu.price_2 || selectedMenu.price_3_6 || selectedMenu.price_7_20) && (() => {
+          const activePrice = menuPriceForGuests(selectedMenu, guestCount);
           const row = (label: string, price: number | null, isActive: boolean) =>
             price != null ? (
               <div className={`flex items-center justify-between text-sm rounded-lg px-3 py-2 -mx-1 ${isActive ? "bg-accent/10 ring-1 ring-accent/20" : ""}`}>
@@ -458,9 +561,9 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess,
                 Precios del menú (por persona)
               </p>
               <div className="space-y-0.5">
-                {row("2 personas",    selectedMenu.price_2,    activePrice === selectedMenu.price_2    && selectedMenu.price_2    != null)}
-                {row("3–6 personas",  selectedMenu.price_3_6,  activePrice === selectedMenu.price_3_6  && selectedMenu.price_3_6  != null)}
-                {row("7–20 personas", selectedMenu.price_7_20, activePrice === selectedMenu.price_7_20 && selectedMenu.price_7_20 != null)}
+                {row(BRACKET_LABELS["2"],      selectedMenu.price_2,    activePrice === selectedMenu.price_2    && selectedMenu.price_2    != null)}
+                {row(BRACKET_LABELS["3_6"],    selectedMenu.price_3_6,  activePrice === selectedMenu.price_3_6  && selectedMenu.price_3_6  != null)}
+                {row(BRACKET_LABELS["7_plus"], selectedMenu.price_7_20, activePrice === selectedMenu.price_7_20 && selectedMenu.price_7_20 != null)}
               </div>
             </div>
           );
@@ -484,8 +587,8 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, onSuccess,
         </button>
         <button
           type="submit"
-          disabled={isPending}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent/90 hover:shadow-md hover:shadow-accent/20 disabled:opacity-50 disabled:pointer-events-none transition-all duration-150"
+          disabled={isPending || !canSubmit}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent/90 hover:shadow-md hover:shadow-accent/20 disabled:bg-zinc-200 disabled:text-zinc-400 disabled:shadow-none disabled:hover:bg-zinc-200 disabled:hover:shadow-none disabled:cursor-not-allowed transition-all duration-150"
         >
           {isPending ? (
             <>
@@ -619,6 +722,8 @@ function RequestCardItem({ req, chefMenus }: { req: RequestCard; chefMenus: Chef
                     req.cuantas_personas ??
                     (((req.guests_adults ?? 0) + (req.guests_teens ?? 0) + (req.guests_kids ?? 0)) || null)
                   }
+                  budgetMin={req.budget_min}
+                  budgetMax={req.budget_max}
                   onSuccess={() => setProposalStatus('pending')}
                   onClose={() => setShowProposal(false)}
                 />

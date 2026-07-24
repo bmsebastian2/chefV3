@@ -5,6 +5,8 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { applyDlocalgoPaymentStatus } from '@/lib/dlocalgo-verify'
 import { applyPaypalOrderStatus } from '@/lib/paypal-verify'
+import { repriceProposal, MIN_BOOKING_GUESTS } from '@/lib/pricing'
+import { MAX_EVENT_GUESTS } from '@/components/wizard/types'
 import { PaymentView } from './PaymentView'
 
 export default async function PaymentPage({
@@ -43,7 +45,7 @@ export default async function PaymentPage({
 
   const { data: proposal } = await supabase
     .from('proposals')
-    .select('id, price_per_person, status')
+    .select('id, price_per_person, status, price_2, price_3_6, price_7_20')
     .eq('id', proposalId)
     .eq('request_id', requestId)
     .single()
@@ -94,9 +96,29 @@ export default async function PaymentPage({
     redirect(`/client-dashboard/${requestId}/proposals/${proposalId}`)
   }
 
-  const guestsRaw = guestsParam ? parseInt(guestsParam, 10) : 2
-  const guests = Number.isFinite(guestsRaw) && guestsRaw > 0 ? guestsRaw : 2
-  const pricePerPerson = (proposal.price_per_person as number) ?? 0
+  // Comensales elegidos en la reserva (query param), clampeados a los límites
+  // del stepper para que un param manipulado no muestre un total fuera de rango.
+  const guestsRaw = guestsParam ? parseInt(guestsParam, 10) : MIN_BOOKING_GUESTS
+  const guests = Number.isFinite(guestsRaw)
+    ? Math.min(MAX_EVENT_GUESTS, Math.max(MIN_BOOKING_GUESTS, guestsRaw))
+    : MIN_BOOKING_GUESTS
+
+  // Mismo re-precio que BookingView y que las rutas de cobro: precio real del
+  // chef para el bracket elegido (snapshot del menú en la propuesta); sin
+  // snapshot el precio queda fijo.
+  const hasSnapshot =
+    proposal.price_2 != null || proposal.price_3_6 != null || proposal.price_7_20 != null
+  const snapshot = hasSnapshot
+    ? {
+        price_2:    proposal.price_2    as number | null,
+        price_3_6:  proposal.price_3_6  as number | null,
+        price_7_20: proposal.price_7_20 as number | null,
+      }
+    : null
+
+  const pricePerPerson =
+    repriceProposal((proposal.price_per_person as number) ?? 0, snapshot, guests)
+      ?? (proposal.price_per_person as number) ?? 0
   const total = pricePerPerson * guests
 
   return (

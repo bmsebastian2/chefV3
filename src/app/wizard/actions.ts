@@ -10,6 +10,7 @@ import { notifyMatchingChefs } from '@/lib/emails/notify-chefs'
 import { sendClientEmails, RequestSummary } from '@/lib/emails/client-emails'
 import { canonicalCity } from '@/lib/maps/cities'
 import { TERMS_VERSION } from '@/lib/terms'
+import { getPriceRange } from '@/lib/pricing'
 
 // País a persistir en la solicitud. Se deriva del countryCode (ISO) capturado en
 // el wizard con country-state-city — MISMA fuente que chef_profiles.country, así
@@ -53,12 +54,6 @@ const CUISINE_MAP: Record<string, string> = {
 const MEAL_TIME_MAP: Record<string, string> = {
   'lunch':  'Comida',
   'dinner': 'Cena',
-}
-
-const BUDGET_MAP: Record<string, { min: number; max: number }> = {
-  'casual':    { min: 210, max: 263 },
-  'gourmet':   { min: 263, max: 315 },
-  'exclusive': { min: 315, max: 420 },
 }
 
 const CUISINE_DISPLAY: Record<string, string> = {
@@ -251,8 +246,6 @@ export async function submitServiceRequest(
 
   const guestsAdults = data.guestsAdults ?? 0
 
-  const budgetTier = data.budgetTier ? BUDGET_MAP[data.budgetTier] : null
-
   const eventTime = data.mealTime
     ? (MEAL_TIME_MAP[data.mealTime] ?? null)
     : (data.time ?? null)
@@ -274,6 +267,11 @@ export async function submitServiceRequest(
   if (totalGuests < MIN_EVENT_GUESTS || totalGuests > MAX_EVENT_GUESTS) {
     return { error: `El número de personas debe estar entre ${MIN_EVENT_GUESTS} y ${MAX_EVENT_GUESTS}` }
   }
+
+  // Rango oficial del tier elegido para el bracket real del grupo (tabla en
+  // lib/pricing) — es lo que se persiste en budget_min/budget_max y lo que ven
+  // chef, cliente y emails.
+  const budgetRange = data.budgetTier ? getPriceRange(data.budgetTier, totalGuests) : null
 
   // Mismo país-fuente para persistir y para canonicalizar la ciudad: ambos lados
   // del matching (request y chef) guardan el valor canónico del catálogo.
@@ -338,11 +336,11 @@ export async function submitServiceRequest(
   }
 
   // Presupuesto
-  if (budgetTier) {
+  if (budgetRange) {
     const { error: budgetError } = await supabase.rpc('update_request_budget', {
       p_request_id: newRequestId,
-      p_budget_min: budgetTier.min,
-      p_budget_max: budgetTier.max,
+      p_budget_min: budgetRange.min,
+      p_budget_max: budgetRange.max,
     })
     if (budgetError) console.error('Error updating budget:', budgetError)
   }
@@ -373,8 +371,8 @@ export async function submitServiceRequest(
     event_time:         eventTime,
     cuantas_personas:   guestsAdults,
     cuisine_type:       CUISINE_MAP[data.cuisine ?? ''] ?? data.cuisine ?? null,
-    budget_min:         budgetTier?.min ?? null,
-    budget_max:         budgetTier?.max ?? null,
+    budget_min:         budgetRange?.min ?? null,
+    budget_max:         budgetRange?.max ?? null,
     descripcion_evento: data.details ?? null,
     mealSlots:          data.serviceType === '2'
                           ? (data.mealSlots ?? []).filter((s) => s.desayuno || s.almuerzo || s.cena)
@@ -397,7 +395,7 @@ export async function submitServiceRequest(
     comensales:   (guestsAdults + guestsTeens + guestsKids) > 0
                     ? `${guestsAdults + guestsTeens + guestsKids} ${(guestsAdults + guestsTeens + guestsKids) === 1 ? 'persona' : 'personas'}`
                     : undefined,
-    precio:       budgetTier ? `desde $${budgetTier.min} a $${budgetTier.max} USD` : undefined,
+    precio:       budgetRange ? `desde $${budgetRange.min} a $${budgetRange.max} USD` : undefined,
     experiencia:  data.budgetTier ? BUDGET_DISPLAY[data.budgetTier] : undefined,
     gastronomia:  data.cuisine ? (CUISINE_DISPLAY[data.cuisine] ?? data.cuisine) : undefined,
     restricciones: restrictionLabels.length > 0 ? restrictionLabels.join(', ') : 'No',

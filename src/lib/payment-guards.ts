@@ -18,6 +18,7 @@
 
 import type { createClient } from '@/utils/supabase/server';
 import type { createAdminClient } from '@/utils/supabase/admin';
+import type { MenuPrices } from '@/lib/pricing';
 
 type ServerClient = Awaited<ReturnType<typeof createClient>>;
 type AdminClient  = ReturnType<typeof createAdminClient>;
@@ -26,6 +27,12 @@ export type PayableOk = {
   ok:             true;
   /** Precio autoritativo leído de la propuesta. El caller calcula el total con él. */
   pricePerPerson: number;
+  /**
+   * Snapshot de precios por bracket del menú (proposals.price_2/3_6/7_20).
+   * El caller re-precia con repriceProposal() según los comensales elegidos.
+   * null en propuestas históricas o sin menú → el precio queda fijo.
+   */
+  snapshot: MenuPrices | null;
 };
 
 export type PayableRejected = {
@@ -86,7 +93,7 @@ export async function assertRequestPayable({
   // Si se confiara en el cliente, podría pagar $1 por un servicio de $378.
   const { data: proposal } = await supabase
     .from('proposals')
-    .select('price_per_person, status')
+    .select('price_per_person, status, price_2, price_3_6, price_7_20')
     .eq('id', proposalId)
     .eq('request_id', requestId)
     .single();
@@ -150,7 +157,19 @@ export async function assertRequestPayable({
     return { ok: false, status: 409, error: 'Esta solicitud ya tiene una reserva activa' };
   }
 
-  return { ok: true, pricePerPerson };
+  // Snapshot solo si al menos un bracket tiene precio; si no, null explícito
+  // (propuesta histórica / sin menú) → el caller no re-precia.
+  const hasSnapshot =
+    proposal.price_2 != null || proposal.price_3_6 != null || proposal.price_7_20 != null;
+  const snapshot = hasSnapshot
+    ? {
+        price_2:    proposal.price_2    as number | null,
+        price_3_6:  proposal.price_3_6  as number | null,
+        price_7_20: proposal.price_7_20 as number | null,
+      }
+    : null;
+
+  return { ok: true, pricePerPerson, snapshot };
 }
 
 /**

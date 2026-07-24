@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { StepProps, MealSlot, MIN_EVENT_GUESTS, MAX_EVENT_GUESTS } from "./types";
+import { getPriceRange, getBracket, PRICE_TABLE, BRACKET_LABELS, MIN_BOOKING_GUESTS, type PriceTier, type GuestBracket } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
+import { CounterRow } from "@/components/ui/stepper";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { registerOrVerifyClient } from "@/app/wizard/actions";
@@ -425,38 +427,6 @@ export function StepLocation({ data, updateData, nextStep, withPostal }: StepPro
 // Variante de la rama semanal para flows.ts (ubicación Mapbox + código postal)
 export function StepLocationWeekly(props: StepProps) {
   return <StepLocation {...props} withPostal />;
-}
-
-// ── CounterRow ────────────────────────────────────────────────────────────────
-interface CounterRowProps {
-  label: string; subtitle: string; value: number; min?: number; max?: number;
-  onDecrement: () => void; onIncrement: () => void;
-}
-function CounterRow({ label, subtitle, value, min = 0, max = Infinity, onDecrement, onIncrement }: CounterRowProps) {
-  return (
-    <div className="flex items-center justify-between p-5 bg-white border border-zinc-200 rounded-2xl transition-colors hover:border-zinc-300">
-      <div>
-        <p className="font-semibold text-zinc-900 text-base">{label}</p>
-        <p className="text-sm text-accent mt-0.5">{subtitle}</p>
-      </div>
-      <div className="flex items-center gap-1 bg-zinc-50 rounded-full p-1 border border-zinc-200">
-        <button
-          type="button"
-          onClick={onDecrement}
-          disabled={value <= min}
-          className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-600 text-lg font-light hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
-        >−</button>
-        <span className="w-8 text-center text-base font-semibold text-zinc-900 select-none">{value}</span>
-        <button
-          type="button"
-          onClick={onIncrement}
-          disabled={value >= max}
-          aria-label="Aumentar"
-          className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-600 text-lg font-light hover:bg-white hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
-        >+</button>
-      </div>
-    </div>
-  );
 }
 
 export function StepGuests({ data, updateData, nextStep }: StepProps) {
@@ -1150,14 +1120,54 @@ export function StepOccasion1({ data, updateData, nextStep }: StepProps) {
 
 // ── StepGuestsCount: contador único de personas (tronco común) ────────────────
 // Guarda el número exacto en guestsAdults (columna guests_adults). El precio
-// orientativo se calcula con el mismo bracket que usa el paso de presupuesto,
-// para que ambos cuenten la misma historia.
+// orientativo ("desde $X") es el mínimo del bracket del grupo en el tier
+// activo: Casual (mínimo absoluto), o el ya elegido si el cliente volvió desde
+// el paso de presupuesto — así la escala nunca contradice su elección.
+
+const BRACKET_ORDER: readonly GuestBracket[] = ["2", "3_6", "7_plus"];
+
+// Escala compacta de "desde" por bracket, con el bracket del grupo resaltado.
+// Mismo patrón visual que "Precios del menú (por persona)" en RequestsView.
+function BracketPriceScale({ tier, guests }: { tier: PriceTier; guests: number }) {
+  const activeBracket = getBracket(guests);
+  return (
+    <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 px-4 py-3">
+      <div className="space-y-0.5">
+        {BRACKET_ORDER.map((bracket) => {
+          const isActive = bracket === activeBracket;
+          return (
+            <div
+              key={bracket}
+              className={`flex items-center justify-between rounded-lg px-3 py-2 -mx-1 transition-colors duration-150 ${
+                isActive ? "bg-accent/10 ring-1 ring-accent/20" : ""
+              }`}
+            >
+              <span className={`text-xs ${isActive ? "text-accent font-medium" : "text-zinc-600"}`}>
+                {BRACKET_LABELS[bracket]}
+              </span>
+              <span className={`text-xs font-semibold ${isActive ? "text-accent" : "text-zinc-900"}`}>
+                desde ${PRICE_TABLE[bracket][tier].min}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function StepGuestsCount({ data, updateData, nextStep }: StepProps) {
-  const [count, setCount] = useState(data.guestsAdults ?? 2);
-  const basePrice = getBasePrice(guestsRangeKey(count));
+  // Mínimo de la tabla oficial (2): clamp también del valor inicial, por si un
+  // prefill (asistente / constructor de carta) trae 1.
+  const [count, setCount] = useState(
+    Math.max(MIN_BOOKING_GUESTS, data.guestsAdults ?? MIN_BOOKING_GUESTS),
+  );
+  const tier: PriceTier = data.budgetTier ?? "casual";
+  const basePrice = getPriceRange(tier, count).min;
   const atMax = count >= MAX_EVENT_GUESTS;
 
   const handleContinue = () => {
+    if (count < MIN_BOOKING_GUESTS) return;
     updateData({ guestsAdults: count });
     nextStep();
   };
@@ -1170,10 +1180,11 @@ export function StepGuestsCount({ data, updateData, nextStep }: StepProps) {
       <CounterRow
         label="Personas"
         subtitle={`desde $${basePrice} por persona`}
-        value={count} min={MIN_EVENT_GUESTS} max={MAX_EVENT_GUESTS}
-        onDecrement={() => setCount(v => Math.max(MIN_EVENT_GUESTS, v - 1))}
+        value={count} min={MIN_BOOKING_GUESTS} max={MAX_EVENT_GUESTS}
+        onDecrement={() => setCount(v => Math.max(MIN_BOOKING_GUESTS, v - 1))}
         onIncrement={() => setCount(v => Math.min(MAX_EVENT_GUESTS, v + 1))}
       />
+      <BracketPriceScale tier={tier} guests={count} />
       <Button onClick={handleContinue} size="lg" className={BTN_CONTINUE + " mt-2"}>
         Continuar
       </Button>
@@ -1263,41 +1274,26 @@ export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
 }
 
 // ── StepBudgetTier ────────────────────────────────────────────────────────────
-function getBasePrice(guestsRange: string | undefined): number {
-  if (guestsRange === "2")   return 210;
-  if (guestsRange === "3-6") return 189;
-  return 147; // '7-12', '13+', or undefined
-}
+// Acá vive solo el copy de cada tier; los rangos salen de la tabla oficial
+// (PRICE_TABLE en lib/pricing) según el bracket de comensales.
+const TIER_CARDS: { value: PriceTier; label: string; desc: string }[] = [
+  { value: "casual",    label: "Casual",              desc: "Crear vínculos en torno a la buena comida." },
+  { value: "gourmet",   label: "Gourmet",             desc: "Menús brillantes para impresionar a tus invitados." },
+  { value: "exclusive", label: "Selección exclusiva", desc: "Lo mejor de lo mejor para tu evento." },
+];
 
-function getBudgetOptions(guestsRange: string | undefined) {
-  const base = getBasePrice(guestsRange);
-  return [
-    {
-      value: "casual"    as const,
-      label: "Casual",
-      desc:  "Crear vínculos en torno a la buena comida.",
-      range: `$${base} - $${base + 42}`,
-    },
-    {
-      value: "gourmet"   as const,
-      label: "Gourmet",
-      desc:  "Menús brillantes para impresionar a tus invitados.",
-      range: `$${base + 42} - $${base + 84}`,
-    },
-    {
-      value: "exclusive" as const,
-      label: "Selección exclusiva",
-      desc:  "Lo mejor de lo mejor para tu evento.",
-      range: `$${base + 84} - $${base + 147}`,
-    },
-  ];
+function getBudgetOptions(totalGuests: number) {
+  return TIER_CARDS.map(({ value, label, desc }) => {
+    const { min, max } = getPriceRange(value, totalGuests);
+    return { value, label, desc, range: `$${min} - $${max}` };
+  });
 }
 
 export function StepBudgetTier({ data, updateData, nextStep }: StepProps) {
   // Bracket desde el número exacto de personas (StepGuestsCount), igual que
   // en StepBudgetMultiple.
   const totalGuests = (data.guestsAdults ?? 0) + (data.guestsTeens ?? 0) + (data.guestsKids ?? 0);
-  const budgetOptions = getBudgetOptions(guestsRangeKey(totalGuests));
+  const budgetOptions = getBudgetOptions(totalGuests);
   return (
     <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
       <p className="text-center text-zinc-500 text-sm mb-2">
@@ -1336,20 +1332,12 @@ export function StepBudgetTier({ data, updateData, nextStep }: StepProps) {
 }
 
 // ── StepBudgetMultiple ────────────────────────────────────────────────────────
-// El servicio múltiple captura los comensales como número (guestsAdults/Teens/Kids),
-// mientras que getBasePrice (tipo 1) trabaja con brackets. Este puente convierte el
-// total de comensales al mismo bracket, para reusar getBudgetOptions como única
-// fuente de verdad y que ambos servicios no vuelvan a desincronizarse.
-function guestsRangeKey(count: number): string {
-  if (count <= 2)  return "2";
-  if (count <= 6)  return "3-6";
-  if (count <= 12) return "7-12";
-  return "13+";
-}
-
+// Mismas cards que StepBudgetTier: ambos servicios calculan el bracket desde el
+// total de comensales vía getBudgetOptions (tabla oficial de lib/pricing), así
+// no vuelven a desincronizarse.
 export function StepBudgetMultiple({ data, updateData, nextStep }: StepProps) {
   const totalGuests = (data.guestsAdults ?? 0) + (data.guestsTeens ?? 0) + (data.guestsKids ?? 0);
-  const budgetOptions = getBudgetOptions(guestsRangeKey(totalGuests));
+  const budgetOptions = getBudgetOptions(totalGuests);
   return (
     <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full">
       <p className="text-center text-zinc-500 text-sm mb-2">

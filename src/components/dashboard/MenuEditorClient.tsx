@@ -8,6 +8,7 @@ import { createClient } from "@/utils/supabase/clients"
 import { compressImage } from "@/utils/images"
 import { saveMenu, type SelectionMode, type MenuEditData } from "@/app/dashboard/menus/actions"
 import type { Course } from "@/app/dashboard/platos/actions"
+import { menuPriceBounds } from "@/lib/pricing"
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -36,10 +37,13 @@ const SELECTION_MODES: { value: SelectionMode; label: string }[] = [
   { value: "choose_3",      label: "El cliente elige 3" },
 ]
 
+// Bordes de validación por bracket, derivados de la tabla oficial (lib/pricing):
+// del mín Casual al máx Exclusiva de cada fila. La columna de DB se sigue
+// llamando price_7_20, pero el bracket es "7 o más".
 const PRICE_RANGES = {
-  price2:   { label: "Precio para 2 personas",    min: 210, max: 420 },
-  price36:  { label: "Precio para 3–6 personas",  min: 189, max: 336 },
-  price720: { label: "Precio para 7–20 personas", min: 147, max: 294 },
+  price2:   { label: "Precio para 2 personas",       ...menuPriceBounds("2") },
+  price36:  { label: "Precio para 3–6 personas",     ...menuPriceBounds("3_6") },
+  price720: { label: "Precio para 7 o más personas", ...menuPriceBounds("7_plus") },
 }
 
 const STORAGE_BUCKET = "menu-images"
@@ -221,10 +225,32 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
     }))
   }
 
+  // ── Monotonía de precios ──────────────────────────────────────────────────
+  // Más personas nunca puede costar MÁS por cabeza: price_2 ≥ price_3_6 ≥
+  // price_7_20. Sin esto, un menú cargado al revés rompe el re-precio de la
+  // reserva (el cliente vería subir el por-persona al agregar comensales).
+  // Solo se comparan los campos completados. Mismo chequeo en create/update_menu.
+  const priceOrderError = useMemo(() => {
+    const p2   = parseFloat(price2)   || 0
+    const p36  = parseFloat(price36)  || 0
+    const p720 = parseFloat(price720) || 0
+    if (p2 > 0 && p36 > 0 && p36 > p2)
+      return "El precio para 3–6 personas no puede superar el de 2 personas."
+    if (p36 > 0 && p720 > 0 && p720 > p36)
+      return "El precio para 7 o más personas no puede superar el de 3–6 personas."
+    if (p2 > 0 && p720 > 0 && p720 > p2)
+      return "El precio para 7 o más personas no puede superar el de 2 personas."
+    return null
+  }, [price2, price36, price720])
+
   // ── Save ──────────────────────────────────────────────────────────────────
 
   function handleSave() {
     setSaveError(null)
+    if (priceOrderError) {
+      setSaveError(priceOrderError)
+      return
+    }
     startTransition(async () => {
       const result = await saveMenu({
         menuId,
@@ -567,6 +593,14 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
                 <PriceInput label={PRICE_RANGES.price36.label}  value={price36}  onChange={setPrice36}  range={PRICE_RANGES.price36} />
                 <PriceInput label={PRICE_RANGES.price720.label} value={price720} onChange={setPrice720} range={PRICE_RANGES.price720} />
               </div>
+              {priceOrderError && (
+                <div className="mt-3 flex items-start gap-1.5">
+                  <AlertTriangle size={12} className="text-red-500 mt-0.5 shrink-0" />
+                  <p className="text-xs text-red-600">
+                    {priceOrderError} A más personas, el precio por persona baja (o queda igual), nunca sube.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
