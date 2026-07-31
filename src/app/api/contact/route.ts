@@ -1,12 +1,7 @@
 import { NextResponse } from 'next/server'
-import { resend } from '@/lib/resend'
+import { resend, FROM_EMAIL } from '@/lib/resend'
 
 export const dynamic = 'force-dynamic'
-
-// Mismos remitentes que el resto del proyecto (src/lib/emails/client-emails.ts)
-const FROM = process.env.RESEND_FROM_EMAIL
-  ? `GetChef <${process.env.RESEND_FROM_EMAIL}>`
-  : 'GetChef <onboarding@resend.dev>'
 
 // Destinatario de los mensajes de contacto
 const CONTACT_TO = process.env.RESEND_DEV_EMAIL
@@ -89,7 +84,7 @@ export async function POST(req: Request) {
     </div>`
 
   const { error } = await resend.emails.send({
-    from: FROM,
+    from: FROM_EMAIL,
     to: CONTACT_TO,
     replyTo: cleanEmail,
     subject: `Contacto GetChef [${topicLabel}] — ${cleanName}`,

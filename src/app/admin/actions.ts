@@ -33,18 +33,33 @@ async function requireAdminId(): Promise<{ adminId?: string; error?: string }> {
   return { adminId: user.id }
 }
 
+// ── Liberar el pago al chef (el giro real ya se hizo por fuera) ──────────────
+// La referencia del giro es OBLIGATORIA: no se marca plata como girada sin
+// constancia. Misma regla que los reembolsos, validada en tres capas (botón
+// deshabilitado en la UI → acá → RPC).
 export async function releasePayout(
   bookingId: string,
-  payoutRef?: string,
+  payoutRef: string,
 ): Promise<{ error?: string }> {
-  if (!(await isAdmin())) return { error: 'No autorizado' }
+  const { adminId, error: authError } = await requireAdminId()
+  if (authError) return { error: authError }
+
+  const ref = payoutRef.trim()
+  if (!ref) return { error: 'El número de transferencia es obligatorio' }
 
   const admin = createAdminClient()
   const { error } = await admin.rpc('release_payout', {
     p_booking_id: bookingId,
-    p_payout_ref: payoutRef ?? null,
+    p_payout_ref: ref,
+    p_admin_id:   adminId,
   })
   if (error) {
+    if (error.message?.includes('payout_already_released')) {
+      return { error: 'Este pago ya fue girado al chef; no se puede volver a marcar' }
+    }
+    if (error.message?.includes('payout_ref_required')) {
+      return { error: 'El número de transferencia es obligatorio' }
+    }
     if (error.message?.includes('payout_window_not_reached')) {
       return { error: 'Todavía no pasó la ventana de 3 días desde que se completó' }
     }
@@ -54,6 +69,81 @@ export async function releasePayout(
 
   revalidatePath('/admin')
   return {}
+}
+
+// ── Histórico de pagos liberados (lazy + paginado) ───────────────────────────
+// Alimenta la pestaña "Pagados". Se dispara SOLO cuando el admin abre esa
+// pestaña y al cambiar de mes / pedir más — nunca al cargar /admin. Toda la
+// query (lote, total, meses y agregados del mes) corre en la RPC
+// get_released_payouts_admin; acá solo validamos rol y pasamos parámetros.
+//
+// Tipos NO exportados a propósito (un archivo 'use server' solo puede exportar
+// funciones async). La UI los deriva con
+//   NonNullable<Awaited<ReturnType<typeof getReleasedPayoutsForAdmin>>['data']>
+
+const RELEASED_PAGE_SIZE = 20
+
+type ReleasedPayoutRow = {
+  booking_id:         string
+  chef_id:            string
+  chef_name:          string
+  client_name:        string
+  client_email:       string | null
+  service_type:       string | null
+  occasion:           string | null
+  city:               string | null
+  total_amount:       number
+  commission_amount:  number
+  chef_payout_amount: number
+  currency:           string
+  completed_at:       string | null
+  released_at:        string
+  payout_ref:         string | null
+  // NULL en las liberaciones anteriores a la migración que agregó released_by.
+  released_by:        string | null
+  released_by_name:   string | null
+}
+
+type ReleasedSummary = {
+  total_net:        number
+  total_commission: number
+  released_count:   number
+  avg_net:          number
+  top_chef:         { name: string; count: number; net: number } | null
+  trend:            { key: string; total: number }[]
+}
+
+type ReleasedPayoutsResult = {
+  // Mes efectivamente resuelto por la RPC ('YYYY-MM'), o null si no hay ninguna
+  // liberación todavía. Puede no coincidir con el pedido si ese mes no tiene datos.
+  month:   string | null
+  rows:    ReleasedPayoutRow[]
+  total:   number
+  months:  string[]
+  summary: ReleasedSummary
+}
+
+export async function getReleasedPayoutsForAdmin(filters: {
+  month?: string | null
+  page?:  number
+}): Promise<{ error?: string; data?: ReleasedPayoutsResult }> {
+  if (!(await isAdmin())) return { error: 'No autorizado' }
+
+  const page = Math.max(0, filters.page ?? 0)
+
+  const admin = createAdminClient()
+  const { data, error } = await admin.rpc('get_released_payouts_admin', {
+    p_month:  filters.month ?? null,
+    p_limit:  RELEASED_PAGE_SIZE,
+    p_offset: page * RELEASED_PAGE_SIZE,
+  })
+
+  if (error) {
+    console.error('getReleasedPayoutsForAdmin:', error)
+    return { error: 'No se pudieron cargar los pagos liberados' }
+  }
+
+  return { data: data as ReleasedPayoutsResult }
 }
 
 // ── Iniciar reembolso: el admin cancela un booking activo → refund_pending ────

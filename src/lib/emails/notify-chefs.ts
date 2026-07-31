@@ -1,7 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/utils/supabase/admin'
-import { resend } from '@/lib/resend'
+import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
 import { normalizeCity } from '@/lib/maps/normalizeCity'
 import { tierFromBudget, type PriceTier } from '@/lib/pricing'
 
@@ -470,21 +470,14 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
   }
 
   const client = resend
-  const devEmail = process.env.RESEND_DEV_EMAIL
-  const hasVerifiedDomain = !!process.env.RESEND_FROM_EMAIL
-  const fromAddress = hasVerifiedDomain
-    ? `GetChef <${process.env.RESEND_FROM_EMAIL}>`
-    : 'GetChef <onboarding@resend.dev>'
 
   const results = await Promise.allSettled(
     (chefs as MatchingChef[]).map((chef) => {
-      const to = hasVerifiedDomain ? chef.email : (devEmail ?? chef.email)
       return client.emails.send({
-        from:    fromAddress,
-        to,
-        subject: hasVerifiedDomain
-          ? `Nueva solicitud en tu ciudad — ${req.city ?? 'sin ciudad'}`
-          : `[TEST → ${chef.email}] Nueva solicitud en tu ciudad — ${req.city ?? 'sin ciudad'}`,
+        from:    FROM_EMAIL,
+        to:      resolveRecipient(chef.email),
+        replyTo: REPLY_TO,
+        subject: `${testSubjectPrefix(chef.email)}Nueva solicitud en tu ciudad — ${req.city ?? 'sin ciudad'}`,
         html: buildEmailHtml(chef.first_name, req),
       })
     })
@@ -597,19 +590,11 @@ export async function notifyChefOfBookingConfirmed(bookingId: string): Promise<v
     return
   }
 
-  const devEmail          = process.env.RESEND_DEV_EMAIL
-  const hasVerifiedDomain = !!process.env.RESEND_FROM_EMAIL
-  const fromAddress       = hasVerifiedDomain
-    ? `GetChef <${process.env.RESEND_FROM_EMAIL}>`
-    : 'GetChef <onboarding@resend.dev>'
-  const to = hasVerifiedDomain ? chefUser.email : (devEmail ?? chefUser.email)
-
   const { error } = await resend.emails.send({
-    from:    fromAddress,
-    to,
-    subject: hasVerifiedDomain
-      ? '¡Tenés una reserva confirmada! — GetChef'
-      : `[TEST → ${chefUser.email}] ¡Tenés una reserva confirmada! — GetChef`,
+    from:    FROM_EMAIL,
+    to:      resolveRecipient(chefUser.email),
+    replyTo: REPLY_TO,
+    subject: `${testSubjectPrefix(chefUser.email)}¡Tenés una reserva confirmada! — GetChef`,
     html: buildBookingConfirmedEmail({
       chefName:    chefUser.first_name,
       clientName,

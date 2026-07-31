@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Loader2, Check } from "lucide-react"
+import { Loader2, Check, AlertTriangle } from "lucide-react"
 import { formatPrice } from "@/lib/format"
 import { releasePayout, markRefund, markOrphanRefund } from "./actions"
 
@@ -12,31 +12,35 @@ type Props = {
   id:     string
   kind:   Kind
   amount?: number | null
+  // Solo para payout: si el chef NO tiene datos bancarios cargados, se advierte
+  // pero NO se bloquea — el giro se hace por fuera y el admin puede tener los
+  // datos por otro canal.
+  hasPayoutAccount?: boolean
 }
 
-// Los reembolsos exigen referencia del giro (no marcar "reembolsado" sin constancia
-// del giro real). El payout la deja opcional (comportamiento previo).
+// Toda acción con dinero exige la referencia del giro: no se marca plata como
+// movida sin constancia del movimiento real.
 const CTA: Record<Kind, string> = {
   payout: "Marcar girado",
   refund: "Marcar reembolsado",
   orphan: "Marcar reembolsado",
 }
 
-export function ProcessButton({ id, kind, amount }: Props) {
+export function ProcessButton({ id, kind, amount, hasPayoutAccount }: Props) {
   const [open, setOpen]   = useState(false)
   const [ref, setRef]     = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isPending, start] = useTransition()
 
-  const refRequired = kind !== "payout"
   const trimmed = ref.trim()
-  const canConfirm = !isPending && (!refRequired || trimmed.length > 0)
+  const canConfirm = !isPending && trimmed.length > 0
+  const missingAccount = kind === "payout" && hasPayoutAccount === false
 
   const run = () => {
     setError(null)
     start(async () => {
       const res =
-        kind === "payout" ? await releasePayout(id, trimmed || undefined)
+        kind === "payout" ? await releasePayout(id, trimmed)
       : kind === "orphan" ? await markOrphanRefund(id, trimmed)
       :                     await markRefund(id, trimmed)
       // En éxito, la fila desaparece por el revalidatePath('/admin').
@@ -64,14 +68,25 @@ export function ProcessButton({ id, kind, amount }: Props) {
       <p className="text-xs text-zinc-500 mb-1.5">
         {kind === "payout" ? "Confirmá el giro al chef" : "Confirmá el reembolso al cliente"}
         {amount != null && <> de <span className="font-semibold text-zinc-700">{formatPrice(amount)}</span></>}.
-        {refRequired && " La referencia del giro es obligatoria."}
+        {kind === "payout"
+          ? " El número de transferencia es obligatorio y no se puede volver a marcar."
+          : " La referencia del giro es obligatoria."}
       </p>
+
+      {/* Advertencia, no bloqueo: el giro se hace por fuera. */}
+      {missingAccount && (
+        <p className="flex items-start gap-1.5 text-xs text-amber-700 bg-amber-50/70 border border-amber-100 rounded-lg px-2.5 py-1.5 mb-1.5">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
+          <span>Este chef no cargó sus datos bancarios. Marcá el giro solo si ya lo hiciste por otro medio.</span>
+        </p>
+      )}
+
       <div className="flex items-center gap-2">
         <input
           type="text"
           value={ref}
           onChange={(e) => setRef(e.target.value)}
-          placeholder={refRequired ? "Referencia del giro *" : "Referencia (opcional)"}
+          placeholder={kind === "payout" ? "N° de transferencia o depósito *" : "Referencia del giro *"}
           className="w-44 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-colors"
         />
         <button

@@ -1,21 +1,8 @@
 'use server'
 
-import { resend } from '@/lib/resend'
+import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
 
 const SITE_URL = (process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
-const HAS_DOMAIN = !!process.env.RESEND_FROM_EMAIL
-const FROM = HAS_DOMAIN
-  ? `GetChef <${process.env.RESEND_FROM_EMAIL}>`
-  : 'GetChef <onboarding@resend.dev>'
-
-function to(email: string): string {
-  const dev = process.env.RESEND_DEV_EMAIL
-  return HAS_DOMAIN ? email : (dev ?? email)
-}
-
-function pfx(email: string): string {
-  return HAS_DOMAIN ? '' : `[TEST → ${email}] `
-}
 
 export interface MealSlotSummary {
   fecha: string   // 'YYYY-MM-DD'
@@ -293,13 +280,11 @@ export async function sendProposalEmail(opts: {
     return
   }
 
-  const recipient = to(opts.clientEmail)
-  const prefix    = pfx(opts.clientEmail)
-
   const { error } = await resend.emails.send({
-    from:    FROM,
-    to:      recipient,
-    subject: `${prefix}${opts.chefName} te envió una propuesta — GetChef`,
+    from:    FROM_EMAIL,
+    to:      resolveRecipient(opts.clientEmail),
+    replyTo: REPLY_TO,
+    subject: `${testSubjectPrefix(opts.clientEmail)}${opts.chefName} te envió una propuesta — GetChef`,
     html:    buildProposalEmail(opts),
   })
 
@@ -340,13 +325,11 @@ export async function sendBookingCancelledEmail(opts: {
     return
   }
 
-  const recipient = to(opts.clientEmail)
-  const prefix    = pfx(opts.clientEmail)
-
   const { error } = await resend.emails.send({
-    from:    FROM,
-    to:      recipient,
-    subject: `${prefix}Tu reserva fue cancelada — reembolso en proceso — GetChef`,
+    from:    FROM_EMAIL,
+    to:      resolveRecipient(opts.clientEmail),
+    replyTo: REPLY_TO,
+    subject: `${testSubjectPrefix(opts.clientEmail)}Tu reserva fue cancelada — reembolso en proceso — GetChef`,
     html:    buildBookingCancelledEmail(opts),
   })
 
@@ -367,15 +350,16 @@ export async function sendClientEmails(opts: {
     return
   }
 
-  const recipient = to(opts.email)
-  const prefix    = pfx(opts.email)
+  const recipient = resolveRecipient(opts.email)
+  const prefix    = testSubjectPrefix(opts.email)
 
   if (!opts.isNewUser) {
     // Caso A: 1 email
     await resend.emails
       .send({
-        from:    FROM,
+        from:    FROM_EMAIL,
         to:      recipient,
+        replyTo: REPLY_TO,
         subject: `${prefix}Tu solicitud ha sido recibida — GetChef`,
         html:    buildActiveEmail(opts.name, opts.requestSummary),
       })
@@ -390,8 +374,9 @@ export async function sendClientEmails(opts: {
   }
 
   const { error } = await resend.emails.send({
-    from:    FROM,
+    from:    FROM_EMAIL,
     to:      recipient,
+    replyTo: REPLY_TO,
     subject: `${prefix}Tu solicitud en GetChef — ingresá con un click`,
     html:    buildMagicLinkEmail(opts.name, opts.confirmationLink, opts.tempPassword, opts.requestSummary),
   })
