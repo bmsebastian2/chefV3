@@ -16,6 +16,10 @@ import { submitProposal, getChefBookingDetail } from "@/app/dashboard/requests/a
 import type { ChefBookingDetail } from "@/app/dashboard/requests/actions";
 import { formatPrice, formatPriceRange } from "@/lib/format";
 import {
+  RequestFacets,
+  type DietaryFlags, type MealMoments, type WeeklySummary,
+} from "@/components/requests/RequestBadges";
+import {
   priceForGuests, proposalPriceRange, cellFromBudget, getBracket,
   BRACKET_LABELS, TIER_LABELS,
 } from "@/lib/pricing";
@@ -59,6 +63,9 @@ export type RequestCard = {
   cuisine_type:     string | null
   client_name:      string
   proposal_status?: string | null
+  restrictions:     DietaryFlags
+  meal_moments:     MealMoments
+  weekly:           WeeklySummary
 }
 
 export type ChefBookingReview = {
@@ -130,6 +137,17 @@ const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   "Servicio único",
   multiple: "Múltiples servicios",
   weekly:   "Semanal",
+};
+
+const CUISINE_LABELS: Record<string, string> = {
+  local:         "Local / argentina",
+  italian:       "Italiana",
+  mediterranean: "Mediterránea",
+  seafood:       "Mariscos",
+  french:        "Francesa",
+  japanese:      "Japonesa",
+  fusion:        "Fusión",
+  chefs_special: "A elección del chef",
 };
 
 const OCCASION_LABELS: Record<string, string> = {
@@ -671,7 +689,7 @@ function RequestCardItem({ req, chefMenus }: { req: RequestCard; chefMenus: Chef
           <DetailRow icon={<Users className="w-3 h-3" />} value={guestStr} />
         )}
         {req.cuisine_type && (
-          <DetailRow icon={<UtensilsCrossed className="w-3 h-3" />} value={req.cuisine_type.replace(/_/g, ' ')} />
+          <DetailRow icon={<UtensilsCrossed className="w-3 h-3" />} value={CUISINE_LABELS[req.cuisine_type] ?? req.cuisine_type} />
         )}
         {req.occasion && (
           <DetailRow icon={<ChefHat className="w-3 h-3" />} value={OCCASION_LABELS[req.occasion] ?? req.occasion} />
@@ -680,6 +698,13 @@ function RequestCardItem({ req, chefMenus }: { req: RequestCard; chefMenus: Chef
           <DetailRow icon={<MapPin className="w-3 h-3" />} value={req.location} />
         )}
       </div>
+
+      <RequestFacets
+        restrictions={req.restrictions}
+        mealMoments={req.meal_moments}
+        weekly={req.weekly}
+        serviceType={req.service_type}
+      />
 
       {/* Action footer */}
       <div className="border-t border-zinc-50 px-4 py-3 flex items-center justify-between gap-2">

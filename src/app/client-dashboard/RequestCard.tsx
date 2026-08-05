@@ -3,6 +3,10 @@ import { CancelButton } from './CancelButtonClient'
 import { ProposalsLink } from './ProposalsLink'
 import { formatPrice, formatPriceRange } from '@/lib/format'
 import type { ClientRequest } from './requests'
+import {
+  RequestFacets,
+  type DietaryFlags, type MealMoments, type WeeklySummary,
+} from '@/components/requests/RequestBadges'
 
 const STATUS_LABELS: Record<string, string> = {
   new:                  'Nueva',
@@ -73,6 +77,28 @@ const ACTIVE_STATUSES = new Set([
   'new', 'active', 'pending_confirmation', 'pending', 'booked',
 ])
 
+// request_restrictions/weekly_meal_details llegan de PostgREST como objeto
+// único (relación 1:1 por request_id UNIQUE, PostgREST la autodetecta y no la
+// envuelve en array) o null si no hay fila. request_dates es 1:muchos y sí
+// llega como array; se agrega con OR — la card resume "incluye este momento
+// en algún día", el desglose día a día queda para el detalle.
+function toDietaryFlags(restrictions: ClientRequest['request_restrictions']): DietaryFlags {
+  return restrictions ?? null
+}
+
+function toMealMoments(rows: ClientRequest['request_dates']): MealMoments {
+  if (!rows || rows.length === 0) return null
+  return {
+    desayuno: rows.some((r) => r.desayuno),
+    almuerzo: rows.some((r) => r.almuerzo),
+    cena: rows.some((r) => r.cena),
+  }
+}
+
+function toWeeklySummary(weekly: ClientRequest['weekly_meal_details']): WeeklySummary {
+  return weekly ?? null
+}
+
 export function RequestCard({
   req,
   proposalCount,
@@ -103,6 +129,10 @@ export function RequestCard({
   const isActive    = ACTIVE_STATUSES.has(req.status)
   const isCancelled = req.status === 'cancelled'
   const isCompleted = req.status === 'completed'
+
+  const restrictions = toDietaryFlags(req.request_restrictions)
+  const mealMoments   = toMealMoments(req.request_dates)
+  const weekly        = toWeeklySummary(req.weekly_meal_details)
 
   return (
     <div
@@ -165,6 +195,13 @@ export function RequestCard({
           <DetailRow icon={<MapPin className="w-3 h-3" />} value={lugar} />
         )}
       </div>
+
+      <RequestFacets
+        restrictions={restrictions}
+        mealMoments={mealMoments}
+        weekly={weekly}
+        serviceType={req.service_type}
+      />
 
       {/* Proposals footer */}
       <div className={`border-t px-4 py-3 flex items-center justify-between ${proposalCount > 0 ? 'border-zinc-100 bg-zinc-50/60' : 'border-zinc-50'}`}>
