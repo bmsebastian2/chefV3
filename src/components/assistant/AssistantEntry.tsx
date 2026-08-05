@@ -1,12 +1,13 @@
 "use client";
 
-// Puerta de entrada full-screen a la solicitud.
+// Puerta de entrada a la solicitud. Única implementación del asistente:
+// la usan tanto /asistente (variant="page") como la sección de la home
+// (variant="embedded"), para que no existan dos flujos que desincronizar.
 // Conduce la conversación (servicio → ocasión → cocina → comensales → preferencias;
 // la rama semanal cambia ocasión/cocina por comidas), muestra una señal de
 // disponibilidad por capacidad (sin listar chefs: el modelo es por postulaciones)
 // y entrega al wizard ya pre-llenado. "Varios días" aún no tiene conversación
 // propia: deriva directo al wizard con el servicio pre-seteado.
-// La sección "descubrir chefs" de la home (ChefAssistant) queda intacta.
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -54,7 +55,11 @@ const QUESTIONS: Record<EntryStep, string> = {
   dietary:  "¿Alguna restricción alimentaria?",
 };
 
-export function AssistantEntry() {
+// `variant` controla solo el "chrome" alrededor de la conversación:
+//   · "page"     → /asistente, toma toda la pantalla, con link de volver al inicio
+//   · "embedded" → sección dentro de la home (id="asistente" para el ancla del Hero)
+// La lógica de pasos y el JSX de cada pregunta son los mismos en ambos casos.
+export function AssistantEntry({ variant = "page" }: { variant?: "page" | "embedded" } = {}) {
   const router = useRouter();
   const [phase, setPhase] = useState<EntryPhase>("service");
   const [answers, setAnswers] = useState<Answers>(INITIAL_ANSWERS);
@@ -186,7 +191,12 @@ export function AssistantEntry() {
   const stepIndex = phase === "results" ? order.length : order.indexOf(phase as EntryStep);
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-[#FAFAFA] py-14 font-sans md:py-20">
+    <section
+      id="asistente"
+      className={`relative overflow-hidden bg-[#FAFAFA] font-sans ${
+        variant === "page" ? "min-h-screen py-14 md:py-20" : "scroll-mt-24 py-24 md:py-32"
+      }`}
+    >
       <style>{`
         @keyframes aeRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
         @keyframes aePing { 0% { transform: scale(.5); opacity: .7; } 70%, 100% { transform: scale(2.2); opacity: 0; } }
@@ -209,16 +219,18 @@ export function AssistantEntry() {
 
       <div className="container relative z-10 mx-auto max-w-[1280px] px-6">
 
-        {/* Volver al inicio */}
-        <div className="mx-auto mb-6 max-w-2xl">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Volver al inicio
-          </Link>
-        </div>
+        {/* Volver al inicio (solo tiene sentido como página propia) */}
+        {variant === "page" && (
+          <div className="mx-auto mb-6 max-w-2xl">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Volver al inicio
+            </Link>
+          </div>
+        )}
 
         {/* Encabezado editorial */}
         <div className="mx-auto mb-10 max-w-2xl text-center">

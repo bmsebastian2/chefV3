@@ -1,7 +1,7 @@
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { SaboresEnCasa } from "@/components/SaboresEnCasa";
-import { ChefAssistant } from "@/components/assistant/ChefAssistant";
+import { AssistantEntry } from "@/components/assistant/AssistantEntry";
 import { HowItWorks } from "@/components/HowItWorks";
 import { MenuDeLaNoche } from "@/components/MenuDeLaNoche";
 import { Chefs, type ChefCard } from "@/components/Chefs";
@@ -110,7 +110,7 @@ export default async function Home() {
       <Header />
       <Hero />
       <SaboresEnCasa />
-      <ChefAssistant />
+      <AssistantEntry variant="embedded" />
       <HowItWorks />
       <MenuDeLaNoche />
       <Chefs chefs={chefs} />
