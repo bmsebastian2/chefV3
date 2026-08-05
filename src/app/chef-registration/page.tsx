@@ -8,6 +8,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { registerChef } from "@/app/auth/actions";
+import { PASSWORD_REQUIREMENTS, validatePassword } from "@/lib/password";
 import { Country } from "country-state-city";
 
 interface FormData {
@@ -82,6 +83,12 @@ export default function ChefRegistrationPage() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     if (formData.email !== formData.confirmEmail) {
       setEmailError("Los emails no coinciden");
+      e.preventDefault();
+      return;
+    }
+    const passwordCheck = validatePassword(formData.password);
+    if (!passwordCheck.valid) {
+      setFormError(passwordCheck.message);
       e.preventDefault();
       return;
     }
@@ -483,6 +490,22 @@ export default function ChefRegistrationPage() {
                   required
                   className={inputCls}
                 />
+                <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
+                  {PASSWORD_REQUIREMENTS.map((req) => {
+                    const met = req.test(formData.password);
+                    return (
+                      <li
+                        key={req.id}
+                        className={`flex items-center gap-1 text-[11px] font-sans transition-colors duration-200 ${
+                          met ? "text-[#22c55e]" : "text-zinc-400"
+                        }`}
+                      >
+                        <span aria-hidden="true">{met ? "✓" : "○"}</span>
+                        {req.label}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
 
               {/* Términos */}

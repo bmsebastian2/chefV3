@@ -4,12 +4,33 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Check, UtensilsCrossed } from "lucide-react";
 import { changePassword } from "@/app/auth/actions";
+import { PASSWORD_REQUIREMENTS, validatePassword } from "@/lib/password";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export default function ResetPasswordPage() {
   const [state, formAction, isPending] = useActionState(changePassword, null);
   const [showPassword, setShowPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [repeatPassword, setRepeatPassword] = useState("");
+  const [localError, setLocalError] = useState("");
+
+  const passwordsMatch = repeatPassword.length === 0 || newPassword === repeatPassword;
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const { valid, message } = validatePassword(newPassword);
+    if (!valid) {
+      setLocalError(message);
+      e.preventDefault();
+      return;
+    }
+    if (newPassword !== repeatPassword) {
+      setLocalError("Las contraseñas no coinciden.");
+      e.preventDefault();
+      return;
+    }
+    setLocalError("");
+  };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#FAFAFA] px-6 py-20">
@@ -52,11 +73,11 @@ export default function ResetPasswordPage() {
                   Elegí una nueva contraseña
                 </h1>
                 <p className="mt-1 text-sm text-zinc-500 leading-relaxed">
-                  Introducí tu nueva contraseña. Debe tener al menos 6 caracteres.
+                  Introducí tu nueva contraseña.
                 </p>
               </div>
 
-              <form className="space-y-3" action={formAction}>
+              <form className="space-y-3" action={formAction} onSubmit={handleSubmit}>
                 {/* Nueva contraseña */}
                 <div className="relative">
                   <Input
@@ -65,7 +86,8 @@ export default function ResetPasswordPage() {
                     autoComplete="new-password"
                     placeholder="Nueva contraseña *"
                     required
-                    minLength={6}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
                     className="rounded-full px-5 h-12 bg-muted border-0 pr-12"
                   />
                   <button
@@ -77,6 +99,22 @@ export default function ResetPasswordPage() {
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                <ul className="flex flex-wrap gap-x-3 gap-y-1 px-2">
+                  {PASSWORD_REQUIREMENTS.map((req) => {
+                    const met = req.test(newPassword);
+                    return (
+                      <li
+                        key={req.id}
+                        className={`flex items-center gap-1 text-xs transition-colors ${
+                          met ? "text-accent" : "text-zinc-400"
+                        }`}
+                      >
+                        <span aria-hidden="true">{met ? "✓" : "○"}</span>
+                        {req.label}
+                      </li>
+                    );
+                  })}
+                </ul>
 
                 {/* Repetir contraseña */}
                 <Input
@@ -85,12 +123,18 @@ export default function ResetPasswordPage() {
                   autoComplete="new-password"
                   placeholder="Repetí la contraseña *"
                   required
-                  minLength={6}
+                  value={repeatPassword}
+                  onChange={(e) => setRepeatPassword(e.target.value)}
                   className="rounded-full px-5 h-12 bg-muted border-0"
                 />
+                {repeatPassword.length > 0 && (
+                  <p className={`px-2 text-xs ${passwordsMatch ? "text-accent" : "text-red-500"}`}>
+                    {passwordsMatch ? "✓ Coinciden" : "✗ Las contraseñas no coinciden"}
+                  </p>
+                )}
 
-                {state?.error && (
-                  <p className="text-sm text-red-500 text-center">{state.error}</p>
+                {(localError || state?.error) && (
+                  <p className="text-sm text-red-500 text-center">{localError || state?.error}</p>
                 )}
 
                 <Button

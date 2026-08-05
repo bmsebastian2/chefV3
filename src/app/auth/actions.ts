@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { TERMS_VERSION } from '@/lib/terms'
+import { validatePassword } from '@/lib/password'
 
 // Errores de acceso que puede provocar quien intenta entrar. Se mapea por
 // `code` y no por `message`: el código es estable entre versiones de Supabase,
@@ -86,8 +87,9 @@ export async function changePassword(
   const newPassword = formData.get('newPassword') as string
   const repeatPassword = formData.get('repeatPassword') as string
 
-  if (!newPassword || newPassword.length < 6) {
-    return { error: 'La contraseña debe tener al menos 6 caracteres.', success: false }
+  const { valid, message } = validatePassword(newPassword || '')
+  if (!valid) {
+    return { error: message, success: false }
   }
   if (newPassword !== repeatPassword) {
     return { error: 'Las contraseñas no coinciden.', success: false }
@@ -137,6 +139,11 @@ export async function registerChef(prevState: { error: string } | null, formData
 
   if (!acceptTerms) {
     return { error: 'Debes aceptar los términos y condiciones para registrarte' }
+  }
+
+  const { valid, message } = validatePassword(password || '')
+  if (!valid) {
+    return { error: message }
   }
 
   try {
