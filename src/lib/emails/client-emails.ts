@@ -33,6 +33,61 @@ export interface RequestSummary {
   }
 }
 
+// Perforado "sello postal" arriba y abajo del card — círculos recortados a
+// la mitad con overflow:hidden, sin depender de ninguna imagen ni gradiente
+// (mismo truco que notify-chefs.ts).
+const SCALLOP_DIAMETER = 16
+const SCALLOP_COUNT    = 35 // 35 × 16 = 560, el ancho del card
+
+function scallopRow(flip: boolean, color: string): string {
+  const dots = Array.from({ length: SCALLOP_COUNT }).map(() => `
+                <td width="${SCALLOP_DIAMETER}" style="line-height:0;font-size:0;">
+                  <div style="width:${SCALLOP_DIAMETER}px;height:${SCALLOP_DIAMETER}px;border-radius:50%;background:${color};box-shadow:inset 0 0 0 1px rgba(24,24,27,0.08), inset 0 2px 3px rgba(24,24,27,0.12);"></div>
+                </td>`).join('')
+
+  return `
+        <tr>
+          <td height="${SCALLOP_DIAMETER / 2}" style="height:${SCALLOP_DIAMETER / 2}px;overflow:hidden;line-height:0;font-size:0;">
+            <table width="${SCALLOP_COUNT * SCALLOP_DIAMETER}" cellpadding="0" cellspacing="0"${flip ? ` style="margin-top:-${SCALLOP_DIAMETER / 2}px;"` : ''}>
+              <tr>${dots}</tr>
+            </table>
+          </td>
+        </tr>`
+}
+
+// Fondo crema del card ("mate" alrededor del contenido, como un sello/ticket
+// real). El perforado de arriba/abajo revela este mismo color de página
+// (#FAFAFA se mantiene detrás, sin cambios en el resto del sitio).
+const CARD_BG = '#F5F0E3'
+
+const SCALLOP_TOP_ROW    = scallopRow(true, '#FAFAFA')
+const SCALLOP_BOTTOM_ROW = scallopRow(false, '#FAFAFA')
+
+// Dorado — acento premium para labels, chip y detalles finos. No reemplaza
+// el verde de marca (CTA, checks): conviven, el dorado es solo ornamento.
+const GOLD = '#B8935B'
+
+// Sello circular con texto en arco — vía SVG inline + <textPath>. Es la única
+// forma de lograr texto curvo en HTML, pero el soporte de SVG inline en
+// email es disparejo (Gmail lo renderiza en general; Outlook desktop no).
+// Si no carga, no rompe nada: el chip de tierBadge ya comunica lo mismo.
+function sealBadge(topText: string, bottomText: string): string {
+  return `
+    <svg width="92" height="92" viewBox="0 0 92 92" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="46" cy="46" r="41" fill="none" stroke="${GOLD}" stroke-width="1" stroke-dasharray="2,3"/>
+      <circle cx="46" cy="46" r="34" fill="${CARD_BG}"/>
+      <path id="sealTopC" d="M 8,46 A 38,38 0 1,1 84,46" fill="none"/>
+      <path id="sealBottomC" d="M 8,46 A 38,38 0 1,0 84,46" fill="none"/>
+      <text font-size="7.5" font-weight="700" fill="${GOLD}" letter-spacing="1.5">
+        <textPath href="#sealTopC" startOffset="50%" text-anchor="middle">${topText}</textPath>
+      </text>
+      <text font-size="7.5" font-weight="700" fill="${GOLD}" letter-spacing="1.5">
+        <textPath href="#sealBottomC" startOffset="50%" text-anchor="middle">${bottomText}</textPath>
+      </text>
+      <text x="46" y="53" font-size="20" text-anchor="middle">✨</text>
+    </svg>`
+}
+
 // ── HTML shell ────────────────────────────────────────────────────────────────
 function shell(body: string): string {
   return `<!DOCTYPE html>
@@ -41,21 +96,40 @@ function shell(body: string): string {
 <body style="margin:0;padding:0;background:#FAFAFA;font-family:'Helvetica Neue',Arial,sans-serif;color:#18181B;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAFAFA;padding:40px 0;">
     <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:${CARD_BG};border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(24,24,27,0.12);">
+        ${SCALLOP_TOP_ROW}
         <tr>
-          <td style="background:#18181B;padding:28px 32px;">
-            <p style="margin:0;font-size:22px;font-weight:700;color:#22c55e;letter-spacing:-0.5px;">GetChef</p>
-            <p style="margin:6px 0 0;font-size:13px;color:#A1A1AA;">Tu plataforma de chefs privados</p>
+          <td style="background:#18181B;padding:0;">
+            <table width="100%" cellpadding="0" cellspacing="0"><tr>
+              <td style="padding:28px 16px 28px 32px;" valign="middle">
+                <p style="margin:0 0 12px;font-size:22px;font-weight:700;color:#22c55e;letter-spacing:-0.5px;">GetChef</p>
+                <div style="height:1px;font-size:0;line-height:1px;margin:0 0 12px;background:rgba(184,147,91,0.4);">&nbsp;</div>
+                <p style="margin:0;font-size:13px;color:${GOLD};">✨ Experiencias gastronómicas a medida</p>
+              </td>
+              <td width="200" style="padding:0;line-height:0;font-size:0;">
+                <img src="${SITE_URL}/banner-chef.webp" width="200" height="140" style="display:block;width:200px;height:140px;object-fit:cover;" alt="">
+              </td>
+            </tr></table>
           </td>
         </tr>
         <tr><td style="padding:32px;">${body}</td></tr>
         <tr>
-          <td style="padding:20px 32px;border-top:1px solid #F4F4F5;">
+          <td style="padding:0 32px 24px;">
+            <table width="100%" cellpadding="0" cellspacing="0"><tr>
+              <td style="border-top:1px solid rgba(184,147,91,0.35);"></td>
+              <td width="34" style="text-align:center;font-size:14px;padding:0 6px;">👨‍🍳</td>
+              <td style="border-top:1px solid rgba(184,147,91,0.35);"></td>
+            </tr></table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 20px;">
             <p style="margin:0;font-size:12px;color:#A1A1AA;text-align:center;">
               Recibiste este email porque realizaste una solicitud en GetChef.
             </p>
           </td>
         </tr>
+        ${SCALLOP_BOTTOM_ROW}
       </table>
     </td></tr>
   </table>
@@ -71,23 +145,115 @@ function cta(href: string, label: string): string {
 </table>`
 }
 
-function section(title: string, rows: [string, string | undefined][]): string {
-  const valid = rows.filter(([, v]) => v != null && v !== '')
-  if (!valid.length) return ''
+// Banda final: ícono + texto + CTA, en vez del botón suelto — mismo
+// lenguaje visual que notify-chefs.ts.
+function ctaBand(question: string, subtext: string, href: string, label: string): string {
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;border:1px solid #E4E4E7;border-radius:8px;overflow:hidden;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#F0EAD8;border-radius:14px;margin-top:8px;">
       <tr>
-        <td style="background:#F4F4F5;padding:9px 16px;">
-          <p style="margin:0;font-size:10px;font-weight:700;color:#71717A;text-transform:uppercase;letter-spacing:0.08em;">${title}</p>
+        <td style="padding:18px 12px 18px 18px;">
+          <table cellpadding="0" cellspacing="0"><tr>
+            <td style="width:44px;vertical-align:top;">
+              <div style="width:36px;height:36px;border-radius:50%;background:#F0FDF4;text-align:center;line-height:36px;font-size:16px;">✨</div>
+            </td>
+            <td style="vertical-align:top;">
+              <p style="margin:0;font-size:14px;font-weight:700;color:#18181B;line-height:1.4;">${question}</p>
+              <p style="margin:2px 0 0;font-size:12px;color:#71717A;">${subtext}</p>
+            </td>
+          </tr></table>
         </td>
       </tr>
-      ${valid.map(([label, value]) => `
       <tr>
-        <td style="padding:10px 16px;border-top:1px solid #F4F4F5;">
-          <span style="font-size:13px;color:#71717A;">${label}:</span>
-          <span style="font-size:13px;color:#18181B;margin-left:6px;font-weight:500;">${value}</span>
+        <td style="padding:0 18px 18px;">
+          <a href="${href}" style="display:block;text-align:center;background:#166534;color:#ffffff;font-weight:700;font-size:14px;text-decoration:none;padding:12px 22px;border-radius:8px;">${label} →</a>
         </td>
-      </tr>`).join('')}
+      </tr>
+    </table>`
+}
+
+function trustBlock(): string {
+  const items = [
+    'Chefs verificados y evaluados',
+    'Propuestas de menú a medida',
+    'Pago protegido hasta el día del servicio',
+  ]
+  return `<div style="background:#F0FDF4;border:1px solid #DCFCE7;border-radius:8px;padding:14px 20px;margin:20px 0;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      ${items.map((item) => `
+      <tr><td style="padding:4px 0;font-size:13px;color:#166534;">
+        <span style="color:#16A34A;font-weight:700;margin-right:8px;">✓</span>${item}
+      </td></tr>`).join('')}
+    </table>
+  </div>`
+}
+
+// Chip de la experiencia (tier o servicio semanal), centrado — mismo
+// lenguaje visual que notify-chefs.ts.
+function tierBadge(label: string): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      <tr><td align="center">
+        <table cellpadding="0" cellspacing="0"><tr>
+          <td style="border:1px solid ${GOLD};border-radius:20px;padding:7px 18px;background:rgba(184,147,91,0.06);">
+            <span style="font-size:11px;font-weight:700;color:${GOLD};letter-spacing:0.06em;text-transform:uppercase;">👑 ${label}</span>
+          </td>
+        </tr></table>
+      </td></tr>
+    </table>`
+}
+
+// Franja de 4 datos clave en una sola fila, con ícono.
+function heroGrid(cells: [string, string, string][]): string {
+  const n = cells.length
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #E4DCC8;border-radius:14px;overflow:hidden;margin-bottom:20px;">
+      <tr>
+        ${cells.map(([icon, label, value], i) => `
+        <td width="${Math.floor(100 / n)}%" style="padding:20px 8px;text-align:center;${i > 0 ? 'border-left:1px solid #F0EAD8;' : ''}">
+          <div style="width:38px;height:38px;border-radius:50%;background:#F0FDF4;margin:0 auto 8px;">
+            <p style="margin:0;line-height:38px;font-size:16px;">${icon}</p>
+          </div>
+          <p style="margin:0 0 3px;font-size:9px;font-weight:700;color:${GOLD};text-transform:uppercase;letter-spacing:0.06em;">${label}</p>
+          <p style="margin:0;font-size:14px;font-weight:700;color:#18181B;line-height:1.3;">${value}</p>
+        </td>`).join('')}
+      </tr>
+    </table>`
+}
+
+// Bloque con el resto del detalle — tarjeta blanca, eyebrow + filas de a 2
+// columnas con ícono.
+function detailBlock(rows: [string, string, string | undefined][]): string {
+  const valid = rows.filter(([, , v]) => v != null && v !== '')
+  if (!valid.length) return ''
+
+  const cell = ([icon, label, value]: [string, string, string | undefined]): string => `
+    <td width="50%" style="padding:12px 20px;vertical-align:top;">
+      <table cellpadding="0" cellspacing="0"><tr>
+        <td style="font-size:15px;padding-right:10px;vertical-align:top;">${icon}</td>
+        <td>
+          <p style="margin:0;font-size:11px;color:#71717A;">${label}</p>
+          <p style="margin:2px 0 0;font-size:14px;font-weight:700;color:#18181B;">${value}</p>
+        </td>
+      </tr></table>
+    </td>`
+
+  const pairedRows: string[] = []
+  for (let i = 0; i < valid.length; i += 2) {
+    const a = valid[i]
+    const b = valid[i + 1]
+    pairedRows.push(`
+      <tr>
+        ${cell(a)}
+        ${b ? cell(b) : '<td width="50%"></td>'}
+      </tr>`)
+  }
+
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #E4DCC8;border-radius:14px;overflow:hidden;margin-bottom:20px;">
+      <tr><td colspan="2" style="padding:16px 20px 8px;">
+        <span style="font-size:11px;font-weight:700;color:${GOLD};text-transform:uppercase;letter-spacing:0.06em;">🍽️ Detalles del servicio</span>
+      </td></tr>
+      ${pairedRows.join('')}
     </table>`
 }
 
@@ -145,48 +311,74 @@ function mealSlotsTable(slots: MealSlotSummary[]): string {
 }
 
 function detailsBlock(r: RequestSummary): string {
+  const badgeLabel = r.semanal ? 'Servicio Semanal' : (r.experiencia ? `Experiencia ${r.experiencia}` : 'Solicitud')
+
+  const hero: [string, string, string][] = r.semanal
+    ? [
+        ['📅', 'Fecha',      r.fecha ?? '—'],
+        ['🔁', 'Frecuencia', r.semanal.frecuencia ?? '—'],
+        ['📍', 'Lugar',      r.lugar ?? '—'],
+        ['👥', 'Personas',   r.semanal.personas ?? '—'],
+      ]
+    : [
+        ['📅', 'Fecha',      r.fecha ?? '—'],
+        ['👥', 'Comensales', r.comensales ?? '—'],
+        ['📍', 'Lugar',      r.lugar ?? '—'],
+        ['🏷️', 'Precio',     r.precio ?? '—'],
+      ]
+
+  const rows: [string, string, string | undefined][] = r.semanal
+    ? [
+        ['📅', 'Días',                       r.semanal.dias],
+        ['🕐', 'Momentos por día',           r.semanal.momentos],
+        ['🍽️', 'Total de comidas',           r.semanal.total],
+        ['🌿', 'Restricciones alimentarias', r.restricciones],
+        ['📝', 'Notas',                      r.notas],
+      ]
+    : [
+        ['🕐', 'Hora',                       r.hora],
+        ['🍴', 'Preferencias gastronómicas', r.gastronomia],
+        ['🌿', 'Restricciones alimentarias', r.restricciones],
+        ['🎉', 'Ocasión',                    r.ocasion ? (OCCASION_LABELS[r.ocasion] ?? r.ocasion) : undefined],
+        ['📝', 'Notas',                      r.notas],
+      ]
+
   return `<div style="margin-top:24px;">
-    ${section('Dónde y cuándo', [
-      ['Lugar', r.lugar],
-      ['Hora', r.hora],
-      ['Fecha', r.fecha],
-    ])}
-    ${r.semanal ? section('Servicio semanal', [
-      ['Frecuencia',          r.semanal.frecuencia],
-      ['Días',                r.semanal.dias],
-      ['Momentos por día',    r.semanal.momentos],
-      ['Personas por comida', r.semanal.personas],
-      ['Total de comidas',    r.semanal.total],
-    ]) : ''}
+    ${tierBadge(badgeLabel)}
+    ${heroGrid(hero)}
+    ${detailBlock(rows)}
     ${r.mealSlots?.length ? mealSlotsTable(r.mealSlots) : ''}
-    ${section('Presupuesto', [
-      ['Número de comensales', r.comensales],
-      ['Precio por persona', r.precio],
-      ['Tipo de experiencia', r.experiencia],
-    ])}
-    ${section('Evento', [
-      ['Preferencias gastronómicas', r.gastronomia],
-      ['Restricciones alimentarias', r.restricciones],
-      ['Ocasión', r.ocasion ? (OCCASION_LABELS[r.ocasion] ?? r.ocasion) : undefined],
-    ])}
-    ${section('Algo que añadir', [
-      ['Notas', r.notas],
-    ])}
   </div>`
 }
 
 // ── Case A: existing user — solicitud activa ───────────────────────────────
 function buildActiveEmail(name: string, summary?: RequestSummary): string {
+  const sealWords: [string, string] = summary?.semanal
+    ? ['SERVICIO', 'SEMANAL']
+    : summary?.experiencia
+      ? ['EXPERIENCIA', summary.experiencia.toUpperCase()]
+      : ['SOLICITUD', 'RECIBIDA']
+
   return shell(`
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.5;">
-      Hola <strong>${name}</strong>, tu solicitud ha sido recibida.
-    </p>
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td valign="top">
+        <p style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.25;color:#18181B;">
+          Hola, <em style="font-style:italic;color:${GOLD};">${name}</em> 👋
+        </p>
+        <p style="margin:0;font-size:16px;font-weight:700;color:#15803D;line-height:1.4;">
+          Tu solicitud fue recibida con éxito.
+        </p>
+      </td>
+      <td width="92" valign="top">${sealBadge(sealWords[0], sealWords[1])}</td>
+    </tr></table>
+    <div style="margin-top:20px;">&nbsp;</div>
+    ${trustBlock()}
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
-      En menos de <strong>30 minutos</strong> recibirás propuestas de menú personalizadas
-      de nuestra red de chefs. Puedes seguir el estado desde tu dashboard.
+      En menos de <strong>30 minutos</strong> empiezan a llegar las propuestas de menú
+      diseñadas para tu evento. Puedes seguir el estado desde tu dashboard.
     </p>
     ${summary ? detailsBlock(summary) : ''}
-    ${cta(`${SITE_URL}/client-dashboard`, 'Ver mi solicitud')}
+    ${ctaBand('Seguí el estado de tu solicitud', 'Revisá las propuestas a medida que vayan llegando.', `${SITE_URL}/client-dashboard`, 'Ver mi solicitud')}
   `)
 }
 
@@ -205,9 +397,13 @@ function buildMagicLinkEmail(name: string, magicLink: string, tempPassword?: str
     : ''
 
   return shell(`
-    <p style="margin:0 0 16px;font-size:16px;line-height:1.5;">
-      Hola <strong>${name}</strong>, bienvenido a GetChef.
+    <p style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.25;color:#18181B;">
+      Hola, <em style="font-style:italic;color:${GOLD};">${name}</em> 👋
     </p>
+    <p style="margin:0 0 24px;font-size:16px;font-weight:700;color:#15803D;line-height:1.4;">
+      Bienvenido a GetChef.
+    </p>
+    ${trustBlock()}
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
       Tu solicitud está lista. Hacé click en el botón para ingresar a tu dashboard
       y ver cómo avanza — sin contraseña, en un solo click.
