@@ -114,17 +114,27 @@ function joinNatural(items: string[]): string {
 }
 const capFirst = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
-function buildEmailHtml(chef: string, req: RequestData): string {
+function buildEmailHtml(chef: string, req: RequestData, clientName: string): string {
   const fmtDate = (d: string) =>
     new Date(d + 'T00:00:00').toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' })
 
   const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
+  const occasionLabel = OCCASION_LABELS[req.occasion] ?? req.occasion
+  const fecha = req.event_date_start ? fmtDate(req.event_date_start) : null
+
+  const summaryLine = req.service_type === 'weekly'
+    ? `<strong>${clientName}</strong> está buscando un chef para su día a día${fecha ? `, a partir del ${fecha}` : ''}${req.city ? ` en ${req.city}` : ''}.`
+    : `<strong>${clientName}</strong> te está esperando para su ${occasionLabel.toLowerCase()}${fecha ? ` — ${fecha}` : ''}${req.cuantas_personas ? `, ${req.cuantas_personas} ${req.cuantas_personas === 1 ? 'persona' : 'personas'}` : ''}${req.city ? ` en ${req.city}` : ''}.`
+
   const intro = `
-    <p style="margin:0 0 20px;font-size:16px;line-height:1.5;">
-      Hola <strong>${chef}</strong>, hay una nueva solicitud en tu ciudad que coincide con tu perfil.
+    <p style="margin:0 0 8px;font-size:16px;line-height:1.5;">
+      🏅 Hola <strong>${chef}</strong>, tu próximo servicio podría estar acá 👨‍🍳
+    </p>
+    <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
+      ${summaryLine} Entrá, mirá el detalle y mandale una propuesta a la altura.
     </p>`
-  const ctaBlock = cta(`${SITE_URL}/dashboard/requests`, 'Ver solicitud en el dashboard')
+  const ctaBlock = cta(`${SITE_URL}/dashboard/requests`, 'Ver solicitud y proponer')
 
   if (req.service_type === 'weekly') {
     const wd = req.weeklyDetails
@@ -163,7 +173,7 @@ function buildEmailHtml(chef: string, req: RequestData): string {
         ['Notas', req.descripcion_evento ?? undefined],
       ])}
     </div>
-    ${ctaBlock}`)
+    ${ctaBlock}`, '✨ Una nueva oportunidad')
   }
 
   // single / multiple — misma estructura y labels que el detailsBlock del
@@ -199,7 +209,7 @@ function buildEmailHtml(chef: string, req: RequestData): string {
         ['Notas', req.descripcion_evento ?? undefined],
       ])}
     </div>
-    ${ctaBlock}`)
+    ${ctaBlock}`, '✨ Una nueva oportunidad')
 }
 
 const DAYS_ES_CHEF     = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
@@ -294,7 +304,7 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
   // Siempre busca los datos frescos desde la DB — evita depender del caller
   const { data: requestRow, error: reqError } = await admin
     .from('service_requests')
-    .select('service_type, occasion, city, country, event_date_start, event_date_end, event_time, guests_adults, guests_teens, guests_kids, cuisine_type, budget_min, budget_max, descripcion_evento')
+    .select('user_id, service_type, occasion, city, country, event_date_start, event_date_end, event_time, guests_adults, guests_teens, guests_kids, cuisine_type, budget_min, budget_max, descripcion_evento')
     .eq('id', requestId)
     .single()
 
@@ -302,6 +312,17 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
     console.error('[notify-chefs] Could not fetch request data:', reqError)
     return
   }
+
+  // Nombre del cliente para el copy del email — mismo patrón que notifyChefOfBookingConfirmed.
+  const { data: clientUser } = await admin
+    .from('users')
+    .select('first_name, first_surname')
+    .eq('id', requestRow.user_id)
+    .maybeSingle()
+
+  const clientName = clientUser
+    ? ([clientUser.first_name, clientUser.first_surname].filter(Boolean).join(' ') || 'Un cliente')
+    : 'Un cliente'
 
   let mealSlots: MealSlot[] = incomingReq?.mealSlots ?? []
   if (!mealSlots.length && requestRow.service_type === 'multiple') {
@@ -477,8 +498,8 @@ export async function notifyMatchingChefs(requestId: string, incomingReq?: Reque
         from:    FROM_EMAIL,
         to:      resolveRecipient(chef.email),
         replyTo: REPLY_TO,
-        subject: `${testSubjectPrefix(chef.email)}Nueva solicitud en tu ciudad — ${req.city ?? 'sin ciudad'}`,
-        html: buildEmailHtml(chef.first_name, req),
+        subject: `${testSubjectPrefix(chef.email)}${clientName} busca un chef en ${req.city ?? 'tu ciudad'} — GetChef`,
+        html: buildEmailHtml(chef.first_name, req, clientName),
       })
     })
   )
