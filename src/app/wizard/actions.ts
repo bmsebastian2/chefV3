@@ -191,6 +191,23 @@ export async function registerOrVerifyClient(
     return { error: 'Error al registrar usuario' }
   }
 
+  // 4.5. La contraseña fue auto-generada (el usuario no la eligió): marcar
+  //      password_set = false para ofrecerle una vez, en su primer ingreso,
+  //      crear una contraseña propia (ver client-dashboard/layout.tsx).
+  //      Vía RPC y no .update() directo: public.users no tiene GRANT UPDATE
+  //      para service_role (ver MIGRATION_client_password_prompt.sql).
+  //      No crítico: si falla, el usuario sigue entrando normal por magic
+  //      link, solo no vería el prompt.
+  if (!isPasswordProvided) {
+    const { error: passwordFlagError } = await admin.rpc('mark_password_unset', {
+      p_user_id: adminData.user.id,
+    })
+
+    if (passwordFlagError) {
+      console.error('Error marking password_set=false:', passwordFlagError)
+    }
+  }
+
   // 5. Generar magic link — confirma el email E inicia sesión en un solo click
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type:    'magiclink',

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { ClientSidebar } from '@/components/client-dashboard/ClientSidebar'
+import { PasswordSetupPrompt } from '@/components/client-dashboard/PasswordSetupPrompt'
 
 export default async function ClientDashboardLayout({
   children,
@@ -13,7 +14,7 @@ export default async function ClientDashboardLayout({
 
   const { data: userData } = await supabase
     .from('users')
-    .select('role')
+    .select('role, password_set')
     .eq('id', user.id)
     .single()
 
@@ -33,6 +34,9 @@ export default async function ClientDashboardLayout({
           {children}
         </main>
       </div>
+      {/* Solo clientes creados desde el wizard con password random ven esto,
+          una única vez (password_set arranca en false para ese caso puntual). */}
+      {userData?.password_set === false && <PasswordSetupPrompt />}
     </div>
   )
 }

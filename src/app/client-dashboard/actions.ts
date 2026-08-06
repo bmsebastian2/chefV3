@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { validatePassword } from '@/lib/password'
 import {
   REQUEST_SELECT,
   REQUEST_STATUS_GROUPS,
@@ -76,6 +77,53 @@ export async function cancelRequest(requestId: string, reason: string): Promise<
     .eq('id', requestId)
     .eq('user_id', user.id)
 
+  if (error) return { error: error.message }
+
+  revalidatePath('/client-dashboard')
+  return {}
+}
+
+/**
+ * Prompt de primer ingreso (ver PasswordSetupPrompt): el cliente elige crear
+ * su propia contraseña en vez de seguir dependiendo del magic link.
+ */
+export async function setInitialPassword(
+  prevState: { error: string; success: boolean } | null,
+  formData: FormData,
+): Promise<{ error: string; success: boolean }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado', success: false }
+
+  const newPassword = formData.get('newPassword') as string
+  const repeatPassword = formData.get('repeatPassword') as string
+
+  const { valid, message } = validatePassword(newPassword || '')
+  if (!valid) return { error: message, success: false }
+  if (newPassword !== repeatPassword) {
+    return { error: 'Las contraseñas no coinciden.', success: false }
+  }
+
+  const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+  if (updateError) return { error: updateError.message, success: false }
+
+  const { error: rpcError } = await supabase.rpc('mark_password_set')
+  if (rpcError) console.error('Error marking password_set:', rpcError)
+
+  revalidatePath('/client-dashboard')
+  return { error: '', success: true }
+}
+
+/**
+ * Prompt de primer ingreso: el cliente elige seguir entrando solo por
+ * magic link. No cambia ninguna contraseña, solo apaga el prompt.
+ */
+export async function skipPasswordSetup(): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  const { error } = await supabase.rpc('mark_password_set')
   if (error) return { error: error.message }
 
   revalidatePath('/client-dashboard')
