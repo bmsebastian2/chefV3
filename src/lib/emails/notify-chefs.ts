@@ -100,8 +100,8 @@ function shell(body: string, subtitle: string = 'Una nueva oportunidad'): string
                 <div style="height:1px;font-size:0;line-height:1px;margin:0 0 12px;background:rgba(184,147,91,0.4);">&nbsp;</div>
                 <p style="margin:0;font-size:13px;color:${GOLD};">✦ ${subtitle}</p>
               </td>
-              <td width="200" height="170" style="width:200px;height:170px;padding:0;line-height:0;font-size:0;overflow:hidden;">
-                <img src="${ASSET_BASE_URL}/banner-chef.webp" width="200" height="170" style="display:block;width:200px;height:170px;object-fit:cover;" alt="">
+              <td width="200" height="170" bgcolor="#18181B" background="${ASSET_BASE_URL}/banner-chef.webp" style="width:200px;height:170px;padding:0;background-image:url('${ASSET_BASE_URL}/banner-chef.webp');background-size:cover;background-position:center center;background-repeat:no-repeat;">
+                &nbsp;
               </td>
             </tr></table>
           </td>
