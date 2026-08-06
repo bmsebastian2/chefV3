@@ -1,7 +1,7 @@
 'use server'
 
 import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
-import { emailFooter, ctaBand, EMAIL_RESPONSIVE_STYLES } from './shared'
+import { emailFooter, ctaBand, detailBlock, EMAIL_RESPONSIVE_STYLES } from './shared'
 
 const SITE_URL = (process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
@@ -173,43 +173,6 @@ function heroGrid(cells: [string, string, string][]): string {
     </table>`
 }
 
-// Bloque con el resto del detalle — tarjeta blanca, eyebrow + filas de a 2
-// columnas con ícono.
-function detailBlock(rows: [string, string, string | undefined][]): string {
-  const valid = rows.filter(([, , v]) => v != null && v !== '')
-  if (!valid.length) return ''
-
-  const cell = ([icon, label, value]: [string, string, string | undefined]): string => `
-    <td width="50%" style="padding:12px 20px;vertical-align:top;">
-      <table cellpadding="0" cellspacing="0"><tr>
-        <td style="font-size:15px;padding-right:10px;vertical-align:top;">${icon}</td>
-        <td>
-          <p style="margin:0;font-size:11px;color:#71717A;">${label}</p>
-          <p style="margin:2px 0 0;font-size:14px;font-weight:700;color:#18181B;">${value}</p>
-        </td>
-      </tr></table>
-    </td>`
-
-  const pairedRows: string[] = []
-  for (let i = 0; i < valid.length; i += 2) {
-    const a = valid[i]
-    const b = valid[i + 1]
-    pairedRows.push(`
-      <tr>
-        ${cell(a)}
-        ${b ? cell(b) : '<td width="50%"></td>'}
-      </tr>`)
-  }
-
-  return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #E4DCC8;border-radius:14px;overflow:hidden;margin-bottom:20px;">
-      <tr><td colspan="2" style="padding:16px 20px 8px;">
-        <span style="font-size:11px;font-weight:700;color:${GOLD};text-transform:uppercase;letter-spacing:0.06em;">🍽️ Detalles del servicio</span>
-      </td></tr>
-      ${pairedRows.join('')}
-    </table>`
-}
-
 const OCCASION_LABELS: Record<string, string> = {
   birthday:          'Cumpleaños',
   family_reunion:    'Reunión Familiar',
@@ -285,15 +248,15 @@ function detailsBlock(r: RequestSummary): string {
         ['📅', 'Días',                       r.semanal.dias],
         ['🕐', 'Momentos por día',           r.semanal.momentos],
         ['🍽️', 'Total de comidas',           r.semanal.total],
-        ['🌿', 'Restricciones alimentarias', r.restricciones],
-        ['📝', 'Notas',                      r.notas],
+        ['hoja', 'Restricciones alimentarias', r.restricciones],
+        ['nota', 'Notas',                      r.notas],
       ]
     : [
-        ['🕐', 'Hora',                       r.hora],
-        ['🍴', 'Preferencias gastronómicas', r.gastronomia],
-        ['🌿', 'Restricciones alimentarias', r.restricciones],
-        ['🎉', 'Ocasión',                    r.ocasion ? (OCCASION_LABELS[r.ocasion] ?? r.ocasion) : undefined],
-        ['📝', 'Notas',                      r.notas],
+        ['reloj', 'Hora',                       r.hora],
+        ['cubiertos', 'Preferencias gastronómicas', r.gastronomia],
+        ['hoja', 'Restricciones alimentarias', r.restricciones],
+        ['party', 'Ocasión',                    r.ocasion ? (OCCASION_LABELS[r.ocasion] ?? r.ocasion) : undefined],
+        ['nota', 'Notas',                      r.notas],
       ]
 
   return `<div style="margin-top:24px;">

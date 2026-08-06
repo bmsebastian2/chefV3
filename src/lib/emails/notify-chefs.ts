@@ -4,7 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
 import { normalizeCity } from '@/lib/maps/normalizeCity'
 import { tierFromBudget, type PriceTier } from '@/lib/pricing'
-import { emailFooter, ctaBand, EMAIL_RESPONSIVE_STYLES } from './shared'
+import { emailFooter, ctaBand, detailBlock, EMAIL_RESPONSIVE_STYLES } from './shared'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
@@ -189,43 +189,6 @@ function heroGrid(cells: [string, string, string][]): string {
     </table>`
 }
 
-// Bloque con el resto del detalle — tarjeta blanca, eyebrow + filas de a 2
-// columnas con ícono, más compacto y prolijo que una lista larga de a uno.
-function detailBlock(rows: [string, string, string | undefined][]): string {
-  const valid = rows.filter(([, , v]) => v != null && v !== '')
-  if (!valid.length) return ''
-
-  const cell = ([icon, label, value]: [string, string, string | undefined]): string => `
-    <td width="50%" style="padding:12px 20px;vertical-align:top;">
-      <table cellpadding="0" cellspacing="0"><tr>
-        <td style="font-size:15px;padding-right:10px;vertical-align:top;">${icon}</td>
-        <td>
-          <p style="margin:0;font-size:11px;color:#71717A;">${label}</p>
-          <p style="margin:2px 0 0;font-size:14px;font-weight:700;color:#18181B;">${value}</p>
-        </td>
-      </tr></table>
-    </td>`
-
-  const pairedRows: string[] = []
-  for (let i = 0; i < valid.length; i += 2) {
-    const a = valid[i]
-    const b = valid[i + 1]
-    pairedRows.push(`
-      <tr>
-        ${cell(a)}
-        ${b ? cell(b) : '<td width="50%"></td>'}
-      </tr>`)
-  }
-
-  return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #E4DCC8;border-radius:14px;overflow:hidden;margin-bottom:20px;">
-      <tr><td colspan="2" style="padding:16px 20px 8px;">
-        <span style="font-size:11px;font-weight:700;color:${GOLD};text-transform:uppercase;letter-spacing:0.06em;">🍽️ Detalles del servicio</span>
-      </td></tr>
-      ${pairedRows.join('')}
-    </table>`
-}
-
 const DAY_NAMES_CHEF: Record<number, string> = {
   1: 'lunes', 2: 'martes', 3: 'miércoles',
   4: 'jueves', 5: 'viernes', 6: 'sábado', 7: 'domingo',
@@ -320,8 +283,8 @@ function buildEmailHtml(chef: string, req: RequestData, clientName: string): str
         ['📅', 'Días',                       frecuenciaLabel],
         ['🕐', 'Momentos por día',           momentosLabel],
         ['🍽️', 'Total de comidas',           wd?.comidas_por_semana != null ? `${wd.comidas_por_semana} comidas semanales` : undefined],
-        ['🌿', 'Restricciones alimentarias', req.restricciones ?? undefined],
-        ['📝', 'Notas',                      req.descripcion_evento ?? undefined],
+        ['hoja', 'Restricciones alimentarias', req.restricciones ?? undefined],
+        ['nota', 'Notas',                      req.descripcion_evento ?? undefined],
       ])}
     </div>
     ${ctaBlock}`, '✨ Una nueva oportunidad')
@@ -347,12 +310,12 @@ function buildEmailHtml(chef: string, req: RequestData, clientName: string): str
         ['🏷️', 'Precio/persona', precioCompacto],
       ])}
       ${detailBlock([
-        ['🕐', 'Hora',                       req.event_time ?? undefined],
-        ['🍴', 'Preferencias gastronómicas', req.cuisine_type ? (CUISINE_LABELS[req.cuisine_type] ?? req.cuisine_type) : undefined],
-        ['🌿', 'Restricciones alimentarias', req.restricciones ?? undefined],
-        ['🎉', 'Ocasión',                    occasionLabel],
-        ['👨‍🍳', 'Tipo de servicio',           SERVICE_TYPE_LABELS[req.service_type] ?? req.service_type],
-        ['📝', 'Notas',                      req.descripcion_evento ?? undefined],
+        ['reloj', 'Hora',                       req.event_time ?? undefined],
+        ['cubiertos', 'Preferencias gastronómicas', req.cuisine_type ? (CUISINE_LABELS[req.cuisine_type] ?? req.cuisine_type) : undefined],
+        ['hoja', 'Restricciones alimentarias', req.restricciones ?? undefined],
+        ['party', 'Ocasión',                    occasionLabel],
+        ['chef-hat', 'Tipo de servicio',           SERVICE_TYPE_LABELS[req.service_type] ?? req.service_type],
+        ['nota', 'Notas',                      req.descripcion_evento ?? undefined],
       ])}
       ${req.mealSlots?.length ? mealSlotsTableChef(req.mealSlots) : ''}
     </div>
