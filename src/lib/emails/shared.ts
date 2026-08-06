@@ -21,6 +21,17 @@ function resolveSiteUrl(): string {
 
 export const SITE_URL = resolveSiteUrl()
 
+// ASSET_BASE_URL — a propósito, SIEMPRE producción, nunca derivado de env
+// vars. Los íconos/fotos del email son archivos estáticos idénticos en
+// cualquier rama; si un email se genera desde un preview deployment
+// (ej. feature/paypal), su dominio (*.vercel.app) suele estar protegido por
+// Vercel Authentication — Gmail/Outlook no pueden autenticarse, así que la
+// imagen se ve rota aunque la URL "exista". Usar siempre el dominio público
+// evita depender de qué rama generó el email. Los links de acción (botones)
+// sí deben ir a SITE_URL — tiene sentido que un preview lleve al dashboard
+// de ese preview.
+export const ASSET_BASE_URL = 'https://www.getcheftoday.com'
+
 // Dorado — mismo tono que GOLD en notify-chefs.ts / client-emails.ts. Se
 // repite acá porque este módulo no importa de esos archivos (evita ciclos).
 const GOLD = '#B8935B'
@@ -42,7 +53,7 @@ const ICON_PATHS: Record<DetailIcon, string> = {
 }
 
 function iconUrl(icon: DetailIcon): string {
-  return `${SITE_URL}/${encodeURI(ICON_PATHS[icon])}`
+  return `${ASSET_BASE_URL}/${encodeURI(ICON_PATHS[icon])}`
 }
 
 // Íconos verdes de la franja de datos clave (Fecha/Comensales/Ciudad/Precio)
@@ -58,7 +69,7 @@ const HERO_ICON_PATHS: Record<HeroIcon, string> = {
 }
 
 function heroIconUrl(icon: HeroIcon): string {
-  return `${SITE_URL}/${encodeURI(HERO_ICON_PATHS[icon])}`
+  return `${ASSET_BASE_URL}/${encodeURI(HERO_ICON_PATHS[icon])}`
 }
 
 // Sello circular "Experiencia Exclusiva" — imagen ya renderizada (texto en
@@ -71,7 +82,7 @@ function heroIconUrl(icon: HeroIcon): string {
 const SEAL_EXCLUSIVE_PATH = 'Iconos email medio/experiencia-exclusiva.png'
 
 function sealImageUrl(): string {
-  return `${SITE_URL}/${encodeURI(SEAL_EXCLUSIVE_PATH)}`
+  return `${ASSET_BASE_URL}/${encodeURI(SEAL_EXCLUSIVE_PATH)}`
 }
 
 // El badge de tier concatena "Experiencia" + el nombre del tier (Casual /
@@ -100,7 +111,7 @@ export function emailFooter(variant: FooterVariant): string {
             <table width="100%" cellpadding="0" cellspacing="0"><tr>
               <td style="border-top:1px solid rgba(184,147,91,0.35);"></td>
               <td width="34" style="text-align:center;padding:0 6px;">
-                <img src="${SITE_URL}/chef-hat-gold.png" width="20" height="20" style="display:block;margin:0 auto;" alt="">
+                <img src="${iconUrl('chef-hat')}" width="20" height="20" style="display:block;margin:0 auto;" alt="">
               </td>
               <td style="border-top:1px solid rgba(184,147,91,0.35);"></td>
             </tr></table>
@@ -318,7 +329,7 @@ export function ctaBand(opts: {
             <td class="ctaIconCell" width="52" valign="middle" style="padding-right:14px;">
               <table cellpadding="0" cellspacing="0"><tr>
                 <td width="36" height="36" align="center" valign="middle" bgcolor="#F0FDF4" style="background-color:#F0FDF4;border-radius:50%;">
-                  <img src="${SITE_URL}/chef-hat-gold.png" width="18" height="18" style="display:block;" alt="">
+                  <img src="${iconUrl('chef-hat')}" width="18" height="18" style="display:block;" alt="">
                 </td>
               </tr></table>
             </td>

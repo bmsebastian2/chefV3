@@ -1,7 +1,7 @@
 'use server'
 
 import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
-import { emailFooter, ctaBand, detailBlock, tierBadge, heroGrid, tierBadgeLabel, greetingBlock, EMAIL_RESPONSIVE_STYLES, SITE_URL } from './shared'
+import { emailFooter, ctaBand, detailBlock, tierBadge, heroGrid, tierBadgeLabel, greetingBlock, EMAIL_RESPONSIVE_STYLES, SITE_URL, ASSET_BASE_URL } from './shared'
 
 export interface MealSlotSummary {
   fecha: string   // 'YYYY-MM-DD'
@@ -85,7 +85,7 @@ function shell(body: string): string {
                 <p style="margin:0;font-size:13px;color:${GOLD};">✨ Experiencias gastronómicas a medida</p>
               </td>
               <td width="200" style="padding:0;line-height:0;font-size:0;">
-                <img src="${SITE_URL}/banner-chef.webp" width="200" height="140" style="display:block;width:200px;height:140px;object-fit:cover;" alt="">
+                <img src="${ASSET_BASE_URL}/banner-chef.webp" width="200" height="140" style="display:block;width:200px;height:140px;object-fit:cover;" alt="">
               </td>
             </tr></table>
           </td>
