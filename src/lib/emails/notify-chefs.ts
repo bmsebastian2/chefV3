@@ -4,7 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
 import { normalizeCity } from '@/lib/maps/normalizeCity'
 import { tierFromBudget, type PriceTier } from '@/lib/pricing'
-import { emailFooter, ctaBand, detailBlock, EMAIL_RESPONSIVE_STYLES } from './shared'
+import { emailFooter, ctaBand, detailBlock, tierBadge, heroGrid, tierBadgeLabel, greetingBlock, EMAIL_RESPONSIVE_STYLES } from './shared'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
@@ -80,26 +80,6 @@ const GOLD = '#B8935B'
 const SCALLOP_TOP_ROW    = scallopRow(true, '#FAFAFA')
 const SCALLOP_BOTTOM_ROW = scallopRow(false, '#FAFAFA')
 
-// Sello circular con texto en arco — vía SVG inline + <textPath>. Es la única
-// forma de lograr texto curvo en HTML, pero el soporte de SVG inline en
-// email es disparejo (Gmail lo renderiza en general; Outlook desktop no).
-// Si no carga, no rompe nada: el chip de tierBadge ya comunica lo mismo.
-function sealBadge(topText: string, bottomText: string): string {
-  return `
-    <svg width="92" height="92" viewBox="0 0 92 92" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="46" cy="46" r="41" fill="none" stroke="${GOLD}" stroke-width="1" stroke-dasharray="2,3"/>
-      <circle cx="46" cy="46" r="34" fill="${CARD_BG}"/>
-      <path id="sealTop" d="M 8,46 A 38,38 0 1,1 84,46" fill="none"/>
-      <path id="sealBottom" d="M 8,46 A 38,38 0 1,0 84,46" fill="none"/>
-      <text font-size="7.5" font-weight="700" fill="${GOLD}" letter-spacing="1.5">
-        <textPath href="#sealTop" startOffset="50%" text-anchor="middle">${topText}</textPath>
-      </text>
-      <text font-size="7.5" font-weight="700" fill="${GOLD}" letter-spacing="1.5">
-        <textPath href="#sealBottom" startOffset="50%" text-anchor="middle">${bottomText}</textPath>
-      </text>
-      <text x="46" y="53" font-size="20" text-anchor="middle">👨‍🍳</text>
-    </svg>`
-}
 
 // ── HTML shell (idéntico al de client-emails) ─────────────────────────────────
 function shell(body: string, subtitle: string = 'Nueva solicitud de servicio'): string {
@@ -155,40 +135,6 @@ function section(title: string, rows: [string, string | undefined][]): string {
     </table>`
 }
 
-// Chip de la experiencia (tier o tipo de servicio), centrado — lo primero
-// que se lee, da contexto de "categoría" antes del detalle línea por línea.
-function tierBadge(label: string): string {
-  return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-      <tr><td align="center">
-        <table cellpadding="0" cellspacing="0"><tr>
-          <td style="border:1px solid ${GOLD};border-radius:20px;padding:7px 18px;background:rgba(184,147,91,0.06);">
-            <span style="font-size:11px;font-weight:700;color:${GOLD};letter-spacing:0.06em;text-transform:uppercase;">👑 ${label}</span>
-          </td>
-        </tr></table>
-      </td></tr>
-    </table>`
-}
-
-// Franja de 4 datos clave en una sola fila, con ícono — los que el chef
-// necesita para decidir en 2 segundos si le interesa la solicitud.
-function heroGrid(cells: [string, string, string][]): string {
-  const n = cells.length
-  return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #E4DCC8;border-radius:14px;overflow:hidden;margin-bottom:20px;">
-      <tr>
-        ${cells.map(([icon, label, value], i) => `
-        <td width="${Math.floor(100 / n)}%" style="padding:20px 8px;text-align:center;${i > 0 ? 'border-left:1px solid #F0EAD8;' : ''}">
-          <div style="width:38px;height:38px;border-radius:50%;background:#F0FDF4;margin:0 auto 8px;">
-            <p style="margin:0;line-height:38px;font-size:16px;">${icon}</p>
-          </div>
-          <p style="margin:0 0 3px;font-size:9px;font-weight:700;color:${GOLD};text-transform:uppercase;letter-spacing:0.06em;">${label}</p>
-          <p style="margin:0;font-size:14px;font-weight:700;color:#18181B;line-height:1.3;">${value}</p>
-        </td>`).join('')}
-      </tr>
-    </table>`
-}
-
 const DAY_NAMES_CHEF: Record<number, string> = {
   1: 'lunes', 2: 'martes', 3: 'miércoles',
   4: 'jueves', 5: 'viernes', 6: 'sábado', 7: 'domingo',
@@ -211,12 +157,7 @@ function buildEmailHtml(chef: string, req: RequestData, clientName: string): str
 
   const badgeLabel = isWeekly
     ? 'Servicio Semanal'
-    : (req.experiencia ? `Experiencia ${req.experiencia}` : (SERVICE_TYPE_LABELS[req.service_type] ?? 'Solicitud'))
-  const sealWords: [string, string] = isWeekly
-    ? ['SERVICIO', 'SEMANAL']
-    : req.experiencia
-      ? ['EXPERIENCIA', req.experiencia.toUpperCase()]
-      : ['NUEVA', 'SOLICITUD']
+    : (req.experiencia ? tierBadgeLabel(req.experiencia) : (SERVICE_TYPE_LABELS[req.service_type] ?? 'Solicitud'))
 
   const headline = isWeekly
     ? `${clientName} está buscando un chef para su día a día.`
@@ -229,23 +170,13 @@ function buildEmailHtml(chef: string, req: RequestData, clientName: string): str
   ].filter((bit): bit is string => Boolean(bit))
   const detailLine = detailBits.length ? `${detailBits.join(', ')}.` : null
 
-  const intro = `
-    <table width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td valign="top">
-        <p style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.25;color:#18181B;">
-          Hola, <em style="font-style:italic;color:${GOLD};">${chef}</em> 👋
-        </p>
-        <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#15803D;line-height:1.4;">
-          ${headline}
-        </p>
-        ${detailLine ? `<p style="margin:0 0 4px;font-size:14px;color:#3F3F46;">${detailLine}</p>` : ''}
-        <p style="margin:0;font-size:14px;color:#3F3F46;">
-          Entrá, mirá el detalle y mandale una propuesta a la altura.
-        </p>
-      </td>
-      <td width="92" valign="top">${sealBadge(sealWords[0], sealWords[1])}</td>
-    </tr></table>
-    <div style="margin-top:20px;">&nbsp;</div>`
+  const intro = greetingBlock({
+    name: chef,
+    headline,
+    detailLine: detailLine ?? undefined,
+    closingLine: 'Entrá, mirá el detalle y mandale una propuesta a la altura.',
+    showSeal: req.experiencia === 'Exclusivo',
+  })
   const ctaBlock = ctaBand({
     title: `¿Listo para ${req.service_type === 'weekly' ? 'sumarte al día a día de' : 'deleitar a'} ${clientName}${req.service_type !== 'weekly' ? ' y sus invitados' : ''}?`,
     subtitle: 'Revisá la solicitud completa y enviá tu propuesta.',
@@ -274,10 +205,10 @@ function buildEmailHtml(chef: string, req: RequestData, clientName: string): str
     <div style="margin-top:8px;">
       ${tierBadge(badgeLabel)}
       ${heroGrid([
-        ['📅', 'Fecha de inicio',  req.event_date_start ? fmtDate(req.event_date_start) : '—'],
+        ['date', 'Fecha de inicio',  req.event_date_start ? fmtDate(req.event_date_start) : '—'],
         ['🔁', 'Frecuencia',       frecuenciaNum ?? '—'],
-        ['📍', 'Ciudad',           req.city ?? '—'],
-        ['👥', 'Personas/comida',  wd?.raciones_por_comida != null ? String(wd.raciones_por_comida) : '—'],
+        ['location', 'Ciudad',           req.city ?? '—'],
+        ['user', 'Personas/comida',  wd?.raciones_por_comida != null ? String(wd.raciones_por_comida) : '—'],
       ])}
       ${detailBlock([
         ['📅', 'Días',                       frecuenciaLabel],
@@ -304,10 +235,10 @@ function buildEmailHtml(chef: string, req: RequestData, clientName: string): str
     <div style="margin-top:8px;">
       ${tierBadge(badgeLabel)}
       ${heroGrid([
-        ['📅', 'Fecha',          fecha ?? '—'],
-        ['👥', 'Comensales',     comensales],
-        ['📍', 'Ciudad',         req.city ?? '—'],
-        ['🏷️', 'Precio/persona', precioCompacto],
+        ['date', 'Fecha',          fecha ?? '—'],
+        ['user', 'Comensales',     comensales],
+        ['location', 'Ciudad',         req.city ?? '—'],
+        ['tag', 'Precio/persona', precioCompacto],
       ])}
       ${detailBlock([
         ['reloj', 'Hora',                       req.event_time ?? undefined],
@@ -636,12 +567,11 @@ function buildBookingConfirmedEmail(opts: {
     new Date(d + 'T00:00:00').toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' })
 
   return shell(`
-    <p style="margin:0 0 20px;font-size:16px;line-height:1.5;">
-      Hola <strong>${opts.chefName}</strong>, ¡tenés una reserva confirmada!
-    </p>
-    <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
-      <strong>${opts.clientName}</strong> confirmó el pago de tu propuesta. El servicio ya está agendado.
-    </p>
+    ${greetingBlock({
+      name: opts.chefName,
+      headline: `${opts.clientName} confirmó el pago de tu propuesta.`,
+      detailLine: 'El servicio ya está agendado.',
+    })}
     ${section('Detalle del servicio', [
       ['Cliente', opts.clientName],
       ['Ciudad',  opts.city ?? undefined],

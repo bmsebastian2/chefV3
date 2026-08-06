@@ -1,7 +1,7 @@
 'use server'
 
 import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
-import { emailFooter, ctaBand, detailBlock, EMAIL_RESPONSIVE_STYLES } from './shared'
+import { emailFooter, ctaBand, detailBlock, tierBadge, heroGrid, tierBadgeLabel, greetingBlock, EMAIL_RESPONSIVE_STYLES } from './shared'
 
 const SITE_URL = (process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
@@ -68,27 +68,6 @@ const SCALLOP_BOTTOM_ROW = scallopRow(false, '#FAFAFA')
 // el verde de marca (CTA, checks): conviven, el dorado es solo ornamento.
 const GOLD = '#B8935B'
 
-// Sello circular con texto en arco — vía SVG inline + <textPath>. Es la única
-// forma de lograr texto curvo en HTML, pero el soporte de SVG inline en
-// email es disparejo (Gmail lo renderiza en general; Outlook desktop no).
-// Si no carga, no rompe nada: el chip de tierBadge ya comunica lo mismo.
-function sealBadge(topText: string, bottomText: string): string {
-  return `
-    <svg width="92" height="92" viewBox="0 0 92 92" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="46" cy="46" r="41" fill="none" stroke="${GOLD}" stroke-width="1" stroke-dasharray="2,3"/>
-      <circle cx="46" cy="46" r="34" fill="${CARD_BG}"/>
-      <path id="sealTopC" d="M 8,46 A 38,38 0 1,1 84,46" fill="none"/>
-      <path id="sealBottomC" d="M 8,46 A 38,38 0 1,0 84,46" fill="none"/>
-      <text font-size="7.5" font-weight="700" fill="${GOLD}" letter-spacing="1.5">
-        <textPath href="#sealTopC" startOffset="50%" text-anchor="middle">${topText}</textPath>
-      </text>
-      <text font-size="7.5" font-weight="700" fill="${GOLD}" letter-spacing="1.5">
-        <textPath href="#sealBottomC" startOffset="50%" text-anchor="middle">${bottomText}</textPath>
-      </text>
-      <text x="46" y="53" font-size="20" text-anchor="middle">✨</text>
-    </svg>`
-}
-
 // ── HTML shell ────────────────────────────────────────────────────────────────
 function shell(body: string): string {
   return `<!DOCTYPE html>
@@ -138,39 +117,6 @@ function trustBlock(): string {
       </td></tr>`).join('')}
     </table>
   </div>`
-}
-
-// Chip de la experiencia (tier o servicio semanal), centrado — mismo
-// lenguaje visual que notify-chefs.ts.
-function tierBadge(label: string): string {
-  return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
-      <tr><td align="center">
-        <table cellpadding="0" cellspacing="0"><tr>
-          <td style="border:1px solid ${GOLD};border-radius:20px;padding:7px 18px;background:rgba(184,147,91,0.06);">
-            <span style="font-size:11px;font-weight:700;color:${GOLD};letter-spacing:0.06em;text-transform:uppercase;">👑 ${label}</span>
-          </td>
-        </tr></table>
-      </td></tr>
-    </table>`
-}
-
-// Franja de 4 datos clave en una sola fila, con ícono.
-function heroGrid(cells: [string, string, string][]): string {
-  const n = cells.length
-  return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #E4DCC8;border-radius:14px;overflow:hidden;margin-bottom:20px;">
-      <tr>
-        ${cells.map(([icon, label, value], i) => `
-        <td width="${Math.floor(100 / n)}%" style="padding:20px 8px;text-align:center;${i > 0 ? 'border-left:1px solid #F0EAD8;' : ''}">
-          <div style="width:38px;height:38px;border-radius:50%;background:#F0FDF4;margin:0 auto 8px;">
-            <p style="margin:0;line-height:38px;font-size:16px;">${icon}</p>
-          </div>
-          <p style="margin:0 0 3px;font-size:9px;font-weight:700;color:${GOLD};text-transform:uppercase;letter-spacing:0.06em;">${label}</p>
-          <p style="margin:0;font-size:14px;font-weight:700;color:#18181B;line-height:1.3;">${value}</p>
-        </td>`).join('')}
-      </tr>
-    </table>`
 }
 
 const OCCASION_LABELS: Record<string, string> = {
@@ -227,20 +173,20 @@ function mealSlotsTable(slots: MealSlotSummary[]): string {
 }
 
 function detailsBlock(r: RequestSummary): string {
-  const badgeLabel = r.semanal ? 'Servicio Semanal' : (r.experiencia ? `Experiencia ${r.experiencia}` : 'Solicitud')
+  const badgeLabel = r.semanal ? 'Servicio Semanal' : (r.experiencia ? tierBadgeLabel(r.experiencia) : 'Solicitud')
 
   const hero: [string, string, string][] = r.semanal
     ? [
-        ['📅', 'Fecha',      r.fecha ?? '—'],
+        ['date', 'Fecha',      r.fecha ?? '—'],
         ['🔁', 'Frecuencia', r.semanal.frecuencia ?? '—'],
-        ['📍', 'Lugar',      r.lugar ?? '—'],
-        ['👥', 'Personas',   r.semanal.personas ?? '—'],
+        ['location', 'Lugar',      r.lugar ?? '—'],
+        ['user', 'Personas',   r.semanal.personas ?? '—'],
       ]
     : [
-        ['📅', 'Fecha',      r.fecha ?? '—'],
-        ['👥', 'Comensales', r.comensales ?? '—'],
-        ['📍', 'Lugar',      r.lugar ?? '—'],
-        ['🏷️', 'Precio',     r.precio ?? '—'],
+        ['date', 'Fecha',      r.fecha ?? '—'],
+        ['user', 'Comensales', r.comensales ?? '—'],
+        ['location', 'Lugar',      r.lugar ?? '—'],
+        ['tag', 'Precio',     r.precio ?? '—'],
       ]
 
   const rows: [string, string, string | undefined][] = r.semanal
@@ -269,25 +215,12 @@ function detailsBlock(r: RequestSummary): string {
 
 // ── Case A: existing user — solicitud activa ───────────────────────────────
 function buildActiveEmail(name: string, summary?: RequestSummary): string {
-  const sealWords: [string, string] = summary?.semanal
-    ? ['SERVICIO', 'SEMANAL']
-    : summary?.experiencia
-      ? ['EXPERIENCIA', summary.experiencia.toUpperCase()]
-      : ['SOLICITUD', 'RECIBIDA']
-
   return shell(`
-    <table width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td valign="top">
-        <p style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.25;color:#18181B;">
-          Hola, <em style="font-style:italic;color:${GOLD};">${name}</em> 👋
-        </p>
-        <p style="margin:0;font-size:16px;font-weight:700;color:#15803D;line-height:1.4;">
-          Tu solicitud fue recibida con éxito.
-        </p>
-      </td>
-      <td width="92" valign="top">${sealBadge(sealWords[0], sealWords[1])}</td>
-    </tr></table>
-    <div style="margin-top:20px;">&nbsp;</div>
+    ${greetingBlock({
+      name,
+      headline: 'Tu solicitud fue recibida con éxito.',
+      showSeal: summary?.experiencia === 'Exclusivo',
+    })}
     ${trustBlock()}
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
       En menos de <strong>30 minutos</strong> empiezan a llegar las propuestas de menú
@@ -318,12 +251,11 @@ function buildMagicLinkEmail(name: string, magicLink: string, tempPassword?: str
     : ''
 
   return shell(`
-    <p style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.25;color:#18181B;">
-      Hola, <em style="font-style:italic;color:${GOLD};">${name}</em> 👋
-    </p>
-    <p style="margin:0 0 24px;font-size:16px;font-weight:700;color:#15803D;line-height:1.4;">
-      Bienvenido a GetChef.
-    </p>
+    ${greetingBlock({
+      name,
+      headline: 'Bienvenido a GetChef.',
+      showSeal: summary?.experiencia === 'Exclusivo',
+    })}
     ${trustBlock()}
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
       Tu solicitud está lista. Hacé click en el botón para ingresar a tu dashboard
@@ -375,13 +307,10 @@ function buildProposalEmail(opts: {
       : 'para tu solicitud de servicio'
 
   return shell(`
-    <p style="margin:0 0 20px;font-size:22px;font-weight:700;line-height:1.3;color:#18181B;">
-      Hola ${opts.clientName}!
-    </p>
-    <p style="margin:0 0 28px;font-size:16px;line-height:1.7;color:#3F3F46;">
-      El/La Chef <strong>${opts.chefName}</strong> te ha enviado
-      <em style="font-style:italic;font-weight:600;">una propuesta</em> ${serviceInfo}
-    </p>
+    ${greetingBlock({
+      name: opts.clientName,
+      headline: `El chef ${opts.chefName} te envió una propuesta ${serviceInfo}.`,
+    })}
     ${ctaBand({
       title: `${opts.chefName} te envió una propuesta`,
       subtitle: 'Revisala antes de que se agote tu fecha.',
@@ -426,13 +355,11 @@ function buildBookingCancelledEmail(opts: {
     new Date(d + 'T00:00:00').toLocaleDateString('es-UY', { day: 'numeric', month: 'long', year: 'numeric' })
 
   return shell(`
-    <p style="margin:0 0 20px;font-size:16px;line-height:1.5;">
-      Hola <strong>${opts.clientName}</strong>, tu reserva fue cancelada.
-    </p>
-    <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
-      Tu chef ya no puede realizar el servicio${opts.eventDate ? ` programado para el <strong>${fmtDate(opts.eventDate)}</strong>` : ''}.
-      Tu pago de <strong>${opts.refundAmount} ${opts.currency}</strong> ya está en proceso de reembolso.
-    </p>
+    ${greetingBlock({
+      name: opts.clientName,
+      headline: 'Tu reserva fue cancelada.',
+      detailLine: `Tu chef ya no puede realizar el servicio${opts.eventDate ? ` programado para el ${fmtDate(opts.eventDate)}` : ''}. Tu pago de ${opts.refundAmount} ${opts.currency} ya está en proceso de reembolso.`,
+    })}
     ${ctaBand({
       title: 'Tu reembolso está en camino',
       subtitle: 'Revisá el estado de tu cuenta cuando quieras.',

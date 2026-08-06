@@ -12,7 +12,7 @@ const GOLD = '#B8935B'
 // Íconos de línea dorados (recoloreados a partir de los originales en negro,
 // mismo tratamiento que chef-hat-gold.png). Los de la carpeta "Iconos email
 // medio/" conviven con chef-hat-gold.png en la raíz de /public.
-export type DetailIcon = 'reloj' | 'cubiertos' | 'hoja' | 'party' | 'chef-hat' | 'nota' | 'cloche'
+export type DetailIcon = 'reloj' | 'cubiertos' | 'hoja' | 'party' | 'chef-hat' | 'nota' | 'cloche' | 'crown'
 
 const ICON_PATHS: Record<DetailIcon, string> = {
   reloj:      'Iconos email medio/icons8-reloj-50-gold.png',
@@ -22,10 +22,49 @@ const ICON_PATHS: Record<DetailIcon, string> = {
   nota:       'Iconos email medio/icons8-nota-50-gold.png',
   cloche:     'Iconos email medio/cloche-gold.png',
   'chef-hat': 'chef-hat-gold.png',
+  crown:      'Iconos email medio/emailcabezera/crown-gold.png',
 }
 
 function iconUrl(icon: DetailIcon): string {
   return `${SITE_URL}/${encodeURI(ICON_PATHS[icon])}`
+}
+
+// Íconos verdes de la franja de datos clave (Fecha/Comensales/Ciudad/Precio)
+// — mismo verde que ya usan los labels (#15803D), distinto del dorado de
+// arriba/abajo porque acá van dentro de círculos verdes tenues.
+export type HeroIcon = 'date' | 'user' | 'location' | 'tag'
+
+const HERO_ICON_PATHS: Record<HeroIcon, string> = {
+  date:     'Iconos email medio/emailcabezera/date-green.png',
+  user:     'Iconos email medio/emailcabezera/user-green.png',
+  location: 'Iconos email medio/emailcabezera/location-green.png',
+  tag:      'Iconos email medio/emailcabezera/tag-green.png',
+}
+
+function heroIconUrl(icon: HeroIcon): string {
+  return `${SITE_URL}/${encodeURI(HERO_ICON_PATHS[icon])}`
+}
+
+// Sello circular "Experiencia Exclusiva" — imagen ya renderizada (texto en
+// arco + ícono), no SVG. Reemplaza el sealBadge() por SVG+textPath del paso
+// anterior: ese era experimental (soporte disparejo de <textPath> en email);
+// esto es un <img> normal, tan confiable como cualquier otro ícono del set.
+// Solo existe para el tier "exclusive" — no hay arte para Casual/Gourmet
+// todavía, así que esos casos (y los emails sin tier, ej. reserva
+// confirmada) van sin sello en vez de inventar uno.
+const SEAL_EXCLUSIVE_PATH = 'Iconos email medio/experiencia-exclusiva.png'
+
+function sealImageUrl(): string {
+  return `${SITE_URL}/${encodeURI(SEAL_EXCLUSIVE_PATH)}`
+}
+
+// El badge de tier concatena "Experiencia" + el nombre del tier (Casual /
+// Gourmet / Exclusivo). "Exclusivo" no concuerda en género con "Experiencia"
+// — se corrige acá para no tocar TIER_DISPLAY/BUDGET_DISPLAY, que también
+// alimentan otras partes de la UI donde "Exclusivo" solo (sin "Experiencia"
+// adelante) sí es correcto.
+export function tierBadgeLabel(tierText: string): string {
+  return tierText === 'Exclusivo' ? 'Experiencia Exclusiva' : `Experiencia ${tierText}`
 }
 
 type FooterVariant = 'chef' | 'client'
@@ -80,8 +119,104 @@ export const EMAIL_RESPONSIVE_STYLES = `
         .detailRow, .detailCell { display:block !important; width:100% !important; }
         .detailCell { border-left:none !important; border-top:1px solid rgba(184,147,91,0.18) !important; }
         .detailRow:first-child .detailCell:first-child { border-top:none !important; }
+
+        .heroCell { display:block !important; width:100% !important; border-left:none !important; border-top:1px solid #F0EAD8 !important; }
+        .heroCell:first-child { border-top:none !important; }
+
+        .greetingTextCell, .greetingSealCell { display:block !important; width:100% !important; }
+        .greetingSealCell { text-align:center !important; padding:14px 0 0 !important; }
       }
     </style>`
+
+// Saludo del cuerpo — nombre en serif itálica dorada, línea verde bold con
+// el motivo (destinatario dependiente: chef o cliente), línea de detalle y
+// cierre opcionales, y el sello circular a la derecha (solo si showSeal).
+// En mobile el sello pasa a centrado debajo del texto (ver EMAIL_RESPONSIVE_STYLES).
+export function greetingBlock(opts: {
+  name: string
+  headline: string
+  detailLine?: string
+  closingLine?: string
+  showSeal?: boolean
+}): string {
+  const sealCell = opts.showSeal
+    ? `<td width="92" class="greetingSealCell" valign="top" align="center">
+         <img src="${sealImageUrl()}" width="90" height="90" style="display:block;" alt="Experiencia Exclusiva">
+       </td>`
+    : ''
+
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td class="greetingTextCell" valign="top">
+        <p style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.25;color:#18181B;">
+          Hola, <em style="font-style:italic;color:${GOLD};">${opts.name}</em> 👋
+        </p>
+        <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#15803D;line-height:1.4;">
+          ${opts.headline}
+        </p>
+        ${opts.detailLine ? `<p style="margin:0 0 4px;font-size:14px;color:#3F3F46;">${opts.detailLine}</p>` : ''}
+        ${opts.closingLine ? `<p style="margin:0;font-size:14px;color:#3F3F46;">${opts.closingLine}</p>` : ''}
+      </td>
+      ${sealCell}
+    </tr></table>
+    <div style="margin-top:20px;">&nbsp;</div>`
+}
+
+// Chip de tier centrado, con corona real (no emoji) — lo primero que se lee.
+export function tierBadge(label: string): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      <tr><td align="center">
+        <table cellpadding="0" cellspacing="0"><tr>
+          <td style="border:1px solid ${GOLD};border-radius:20px;padding:7px 18px 7px 14px;background:rgba(184,147,91,0.06);">
+            <table cellpadding="0" cellspacing="0"><tr>
+              <td style="padding-right:6px;vertical-align:middle;">
+                <img src="${iconUrl('crown')}" width="13" height="13" style="display:block;" alt="">
+              </td>
+              <td style="vertical-align:middle;">
+                <span style="font-size:11px;font-weight:700;color:${GOLD};letter-spacing:0.06em;text-transform:uppercase;">${label}</span>
+              </td>
+            </tr></table>
+          </td>
+        </tr></table>
+      </td></tr>
+    </table>`
+}
+
+type HeroIconOrEmoji = HeroIcon | (string & {})
+
+function isKnownHeroIcon(icon: string): icon is HeroIcon {
+  return icon in HERO_ICON_PATHS
+}
+
+// Franja de 4 datos clave en una sola fila — ícono en círculo verde tenue,
+// label verde en mayúsculas, valor en negrita. Divisor vertical sutil entre
+// columnas; en mobile pasa a 1 columna (ver EMAIL_RESPONSIVE_STYLES), mismo
+// criterio de apilado que el resto de los bloques para no sumar una técnica
+// responsive distinta por sección.
+export function heroGrid(cells: [HeroIconOrEmoji, string, string][]): string {
+  const n = cells.length
+  const iconHtml = (icon: HeroIconOrEmoji): string =>
+    isKnownHeroIcon(icon)
+      ? `<img src="${heroIconUrl(icon)}" width="16" height="16" style="display:block;" alt="">`
+      : `<span style="font-size:14px;">${icon}</span>`
+
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #E4DCC8;border-radius:14px;overflow:hidden;margin-bottom:20px;">
+      <tr>
+        ${cells.map(([icon, label, value], i) => `
+        <td width="${Math.floor(100 / n)}%" class="heroCell" style="padding:20px 8px;text-align:center;${i > 0 ? 'border-left:1px solid #F0EAD8;' : ''}">
+          <table cellpadding="0" cellspacing="0" style="margin:0 auto 8px;"><tr>
+            <td width="38" height="38" align="center" valign="middle" bgcolor="#F0FDF4" style="background-color:#F0FDF4;border-radius:50%;">
+              ${iconHtml(icon)}
+            </td>
+          </tr></table>
+          <p style="margin:0 0 3px;font-size:9px;font-weight:700;color:#15803D;text-transform:uppercase;letter-spacing:0.06em;">${label}</p>
+          <p style="margin:0;font-size:14px;font-weight:700;color:#18181B;line-height:1.3;">${value}</p>
+        </td>`).join('')}
+      </tr>
+    </table>`
+}
 
 // Icono real (DetailIcon) o, mientras no exista un asset que le quede bien
 // a un campo (ej. "Días"/"Total de comidas" del servicio semanal), un
