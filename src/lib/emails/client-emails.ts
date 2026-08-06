@@ -217,7 +217,7 @@ function buildActiveEmail(name: string, summary?: RequestSummary): string {
     ${greetingBlock({
       name,
       headline: 'Tu solicitud fue recibida con éxito.',
-      showSeal: summary?.experiencia === 'Exclusivo',
+      tier: summary?.experiencia,
     })}
     ${trustBlock()}
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
@@ -252,7 +252,7 @@ function buildMagicLinkEmail(name: string, magicLink: string, tempPassword?: str
     ${greetingBlock({
       name,
       headline: 'Bienvenido a GetChef.',
-      showSeal: summary?.experiencia === 'Exclusivo',
+      tier: summary?.experiencia,
     })}
     ${trustBlock()}
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">

@@ -173,7 +173,7 @@ function buildEmailHtml(chef: string, req: RequestData, clientName: string): str
     headline,
     detailLine: detailLine ?? undefined,
     closingLine: 'Entrá, mirá el detalle y mandale una propuesta a la altura.',
-    showSeal: req.experiencia === 'Exclusivo',
+    tier: req.experiencia,
   })
   const ctaBlock = ctaBand({
     title: `¿Listo para ${req.service_type === 'weekly' ? 'sumarte al día a día de' : 'deleitar a'} ${clientName}${req.service_type !== 'weekly' ? ' y sus invitados' : ''}?`,
