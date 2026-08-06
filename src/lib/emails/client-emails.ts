@@ -104,22 +104,6 @@ function shell(body: string, subtitle: string = 'Experiencias gastronómicas a m
 }
 
 
-function trustBlock(): string {
-  const items = [
-    'Chefs verificados y evaluados',
-    'Propuestas de menú a medida',
-    'Pago protegido hasta el día del servicio',
-  ]
-  return `<div style="background:#F0FDF4;border:1px solid #DCFCE7;border-radius:8px;padding:14px 20px;margin:20px 0;">
-    <table width="100%" cellpadding="0" cellspacing="0">
-      ${items.map((item) => `
-      <tr><td style="padding:4px 0;font-size:13px;color:#166534;">
-        <span style="color:#16A34A;font-weight:700;margin-right:8px;">✓</span>${item}
-      </td></tr>`).join('')}
-    </table>
-  </div>`
-}
-
 const OCCASION_LABELS: Record<string, string> = {
   birthday:          'Cumpleaños',
   family_reunion:    'Reunión Familiar',
@@ -222,7 +206,6 @@ function buildActiveEmail(name: string, summary?: RequestSummary): string {
       headline: 'Tu solicitud fue recibida con éxito.',
       tier: summary?.experiencia,
     })}
-    ${trustBlock()}
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
       En menos de <strong>30 minutos</strong> empiezan a llegar las propuestas de menú
       diseñadas para tu evento. Puedes seguir el estado desde tu dashboard.
@@ -257,7 +240,6 @@ function buildMagicLinkEmail(name: string, magicLink: string, tempPassword?: str
       headline: 'Bienvenido a GetChef.',
       tier: summary?.experiencia,
     })}
-    ${trustBlock()}
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#3F3F46;">
       Tu solicitud está lista. Hacé click en el botón para ingresar a tu dashboard
       y ver cómo avanza — sin contraseña, en un solo click.
