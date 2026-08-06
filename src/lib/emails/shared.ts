@@ -72,24 +72,11 @@ function heroIconUrl(icon: HeroIcon): string {
   return `${ASSET_BASE_URL}/${encodeURI(HERO_ICON_PATHS[icon])}`
 }
 
-// Sello circular "Experiencia Exclusiva" — imagen ya renderizada (texto en
-// arco + ícono), no SVG. Reemplaza el sealBadge() por SVG+textPath de un
-// paso anterior: ese era experimental (soporte disparejo de <textPath> en
-// email); esto es un <img> normal, tan confiable como cualquier otro ícono.
-// Solo existe arte para el tier "exclusive" — Casual/Gourmet usan un sello
-// alternativo más simple (tierFallbackSeal, sin texto en arco).
-const SEAL_EXCLUSIVE_PATH = 'Iconos email medio/experiencia-exclusiva.png'
-
-function sealImageUrl(): string {
-  return `${ASSET_BASE_URL}/${encodeURI(SEAL_EXCLUSIVE_PATH)}`
-}
-
-// Sello alternativo para Casual/Gourmet (no hay arte dedicado como el de
-// Exclusiva): círculo con borde punteado + ícono de cloche + texto chico
-// derecho (sin curva — nada de <textPath>, mismo criterio anti-experimental
-// que el resto del rediseño). Mismo footprint de 90×90 que el sello real
-// para que el layout del saludo no salte entre tiers.
-function tierFallbackSeal(tierLabel: string): string {
+// Sello circular de tier — círculo con borde punteado + ícono de cloche +
+// texto chico recto (sin curva, nada de <textPath>: reemplaza al sello con
+// imagen "Experiencia Exclusiva" de un paso anterior, que se veía chico y
+// sin estilo propio). Mismo diseño para los 3 tiers, cambia solo el texto.
+function tierSeal(tierLabel: string): string {
   return `
     <table cellpadding="0" cellspacing="0"><tr>
       <td width="90" height="90" align="center" valign="middle" style="border:1px dashed ${GOLD};border-radius:50%;">
@@ -171,23 +158,20 @@ export const EMAIL_RESPONSIVE_STYLES = `
 
 // Saludo del cuerpo — nombre en serif itálica dorada, línea verde bold con
 // el motivo (destinatario dependiente: chef o cliente), línea de detalle y
-// cierre opcionales, y el sello circular a la derecha (solo si showSeal).
+// cierre opcionales, y el sello circular de tier a la derecha (solo si hay tier).
 // En mobile el sello pasa a centrado debajo del texto (ver EMAIL_RESPONSIVE_STYLES).
 export function greetingBlock(opts: {
   name: string
   headline: string
   detailLine?: string
   closingLine?: string
-  // Nombre del tier ya mapeado a texto (ej. "Exclusivo", "Gourmet", "Casual")
-  // — "Exclusivo" muestra el sello real, cualquier otro valor no vacío
-  // muestra el sello alternativo, y sin tier no se muestra nada.
+  // Nombre del tier ya mapeado a texto (ej. "Exclusivo", "Gourmet", "Casual").
+  // Sin tier (weekly, reserva confirmada, etc.) no se muestra sello.
   tier?: string | null
 }): string {
   const sealCell = opts.tier
     ? `<td width="92" class="greetingSealCell" valign="top" align="center">
-         ${opts.tier === 'Exclusivo'
-            ? `<img src="${sealImageUrl()}" width="90" height="90" style="display:block;" alt="Experiencia Exclusiva">`
-            : tierFallbackSeal(opts.tier)}
+         ${tierSeal(opts.tier)}
        </td>`
     : ''
 
