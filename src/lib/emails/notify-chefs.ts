@@ -4,7 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
 import { normalizeCity } from '@/lib/maps/normalizeCity'
 import { tierFromBudget, type PriceTier } from '@/lib/pricing'
-import { emailFooter, ctaBand, detailBlock, tierBadge, heroGrid, tierBadgeLabel, greetingBlock, EMAIL_RESPONSIVE_STYLES, SITE_URL, ASSET_BASE_URL } from './shared'
+import { emailFooter, ctaBand, detailBlock, tierBadge, heroGrid, tierBadgeLabel, greetingBlock, iconUrl, EMAIL_RESPONSIVE_STYLES, SITE_URL, ASSET_BASE_URL } from './shared'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
   single:   'Servicio Único',
@@ -80,7 +80,7 @@ const SCALLOP_BOTTOM_ROW = scallopRow(false, '#FAFAFA')
 
 
 // ── HTML shell (idéntico al de client-emails) ─────────────────────────────────
-function shell(body: string, subtitle: string = 'Nueva solicitud de servicio'): string {
+function shell(body: string, subtitle: string = 'Una nueva oportunidad'): string {
   return `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">${EMAIL_RESPONSIVE_STYLES}</head>
@@ -92,10 +92,13 @@ function shell(body: string, subtitle: string = 'Nueva solicitud de servicio'): 
         <tr>
           <td style="background:#18181B;padding:0;">
             <table width="100%" cellpadding="0" cellspacing="0"><tr>
-              <td style="padding:28px 16px 28px 32px;" valign="middle">
-                <p style="margin:0 0 12px;font-size:22px;font-weight:700;color:#22c55e;letter-spacing:-0.5px;">GetChef</p>
+              <td style="padding:24px 16px 28px 32px;text-align:center;" valign="middle">
+                <img src="${iconUrl('chef-hat')}" width="34" height="34" style="display:block;margin:0 auto 8px;" alt="">
+                <p style="margin:0 0 12px;font-size:22px;font-weight:700;letter-spacing:-0.5px;">
+                  <span style="color:#22c55e;">Get</span><span style="color:#ffffff;">Chef</span>
+                </p>
                 <div style="height:1px;font-size:0;line-height:1px;margin:0 0 12px;background:rgba(184,147,91,0.4);">&nbsp;</div>
-                <p style="margin:0;font-size:13px;color:${GOLD};">${subtitle}</p>
+                <p style="margin:0;font-size:13px;color:${GOLD};">✦ ${subtitle}</p>
               </td>
               <td width="200" style="padding:0;line-height:0;font-size:0;">
                 <img src="${ASSET_BASE_URL}/banner-chef.webp" width="200" height="140" style="display:block;width:200px;height:140px;object-fit:cover;" alt="">
@@ -216,7 +219,7 @@ function buildEmailHtml(chef: string, req: RequestData, clientName: string): str
         ['nota', 'Notas',                      req.descripcion_evento ?? undefined],
       ])}
     </div>
-    ${ctaBlock}`, '✨ Una nueva oportunidad')
+    ${ctaBlock}`, 'Una nueva oportunidad')
   }
 
   // single / multiple — mismo lenguaje visual que el detailsBlock del email
@@ -248,7 +251,7 @@ function buildEmailHtml(chef: string, req: RequestData, clientName: string): str
       ])}
       ${req.mealSlots?.length ? mealSlotsTableChef(req.mealSlots) : ''}
     </div>
-    ${ctaBlock}`, '✨ Una nueva oportunidad')
+    ${ctaBlock}`, 'Una nueva oportunidad')
 }
 
 const DAYS_ES_CHEF     = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']

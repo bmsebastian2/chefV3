@@ -52,7 +52,7 @@ const ICON_PATHS: Record<DetailIcon, string> = {
   crown:      'Iconos email medio/emailcabezera/crown-gold.png',
 }
 
-function iconUrl(icon: DetailIcon): string {
+export function iconUrl(icon: DetailIcon): string {
   return `${ASSET_BASE_URL}/${encodeURI(ICON_PATHS[icon])}`
 }
 
