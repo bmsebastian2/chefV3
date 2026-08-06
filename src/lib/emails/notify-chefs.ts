@@ -4,6 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
 import { normalizeCity } from '@/lib/maps/normalizeCity'
 import { tierFromBudget, type PriceTier } from '@/lib/pricing'
+import { emailFooter, ctaBand, EMAIL_RESPONSIVE_STYLES } from './shared'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
@@ -104,7 +105,7 @@ function sealBadge(topText: string, bottomText: string): string {
 function shell(body: string, subtitle: string = 'Nueva solicitud de servicio'): string {
   return `<!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">${EMAIL_RESPONSIVE_STYLES}</head>
 <body style="margin:0;padding:0;background:#FAFAFA;font-family:'Helvetica Neue',Arial,sans-serif;color:#18181B;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAFAFA;padding:40px 0;">
     <tr><td align="center">
@@ -125,63 +126,13 @@ function shell(body: string, subtitle: string = 'Nueva solicitud de servicio'): 
           </td>
         </tr>
         <tr><td style="padding:32px;">${body}</td></tr>
-        <tr>
-          <td style="padding:0 32px 24px;">
-            <table width="100%" cellpadding="0" cellspacing="0"><tr>
-              <td style="border-top:1px solid rgba(184,147,91,0.35);"></td>
-              <td width="34" style="text-align:center;font-size:14px;padding:0 6px;">👨‍🍳</td>
-              <td style="border-top:1px solid rgba(184,147,91,0.35);"></td>
-            </tr></table>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:0 32px 20px;">
-            <p style="margin:0;font-size:12px;color:#A1A1AA;text-align:center;">
-              Recibiste este email porque tu perfil está activo en GetChef.<br>
-              Podés ajustar tus preferencias de solicitud desde tu dashboard.
-            </p>
-          </td>
-        </tr>
+        ${emailFooter('chef')}
         ${SCALLOP_BOTTOM_ROW}
       </table>
     </td></tr>
   </table>
 </body>
 </html>`
-}
-
-function cta(href: string, label: string): string {
-  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;">
-  <tr><td align="center">
-    <a href="${href}" style="display:inline-block;background:#22c55e;color:#18181B;font-weight:700;font-size:15px;text-decoration:none;padding:14px 32px;border-radius:8px;">${label}</a>
-  </td></tr>
-</table>`
-}
-
-// Banda final: ícono + pregunta motivadora + CTA, en vez del botón suelto —
-// mismo lenguaje visual que client-emails.ts.
-function ctaBand(question: string, subtext: string, href: string, label: string): string {
-  return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#F0EAD8;border-radius:14px;margin-top:8px;">
-      <tr>
-        <td style="padding:18px 12px 18px 18px;">
-          <table cellpadding="0" cellspacing="0"><tr>
-            <td style="width:44px;vertical-align:top;">
-              <div style="width:36px;height:36px;border-radius:50%;background:#F0FDF4;text-align:center;line-height:36px;font-size:16px;">👨‍🍳</div>
-            </td>
-            <td style="vertical-align:top;">
-              <p style="margin:0;font-size:14px;font-weight:700;color:#18181B;line-height:1.4;">${question}</p>
-              <p style="margin:2px 0 0;font-size:12px;color:#71717A;">${subtext}</p>
-            </td>
-          </tr></table>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:0 18px 18px;">
-          <a href="${href}" style="display:block;text-align:center;background:#166534;color:#ffffff;font-weight:700;font-size:14px;text-decoration:none;padding:12px 22px;border-radius:8px;">${label} →</a>
-        </td>
-      </tr>
-    </table>`
 }
 
 function section(title: string, rows: [string, string | undefined][]): string {
@@ -332,12 +283,12 @@ function buildEmailHtml(chef: string, req: RequestData, clientName: string): str
       <td width="92" valign="top">${sealBadge(sealWords[0], sealWords[1])}</td>
     </tr></table>
     <div style="margin-top:20px;">&nbsp;</div>`
-  const ctaBlock = ctaBand(
-    `¿Listo para ${req.service_type === 'weekly' ? 'sumarte al día a día de' : 'deleitar a'} ${clientName}${req.service_type !== 'weekly' ? ' y sus invitados' : ''}?`,
-    'Revisá la solicitud completa y enviá tu propuesta.',
-    `${SITE_URL}/dashboard/requests`,
-    'Ver solicitud y proponer'
-  )
+  const ctaBlock = ctaBand({
+    title: `¿Listo para ${req.service_type === 'weekly' ? 'sumarte al día a día de' : 'deleitar a'} ${clientName}${req.service_type !== 'weekly' ? ' y sus invitados' : ''}?`,
+    subtitle: 'Revisá la solicitud completa y enviá tu propuesta.',
+    buttonLabel: 'Ver solicitud y proponer',
+    href: `${SITE_URL}/dashboard/requests`,
+  })
 
   if (req.service_type === 'weekly') {
     const wd = req.weeklyDetails
@@ -735,7 +686,12 @@ function buildBookingConfirmedEmail(opts: {
       ['Fecha',   opts.eventDate ? fmtDate(opts.eventDate) : undefined],
       ['Monto',   `${opts.totalAmount} ${opts.currency}`],
     ])}
-    ${cta(`${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard/requests`, 'Ver mi reserva')}
+    ${ctaBand({
+      title: `¡Reserva confirmada con ${opts.clientName}!`,
+      subtitle: 'El servicio ya está agendado — revisá los detalles.',
+      buttonLabel: 'Ver mi reserva',
+      href: `${SITE_URL}/dashboard/requests`,
+    })}
   `, 'Reserva confirmada')
 }
 
