@@ -3,7 +3,23 @@
 // para que "aplicar a todos los emails" sea automático, no copiar/pegar.
 // Sin 'use server': no exporta server actions, son helpers de HTML puro.
 
-const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
+// SITE_URL — nunca debe resolver a localhost: los emails los abre Gmail/
+// Outlook desde afuera, no desde tu máquina. NEXT_PUBLIC_APP_URL suele quedar
+// seteada a localhost en dev (para otros usos); por eso, si apunta a
+// localhost, se prioriza NEXT_PUBLIC_URL (la prod real: getcheftoday.com).
+// Mismo patrón que resolveAppUrl() en payment-guards.ts — ahí el problema ya
+// se había dado con los webhooks de pago.
+function resolveSiteUrl(): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (appUrl && !appUrl.includes('localhost')) return appUrl.replace(/\/$/, '')
+
+  const fallbackUrl = process.env.NEXT_PUBLIC_URL
+  if (fallbackUrl) return fallbackUrl.replace(/\/$/, '')
+
+  return (appUrl ?? 'http://localhost:3000').replace(/\/$/, '')
+}
+
+export const SITE_URL = resolveSiteUrl()
 
 // Dorado — mismo tono que GOLD en notify-chefs.ts / client-emails.ts. Se
 // repite acá porque este módulo no importa de esos archivos (evita ciclos).
