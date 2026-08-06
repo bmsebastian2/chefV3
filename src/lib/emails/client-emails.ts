@@ -57,7 +57,7 @@ function scallopRow(flip: boolean, color: string): string {
 // Fondo crema del card ("mate" alrededor del contenido, como un sello/ticket
 // real). El perforado de arriba/abajo revela este mismo color de página
 // (#FAFAFA se mantiene detrás, sin cambios en el resto del sitio).
-const CARD_BG = '#F5F0E3'
+const CARD_BG = '#FBF8F1'
 
 const SCALLOP_TOP_ROW    = scallopRow(true, '#FAFAFA')
 const SCALLOP_BOTTOM_ROW = scallopRow(false, '#FAFAFA')
@@ -74,7 +74,7 @@ function shell(body: string, subtitle: string = 'Experiencias gastronómicas a m
 <body style="margin:0;padding:0;background:#FAFAFA;font-family:'Helvetica Neue',Arial,sans-serif;color:#18181B;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAFAFA;padding:40px 0;">
     <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:${CARD_BG};border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(24,24,27,0.12);">
+      <table width="560" cellpadding="0" cellspacing="0" style="background-color:${CARD_BG};border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(24,24,27,0.12);">
         ${SCALLOP_TOP_ROW}
         <tr>
           <td style="background:#18181B;padding:0;">
@@ -87,13 +87,13 @@ function shell(body: string, subtitle: string = 'Experiencias gastronómicas a m
                 <div style="height:1px;font-size:0;line-height:1px;margin:0 0 12px;background:rgba(184,147,91,0.4);">&nbsp;</div>
                 <p style="margin:0;font-size:13px;color:${GOLD};">✦ ${subtitle}</p>
               </td>
-              <td width="200" height="170" bgcolor="#18181B" background="${ASSET_BASE_URL}/banner-chef.webp" style="width:200px;height:170px;padding:0;background-image:url('${ASSET_BASE_URL}/banner-chef.webp');background-size:cover;background-position:center center;background-repeat:no-repeat;">
+              <td width="200" height="170" bgcolor="#18181B" background="${ASSET_BASE_URL}/banner-chef.webp" style="width:200px;height:170px;padding:0;background-image:linear-gradient(to right, #18181B 0%, rgba(24,24,27,0) 35%), url('${ASSET_BASE_URL}/banner-chef.webp');background-size:cover, cover;background-position:center, center center;background-repeat:no-repeat, no-repeat;">
                 &nbsp;
               </td>
             </tr></table>
           </td>
         </tr>
-        <tr><td style="padding:32px;">${body}</td></tr>
+        <tr><td background="${ASSET_BASE_URL}/${encodeURI('Iconos email medio/leaves-gold.png')}" style="background-image:url('${ASSET_BASE_URL}/${encodeURI('Iconos email medio/leaves-gold-flip.png')}'), url('${ASSET_BASE_URL}/${encodeURI('Iconos email medio/leaves-gold.png')}');background-repeat:no-repeat, no-repeat;background-position:left top, left bottom;background-size:220px auto, 260px auto;padding:32px;">${body}</td></tr>
         ${emailFooter('client')}
         ${SCALLOP_BOTTOM_ROW}
       </table>
