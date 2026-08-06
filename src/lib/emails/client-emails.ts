@@ -79,7 +79,7 @@ function shell(body: string, subtitle: string = 'Experiencias gastronómicas a m
         <tr>
           <td style="background:#18181B;padding:0;">
             <table width="100%" cellpadding="0" cellspacing="0"><tr>
-              <td style="padding:24px 16px 28px 32px;text-align:center;" valign="middle">
+              <td height="170" style="height:170px;padding:24px 16px 28px 32px;text-align:center;" valign="middle">
                 <img src="${iconUrl('chef-hat')}" width="34" height="34" style="display:block;margin:0 auto 8px;" alt="">
                 <p style="margin:0 0 12px;font-size:22px;font-weight:700;letter-spacing:-0.5px;">
                   <span style="color:#22c55e;">Get</span><span style="color:#ffffff;">Chef</span>
@@ -87,8 +87,8 @@ function shell(body: string, subtitle: string = 'Experiencias gastronómicas a m
                 <div style="height:1px;font-size:0;line-height:1px;margin:0 0 12px;background:rgba(184,147,91,0.4);">&nbsp;</div>
                 <p style="margin:0;font-size:13px;color:${GOLD};">✦ ${subtitle}</p>
               </td>
-              <td width="200" style="padding:0;line-height:0;font-size:0;">
-                <img src="${ASSET_BASE_URL}/banner-chef.webp" width="200" height="140" style="display:block;width:200px;height:140px;object-fit:cover;" alt="">
+              <td width="200" height="170" style="height:170px;padding:0;line-height:0;font-size:0;">
+                <img src="${ASSET_BASE_URL}/banner-chef.webp" width="200" height="170" style="display:block;width:200px;height:170px;object-fit:cover;" alt="">
               </td>
             </tr></table>
           </td>
