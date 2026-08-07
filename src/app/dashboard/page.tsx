@@ -7,7 +7,6 @@ import { ActiveToggle } from '@/components/dashboard/ActiveToggle'
 import { ChefRatingSummary } from '@/components/dashboard/ChefRatingSummary'
 
 type CompletionRow = {
-  account_done: boolean
   bio_done: boolean
   location_done: boolean
   profile_picture_done: boolean
@@ -23,7 +22,6 @@ const ITEMS: {
   href: string | null
   desc: string
 }[] = [
-  { key: 'account_done',        label: 'Mi Cuenta',                   href: null,                          desc: 'Registro completado.' },
   { key: 'bio_done',            label: 'Bio Profesional',              href: '/dashboard/perfil',           desc: 'Escribe tu presentación y bio.' },
   { key: 'location_done',       label: 'Ubicación',                   href: '/dashboard/ubicacion',        desc: 'Añade tu ciudad y país.' },
   { key: 'profile_picture_done',label: 'Foto de Perfil',              href: '/dashboard/fotos',            desc: 'Sube tu foto de perfil.' },
@@ -60,7 +58,7 @@ export default async function DashboardPage() {
     ] = await Promise.all([
       supabase
         .from('profile_completion')
-        .select('account_done, bio_done, location_done, profile_picture_done, gallery_done, menus_done, payments_done, request_prefs_done')
+        .select('bio_done, location_done, profile_picture_done, gallery_done, menus_done, payments_done, request_prefs_done')
         .eq('chef_id', chefProfile.id)
         .single(),
       supabase
