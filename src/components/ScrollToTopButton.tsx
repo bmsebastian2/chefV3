@@ -33,7 +33,14 @@ export function ScrollToTopButton() {
   return (
     <button
       type="button"
-      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      onClick={() => {
+        // Limpiamos el hash: si no, la URL queda en algo como "/#chefs" y un
+        // segundo click en un link "#chefs" no dispara scroll (el hash no cambió).
+        if (window.location.hash) {
+          history.replaceState(null, "", window.location.pathname + window.location.search);
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }}
       aria-label="Volver arriba"
       inert={!visible}
       className={`group fixed z-40 flex h-14 w-14 items-center justify-center rounded-full border border-border bg-white text-foreground shadow-[0_8px_30px_-6px_rgba(24,24,27,0.18)] outline-none ring-accent/40 transition-all duration-300 ease-out hover:scale-110 hover:border-accent/40 focus-visible:ring-4 active:scale-95 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-[calc(1rem+env(safe-area-inset-right))] ${

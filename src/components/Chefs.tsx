@@ -139,7 +139,7 @@ export function Chefs({ chefs }: { chefs: ChefCard[] }) {
   }`;
 
   return (
-    <section id="chefs" ref={sectionRef} className="relative overflow-hidden bg-white py-28">
+    <section id="chefs" ref={sectionRef} className="relative overflow-hidden bg-white py-28 scroll-mt-20">
       {/* Animaciones del detalle (respetan prefers-reduced-motion) */}
       <style>{`
         @keyframes chefPanelIn {

@@ -190,7 +190,7 @@ export function Hero() {
               </Link>
               <Link
                 href="#chefs"
-                className="group/ghost inline-flex items-center justify-center sm:justify-start gap-2 h-12 px-2 text-sm font-semibold text-amber-700 transition-colors hover:text-amber-800"
+                className="group/ghost inline-flex items-center justify-center sm:justify-start gap-2 h-12 px-2 rounded-lg text-sm font-semibold text-amber-700 outline-none transition-colors hover:text-amber-800 focus-visible:ring-2 focus-visible:ring-amber-300/60"
               >
                 <span className="border-b border-amber-500/40 group-hover/ghost:border-amber-700 transition-colors">
                   Ver nuestros chefs
