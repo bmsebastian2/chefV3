@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/utils/supabase/admin'
-import { Banknote, Undo2, ShieldCheck, CheckCircle2, Wallet, ClipboardList, Users, AlertTriangle } from 'lucide-react'
+import { Banknote, Undo2, ShieldCheck, CheckCircle2, Wallet, ClipboardList, Users, AlertTriangle, Settings } from 'lucide-react'
 import { formatPrice } from '@/lib/format'
 import { ProcessButton } from './ProcessButton'
 import { PaymentRefChip } from './PaymentRefChip'
@@ -9,6 +9,7 @@ import { AllPaymentsSection, type AllPayment } from './AllPaymentsSection'
 import { RequestsMonitorSection } from './RequestsMonitorSection'
 import { ChefsManagementSection } from './ChefsManagementSection'
 import { ReleasedPayoutsSection } from './ReleasedPayoutsSection'
+import { CommissionRateSection } from './CommissionRateSection'
 import { AdminTabs } from './AdminTabs'
 
 type Payout = {
@@ -98,6 +99,14 @@ export default async function AdminPage({
     .from('bookings')
     .select('id', { count: 'exact', head: true })
     .eq('payout_status', 'released')
+
+  // ── Comisión vigente (para la pestaña Config) ──
+  const { data: platformConfig } = await admin
+    .from('platform_config')
+    .select('commission_rate')
+    .eq('id', 1)
+    .single()
+  const commissionRatePercent = Number((((platformConfig?.commission_rate as number) ?? 0.15) * 100).toFixed(2))
 
   return (
     <main className="max-w-4xl mx-auto px-6 pt-12 pb-16">
@@ -269,6 +278,12 @@ export default async function AdminPage({
             label: 'Chefs',
             icon: <Users className="w-4 h-4" />,
             content: <ChefsManagementSection />,
+          },
+          {
+            id: 'config',
+            label: 'Config',
+            icon: <Settings className="w-4 h-4" />,
+            content: <CommissionRateSection currentRatePercent={commissionRatePercent} />,
           },
         ]}
       />

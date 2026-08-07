@@ -617,3 +617,45 @@ export async function cancelChefBookingsAndRefund(
   revalidatePath('/admin')
   return { cancelled: bookings.length - failed, failed }
 }
+
+// ── Cambiar la comisión de la plataforma (rige para bookings NUEVOS) ─────────
+// create_booking_for_payment lee la tasa de platform_config al momento de
+// crear cada booking y la congela ahí — bookings ya existentes no se tocan.
+// El PIN es un segundo factor fijo (env var), además del rol admin: esto mueve
+// plata de todos los bookings futuros, así que el gate es más duro que el
+// resto de las acciones admin.
+export async function updateCommissionRate(
+  newRatePercent: number,
+  pin: string,
+): Promise<{ error?: string }> {
+  const { adminId, error: authError } = await requireAdminId()
+  if (authError) return { error: authError }
+
+  const expectedPin = process.env.COMMISSION_RATE_PIN
+  if (!expectedPin) {
+    console.error('updateCommissionRate: COMMISSION_RATE_PIN no está configurado')
+    return { error: 'No se pudo verificar el PIN' }
+  }
+  if (pin !== expectedPin) return { error: 'PIN incorrecto' }
+
+  if (!Number.isFinite(newRatePercent) || newRatePercent <= 0 || newRatePercent >= 100) {
+    return { error: 'La comisión debe ser un porcentaje entre 0 y 100' }
+  }
+
+  const admin = createAdminClient()
+  const { error } = await admin.rpc('update_commission_rate', {
+    p_new_rate: newRatePercent / 100,
+    p_admin_id: adminId,
+  })
+  if (error) {
+    if (error.message?.includes('invalid_commission_rate')) {
+      return { error: 'Tasa inválida' }
+    }
+    console.error('updateCommissionRate:', error)
+    return { error: 'No se pudo actualizar la comisión' }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/dashboard/menus')
+  return {}
+}

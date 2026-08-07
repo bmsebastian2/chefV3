@@ -22,6 +22,15 @@ export default async function MenuEditorPage({
 
   if (!chef) redirect('/dashboard')
 
+  // Tasa vigente de comisión (ver MIGRATION_commission_rate_config.sql) — solo
+  // para el preview "cuánto te queda" de la tabla de precios.
+  const { data: platformConfig } = await supabase
+    .from('platform_config')
+    .select('commission_rate')
+    .eq('id', 1)
+    .single()
+  const commissionRatePercent = Number((((platformConfig?.commission_rate as number) ?? 0.15) * 100).toFixed(2))
+
   const { data: dishes } = await supabase
     .from('dishes')
     .select('id, name, course')
@@ -98,6 +107,7 @@ export default async function MenuEditorPage({
       availableDishes={availableDishes}
       initialData={initialData}
       userId={user.id}
+      commissionRatePercent={commissionRatePercent}
     />
   )
 }

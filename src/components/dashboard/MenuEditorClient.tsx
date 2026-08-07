@@ -57,10 +57,14 @@ type CourseMap      = Record<Course, CourseSetting>
 type AvailableDish  = { id: string; name: string; course: Course }
 
 type Props = {
-  menuId:          string | null
-  availableDishes: AvailableDish[]
-  initialData?:    MenuEditData
-  userId:          string
+  menuId:               string | null
+  availableDishes:      AvailableDish[]
+  initialData?:         MenuEditData
+  userId:               string
+  // Tasa vigente de platform_config (ver MIGRATION_commission_rate_config.sql),
+  // como porcentaje (15 = 15%). Solo para el preview "cuánto te queda" — el
+  // cálculo real corre en create_booking_for_payment al momento de la reserva.
+  commissionRatePercent: number
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -124,7 +128,7 @@ function PriceInput({
 
 // ── Main component ───────────────────────────────────────────────────────────
 
-export function MenuEditorClient({ menuId, availableDishes, initialData, userId }: Props) {
+export function MenuEditorClient({ menuId, availableDishes, initialData, userId, commissionRatePercent }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -152,17 +156,18 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
   // ── Price table ──────────────────────────────────────────────────────────
 
   const priceRows = useMemo(() => {
-    const p2   = parseFloat(price2)   || 0
-    const p36  = parseFloat(price36)  || 0
-    const p720 = parseFloat(price720) || 0
+    const p2      = parseFloat(price2)   || 0
+    const p36     = parseFloat(price36)  || 0
+    const p720    = parseFloat(price720) || 0
+    const chefCut = 1 - commissionRatePercent / 100
     return Array.from({ length: maxGuests - minGuests + 1 }, (_, i) => {
       const n         = minGuests + i
       const perPerson = n === 2 ? p2 : n <= 6 ? p36 : p720
       const total     = Math.round(perPerson * n * 100) / 100
-      const chef      = Math.round(total * 0.80 * 100) / 100
+      const chef      = Math.round(total * chefCut * 100) / 100
       return { n, chef, total }
     })
-  }, [minGuests, maxGuests, price2, price36, price720])
+  }, [minGuests, maxGuests, price2, price36, price720, commissionRatePercent])
 
   // ── Cuisine type toggle ───────────────────────────────────────────────────
 
@@ -625,7 +630,7 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId 
               </tbody>
             </table>
             <p className="px-4 py-2.5 text-xs text-zinc-400 border-t border-zinc-50 leading-relaxed">
-              * GetChef cobra una comisión del 20% sobre el importe total del servicio.
+              * GetChef cobra una comisión del {commissionRatePercent}% sobre el importe total del servicio.
             </p>
           </div>
         </div>
