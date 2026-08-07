@@ -28,8 +28,8 @@ const NAV = [
     label: "Propuesta Gastronómica",
     icon: UtensilsCrossed,
     children: [
-      { href: "/dashboard/menus", label: "Menús" },
       { href: "/dashboard/platos", label: "Platos" },
+      { href: "/dashboard/menus", label: "Menús" },
     ],
   },
   { href: "/dashboard/request-settings", label: "Config. Solicitudes", icon: SlidersHorizontal },
