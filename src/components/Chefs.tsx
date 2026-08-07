@@ -62,7 +62,7 @@ function ChefPhoto({
   );
 }
 
-function Stars({ rating, className = "" }: { rating: number; className?: string }) {
+export function Stars({ rating, className = "" }: { rating: number; className?: string }) {
   return (
     <span className={`flex items-center gap-1 ${className}`}>
       {Array.from({ length: 5 }).map((_, i) => (
@@ -81,7 +81,7 @@ function Stars({ rating, className = "" }: { rating: number; className?: string 
 // reseñas reales que lo respalden (el count es el único gate).
 // - count > 0  → estrellas + "4.9 · 12 reseñas"
 // - count = 0  → chip "Chef nuevo" (se ignora rating.average por completo)
-function RatingLine({
+export function RatingLine({
   rating,
   size = "sm",
 }: {

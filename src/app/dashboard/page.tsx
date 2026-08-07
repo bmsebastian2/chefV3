@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { CheckCircle2, Circle, ArrowRight, Wallet } from 'lucide-react'
 import { ActiveToggle } from '@/components/dashboard/ActiveToggle'
+import { ChefRatingSummary } from '@/components/dashboard/ChefRatingSummary'
 
 type CompletionRow = {
   account_done: boolean
@@ -39,7 +40,7 @@ export default async function DashboardPage() {
 
   const [{ data: userData }, { data: chefProfile }] = await Promise.all([
     supabase.from('users').select('first_name').eq('id', user.id).single(),
-    supabase.from('chef_profiles').select('id, is_active').eq('user_id', user.id).single(),
+    supabase.from('chef_profiles').select('id, is_active, rating_avg, rating_count').eq('user_id', user.id).single(),
   ])
 
   let completion: CompletionRow | null = null
@@ -182,6 +183,15 @@ export default async function DashboardPage() {
                 <h1 className="font-serif text-2xl md:text-3xl font-semibold text-zinc-900 leading-tight">
                   {firstName}
                 </h1>
+                {chefProfile && (
+                  <div className="mt-1.5">
+                    <ChefRatingSummary
+                      chefId={chefProfile.id}
+                      average={chefProfile.rating_avg ?? 0}
+                      count={chefProfile.rating_count ?? 0}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
