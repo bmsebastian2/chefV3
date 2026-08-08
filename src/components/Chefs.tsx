@@ -30,6 +30,16 @@ function initialOf(name: string): string {
   return name.trim().charAt(0).toUpperCase() || "C";
 }
 
+// Fisher-Yates: cada chef destacado tiene la misma chance de aparecer primero.
+function shuffle<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 // Foto del chef con fallback elegante cuando no hay imagen (chef sin foto subida).
 function ChefPhoto({
   src,
@@ -270,6 +280,14 @@ export function Chefs({ chefs }: { chefs: ChefCard[] }) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<ChefCard | null>(null);
   const [revealed, setRevealed] = useState(false);
+  // Arranca con el orden del servidor (para que la hidratación coincida) y
+  // recién mezcla en el cliente tras montar — Math.random() en el initializer
+  // de useState correría también en SSR y produciría un mismatch de hidratación.
+  const [shuffledChefs, setShuffledChefs] = useState(chefs);
+  useEffect(() => {
+    setShuffledChefs(shuffle(chefs));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reveal al entrar en viewport (equivale al ScrollTrigger start "top 75%"),
   // sin el forced reflow de ScrollTrigger ni el peso de GSAP.
@@ -335,7 +353,7 @@ export function Chefs({ chefs }: { chefs: ChefCard[] }) {
           aria-label="Chefs destacados"
           className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [-webkit-mask-image:linear-gradient(to_right,#000_86%,transparent)] [mask-image:linear-gradient(to_right,#000_86%,transparent)] md:mx-0 md:grid md:snap-none md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0 md:[-webkit-mask-image:none] md:[mask-image:none] lg:grid-cols-4"
         >
-          {chefs.map((chef, idx) => (
+          {shuffledChefs.map((chef, idx) => (
             <div
               key={chef.id}
               className={`w-[85%] shrink-0 snap-start sm:w-[55%] md:w-auto md:shrink-0 ${cardCls}`}
