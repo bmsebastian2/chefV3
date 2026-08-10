@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Plus, UtensilsCrossed } from 'lucide-react'
 import { createClient } from '@/utils/supabase/server'
 import { MenuEditorClient } from '@/components/dashboard/MenuEditorClient'
 import type { Course } from '@/app/dashboard/platos/actions'
@@ -43,6 +45,31 @@ export default async function MenuEditorPage({
     name: d.name as string,
     course: d.course as Course,
   }))
+
+  if (id === 'nuevo' && availableDishes.length === 0) {
+    return (
+      <div className="p-6 md:p-10 max-w-2xl">
+        <div className="bg-white border border-zinc-100 rounded-2xl shadow-sm py-16 text-center">
+          <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <UtensilsCrossed className="text-zinc-300" size={28} />
+          </div>
+          <h3 className="font-serif text-lg font-semibold text-zinc-800 mb-2">
+            Creá tus platos primero
+          </h3>
+          <p className="text-sm text-zinc-400 mb-7 max-w-xs mx-auto leading-relaxed">
+            Un menú se arma combinando tus platos. Cargá al menos uno antes de crear tu primer menú.
+          </p>
+          <Link
+            href="/dashboard/platos"
+            className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-accent/20"
+          >
+            <Plus size={15} />
+            Crear mis platos
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   let initialData: MenuEditData | undefined
 

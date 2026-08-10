@@ -514,11 +514,26 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId,
                       <div className="fixed inset-0 z-10" onClick={() => setOpenPicker(null)} />
                       <div className="absolute left-0 top-7 z-20 min-w-56 rounded-xl border border-zinc-100 bg-white shadow-xl py-1">
                         {notAdded.length === 0 ? (
-                          <p className="px-4 py-3 text-sm text-zinc-400">
-                            {courseDishes.length === 0
-                              ? "No tenés platos de este tipo. Agregálos en la sección Platos."
-                              : "Ya agregaste todos los platos disponibles."}
-                          </p>
+                          courseDishes.length === 0 ? (
+                            <div className="px-4 py-3">
+                              <p className="text-sm text-zinc-400 mb-2">
+                                No tenés platos de este tipo todavía.
+                              </p>
+                              <a
+                                href="/dashboard/platos"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
+                              >
+                                Crear plato en una pestaña nueva
+                                <ChevronRight size={12} />
+                              </a>
+                            </div>
+                          ) : (
+                            <p className="px-4 py-3 text-sm text-zinc-400">
+                              Ya agregaste todos los platos disponibles.
+                            </p>
+                          )
                         ) : (
                           notAdded.map(d => (
                             <button
