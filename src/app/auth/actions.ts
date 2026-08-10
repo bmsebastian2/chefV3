@@ -1,6 +1,5 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
@@ -8,6 +7,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { TERMS_VERSION } from '@/lib/terms'
 import { validatePassword } from '@/lib/password'
 import { validateEmail } from '@/lib/email-validation'
+import { sendChefConfirmationEmail } from '@/lib/emails/chef-emails'
 
 // Errores de acceso que puede provocar quien intenta entrar. Se mapea por
 // `code` y no por `message`: el código es estable entre versiones de Supabase,
@@ -156,8 +156,7 @@ export async function registerChef(
   }
 
   try {
-    // Clear any stale session (e.g. left over from a wizard client signup)
-    // so the subsequent signUp starts from a clean state.
+    // Clear any stale session (e.g. left over from a wizard client signup).
     await supabase.auth.signOut()
 
     // 1. Validate phone uniqueness BEFORE creating the auth user.
@@ -174,27 +173,40 @@ export async function registerChef(
       return { error: 'Este número de teléfono ya está registrado' }
     }
 
-    // 2. Create user in Supabase Auth (only after validations pass)
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // 2. Create user in Supabase Auth vía Admin API — mismo patrón que el
+    //    alta de cliente del wizard (registerOrVerifyClient): sin sesión,
+    //    sin depender del toggle "Confirm email" del dashboard. El email de
+    //    confirmación lo mandamos nosotros (Resend, con marca) en vez del
+    //    genérico de Supabase.
+    const admin = createAdminClient()
+    const { data: adminData, error: adminError } = await admin.auth.admin.createUser({
       email,
       password,
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-      },
+      email_confirm: false,
+      user_metadata: { full_name: `${firstName} ${firstSurname}`.trim() },
     })
 
-    if (authError || !authData.user) {
-      return { error: authError?.message || 'Error al crear cuenta' }
+    if (adminError) {
+      const msg = adminError.message?.toLowerCase() ?? ''
+      if (msg.includes('already registered') || msg.includes('already been registered')) {
+        return { error: 'Este correo ya tiene una cuenta. Por favor inicia sesión.' }
+      }
+      console.error('Error creating admin user:', adminError)
+      return { error: 'Error al crear cuenta' }
     }
 
-    const userId = authData.user.id
+    if (!adminData.user) {
+      return { error: 'Error al crear cuenta' }
+    }
+
+    const userId = adminData.user.id
 
     // 3. Register chef profile via RPC.
     //    register_chef solo es ejecutable por service_role (ver
     //    MIGRATION_lockdown_register_functions.sql) porque confía en
     //    p_user_id sin validarlo contra auth.uid() — se llama con el
     //    cliente admin, nunca con el anon/cookies.
-    const { error: rpcError } = await createAdminClient()
+    const { error: rpcError } = await admin
       .rpc('register_chef', {
         p_user_id:        userId,
         p_email:          email,
@@ -215,17 +227,25 @@ export async function registerChef(
       return { error: errorMessage }
     }
 
-    // Si Supabase Auth exige confirmar el email ("Confirm email" en el
-    // dashboard), signUp() no devuelve sesión hasta que el chef confirme.
-    // El perfil ya quedó creado por el RPC arriba (corre con service role,
-    // no depende de sesión) — acá solo evitamos mandarlo a /dashboard sin
-    // estar logueado, cosa que el middleware rebotaría sin explicación.
-    if (!authData.session) {
-      return { needsEmailConfirmation: true, email }
+    // 4. Enlace de confirmación + email de marca (Resend). El chef ya eligió
+    //    su propia contraseña más arriba, a diferencia del cliente del wizard.
+    const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+      type:    'magiclink',
+      email,
+      options: { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/dashboard` },
+    })
+
+    if (linkError) {
+      console.error('Error generating confirmation link:', linkError)
+      return { error: 'Cuenta creada, pero no pudimos enviar el email de confirmación. Contactanos.' }
     }
 
-    revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    const confirmationLink = linkData?.properties?.action_link
+    if (confirmationLink) {
+      await sendChefConfirmationEmail({ email, name: firstName, confirmationLink })
+    }
+
+    return { needsEmailConfirmation: true, email }
   } catch (error) {
     // Re-throw Next.js redirect errors
     if (error instanceof Error && 'digest' in error && String((error as any).digest).includes('NEXT_REDIRECT')) {
