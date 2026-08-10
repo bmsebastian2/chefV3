@@ -8,6 +8,7 @@ import { CounterRow } from "@/components/ui/stepper";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { registerOrVerifyClient } from "@/app/wizard/actions";
+import { validateEmail } from "@/lib/email-validation";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Check, X, Fish, Leaf, ChefHat, Layers, Store, Pizza, Croissant, Soup, Cake, PartyPopper, Heart, Briefcase, Smile, HelpCircle, Sun, Moon, Home, Users, ChevronDown } from "lucide-react";
@@ -759,15 +760,14 @@ function PhoneInput({
   );
 }
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const email = data.contact?.email ?? "";
-  const emailValid  = EMAIL_REGEX.test(email);
+  const emailCheck = validateEmail(email);
+  const emailValid  = emailCheck.valid;
   const { local: phoneLocal } = parsePhone(data.contact?.phone ?? '');
   const phoneValid  = phoneLocal.replace(/\D/g, '').length >= 6;
   const isValid = !!(data.contact?.name && emailValid && phoneValid);
@@ -838,7 +838,7 @@ export function StepContact({ data, updateData, onFinalSubmit }: StepProps) {
           onBlur={() => blur("email")}
         />
         {touched.email && !emailValid && (
-          <p className="text-xs text-red-500 mt-1">Ingresá un email válido.</p>
+          <p className="text-xs text-red-500 mt-1">{emailCheck.message}</p>
         )}
       </div>
 
@@ -1499,7 +1499,8 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const email       = data.contact?.email ?? "";
-  const emailValid  = EMAIL_REGEX.test(email);
+  const emailCheck  = validateEmail(email);
+  const emailValid  = emailCheck.valid;
   const { local: phoneLocal } = parsePhone(data.contact?.phone ?? "");
   const phoneValid  = phoneLocal.replace(/\D/g, "").length >= 6;
   const isValid     = !!(data.contact?.name && emailValid && phoneValid);
@@ -1561,7 +1562,7 @@ export function StepContact1({ data, updateData, onFinalSubmit }: StepProps) {
           ].join(" ")}
         />
         {touched.email && !emailValid && (
-          <p className="text-xs text-red-500 mt-1.5">Ingresá un email válido</p>
+          <p className="text-xs text-red-500 mt-1.5">{emailCheck.message}</p>
         )}
       </div>
 

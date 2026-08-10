@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { registerChef } from "@/app/auth/actions";
 import { PASSWORD_REQUIREMENTS, validatePassword } from "@/lib/password";
+import { validateEmail } from "@/lib/email-validation";
 import { Country } from "country-state-city";
 
 interface FormData {
@@ -55,7 +56,11 @@ export default function ChefRegistrationPage() {
         const emailToCheck = name === "email" ? value : formData.email;
         const confirmEmailToCheck =
           name === "confirmEmail" ? value : formData.confirmEmail;
-        if (
+
+        const formatCheck = validateEmail(emailToCheck);
+        if (emailToCheck && !formatCheck.valid) {
+          setEmailError(formatCheck.message);
+        } else if (
           emailToCheck &&
           confirmEmailToCheck &&
           emailToCheck !== confirmEmailToCheck
@@ -81,6 +86,12 @@ export default function ChefRegistrationPage() {
     emailError === "";
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const formatCheck = validateEmail(formData.email);
+    if (!formatCheck.valid) {
+      setEmailError(formatCheck.message);
+      e.preventDefault();
+      return;
+    }
     if (formData.email !== formData.confirmEmail) {
       setEmailError("Los emails no coinciden");
       e.preventDefault();
@@ -141,6 +152,50 @@ export default function ChefRegistrationPage() {
                 onClick={() => (window.location.href = "/chef-registration")}
               >
                 Intentar de nuevo
+              </Button>
+            </Link>
+            <div className="w-px h-12 bg-[#22c55e]/35 mx-auto mt-10" />
+          </div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
+
+  /* ── Email confirmation pending ── */
+  if (state?.needsEmailConfirmation) {
+    return (
+      <main className="flex min-h-screen flex-col bg-[#0C0C0C]">
+        <Header />
+        <div className="flex-1 flex items-center justify-center px-6 py-20">
+          <div className="max-w-md w-full text-center">
+            <div className="w-px h-12 bg-[#22c55e]/35 mx-auto mb-10" />
+            <div className="w-14 h-14 border border-[#22c55e]/35 rounded-full flex items-center justify-center mx-auto mb-8">
+              <svg
+                className="w-6 h-6 text-[#22c55e]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <h2 className="font-serif text-3xl font-semibold text-white mb-4 tracking-tight">
+              Confirmá tu email
+            </h2>
+            <p className="font-sans text-zinc-500 mb-10 leading-relaxed text-sm">
+              Te mandamos un enlace de confirmación a{" "}
+              <span className="text-zinc-300">{state.email}</span>. Revisá tu
+              bandeja de entrada (y spam) y hacé clic en el enlace para activar tu cuenta.
+            </p>
+            <Link href="/">
+              <Button className="w-full bg-[#22c55e] hover:bg-[#16a34a] text-black border-none h-12 text-xs font-sans font-semibold tracking-[0.2em] uppercase rounded-none transition-all">
+                Volver al inicio
               </Button>
             </Link>
             <div className="w-px h-12 bg-[#22c55e]/35 mx-auto mt-10" />

@@ -11,6 +11,7 @@ import { sendClientEmails, RequestSummary } from '@/lib/emails/client-emails'
 import { canonicalCity } from '@/lib/maps/cities'
 import { TERMS_VERSION } from '@/lib/terms'
 import { getPriceRange } from '@/lib/pricing'
+import { validateEmail } from '@/lib/email-validation'
 
 // País a persistir en la solicitud. Se deriva del countryCode (ISO) capturado en
 // el wizard con country-state-city — MISMA fuente que chef_profiles.country, así
@@ -106,6 +107,11 @@ export async function registerOrVerifyClient(
   tempPassword?: string
   confirmationLink?: string
 }> {
+  const { valid, message } = validateEmail(email)
+  if (!valid) {
+    return { error: message }
+  }
+
   const supabase = await createClient()
 
   // 1. Buscar por email

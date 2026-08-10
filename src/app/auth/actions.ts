@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { TERMS_VERSION } from '@/lib/terms'
 import { validatePassword } from '@/lib/password'
+import { validateEmail } from '@/lib/email-validation'
 
 // Errores de acceso que puede provocar quien intenta entrar. Se mapea por
 // `code` y no por `message`: el código es estable entre versiones de Supabase,
@@ -124,7 +125,10 @@ export async function requestPasswordReset(
   return { error: '', success: true }
 }
 
-export async function registerChef(prevState: { error: string } | null, formData: FormData) {
+export async function registerChef(
+  prevState: { error?: string; needsEmailConfirmation?: boolean; email?: string } | null,
+  formData: FormData
+) {
   const supabase = await createClient()
 
   const email = formData.get('email') as string
@@ -139,6 +143,11 @@ export async function registerChef(prevState: { error: string } | null, formData
 
   if (!acceptTerms) {
     return { error: 'Debes aceptar los términos y condiciones para registrarte' }
+  }
+
+  const emailCheck = validateEmail(email || '')
+  if (!emailCheck.valid) {
+    return { error: emailCheck.message }
   }
 
   const { valid, message } = validatePassword(password || '')
@@ -204,6 +213,15 @@ export async function registerChef(prevState: { error: string } | null, formData
         errorMessage = 'Este número de teléfono ya está registrado'
       }
       return { error: errorMessage }
+    }
+
+    // Si Supabase Auth exige confirmar el email ("Confirm email" en el
+    // dashboard), signUp() no devuelve sesión hasta que el chef confirme.
+    // El perfil ya quedó creado por el RPC arriba (corre con service role,
+    // no depende de sesión) — acá solo evitamos mandarlo a /dashboard sin
+    // estar logueado, cosa que el middleware rebotaría sin explicación.
+    if (!authData.session) {
+      return { needsEmailConfirmation: true, email }
     }
 
     revalidatePath('/', 'layout')
