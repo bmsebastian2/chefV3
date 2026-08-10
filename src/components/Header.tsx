@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, LayoutDashboard } from "lucide-react";
+import { Menu, X, LayoutDashboard, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginDialog } from "../components/auth/login-dialog";
 import { InstallButton } from "@/components/InstallButton";
@@ -12,8 +12,37 @@ const navLinks = [
   { href: "/#chefs", label: "Nuestros Chefs" },
   { href: "/sobre-nosotros", label: "Sobre nosotros" },
   { href: "/#contacto", label: "Contacto" },
-  { href: "/chef-registration", label: "Registro de Chef" },
 ];
+
+// Mismo patrón de loading que ProposalsLink/BackLink: useState manual seteado
+// en el click, sin "apagarlo" — el componente se desmonta al completarse la
+// navegación. `closeOnClick` es false en el drawer mobile a propósito: si
+// cerráramos el drawer al instante el spinner nunca llegaría a verse.
+function ChefRegistrationLink({
+  className,
+  closeOnClick,
+}: {
+  className: string;
+  closeOnClick?: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <Link
+      href="/chef-registration"
+      aria-disabled={loading}
+      onClick={(e) => {
+        if (loading) { e.preventDefault(); return; }
+        setLoading(true);
+        closeOnClick?.();
+      }}
+      className={`${className} ${loading ? "pointer-events-none opacity-60" : ""}`}
+    >
+      {loading && <Loader2 className="w-3.5 h-3.5 animate-spin inline-block mr-1.5 align-[-2px]" />}
+      Registro de Chef
+    </Link>
+  );
+}
 
 // Enlace real (<a href>) en vez de window.location.assign: hace una navegación
 // de verdad que corre middleware + layout en el server y no puede "fallar en
@@ -134,6 +163,7 @@ export function Header() {
               {l.label}
             </Link>
           ))}
+          <ChefRegistrationLink className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors duration-200 relative after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full" />
         </nav>
 
         {/* CTA group */}
@@ -185,6 +215,7 @@ export function Header() {
                   {l.label}
                 </Link>
               ))}
+              <ChefRegistrationLink className="text-lg font-medium text-zinc-800 hover:text-accent transition-colors" />
             </nav>
 
             <div className="mt-auto flex flex-col gap-3">
