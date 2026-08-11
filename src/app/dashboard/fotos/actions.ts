@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
+import { MIN_GALLERY_PHOTOS } from '@/lib/chefRequirements'
 
 const STORAGE_BUCKET = 'chef-photos'
 const MAX_GALLERY = 12
@@ -102,7 +103,7 @@ export async function addGalleryPhoto(
 
   await supabase
     .from('profile_completion')
-    .update({ gallery_done: true, updated_at: new Date().toISOString() })
+    .update({ gallery_done: (count ?? 0) + 1 >= MIN_GALLERY_PHOTOS, updated_at: new Date().toISOString() })
     .eq('chef_id', chefId)
 
   revalidatePath('/dashboard')
@@ -145,7 +146,7 @@ export async function deleteGalleryPhoto(
 
   await supabase
     .from('profile_completion')
-    .update({ gallery_done: (count ?? 0) > 0, updated_at: new Date().toISOString() })
+    .update({ gallery_done: (count ?? 0) >= MIN_GALLERY_PHOTOS, updated_at: new Date().toISOString() })
     .eq('chef_id', chefId)
 
   revalidatePath('/dashboard')

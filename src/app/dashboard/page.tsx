@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { CheckCircle2, Circle, ArrowRight, Wallet } from 'lucide-react'
 import { ActiveToggle } from '@/components/dashboard/ActiveToggle'
 import { ChefRatingSummary } from '@/components/dashboard/ChefRatingSummary'
+import { MIN_PROFILE_PHOTOS, MIN_GALLERY_PHOTOS, MIN_MENUS, MIN_DISHES } from '@/lib/chefRequirements'
 
 type CompletionRow = {
   bio_done: boolean
@@ -100,10 +101,10 @@ export default async function DashboardPage() {
     profilePhotoUrl = photoData?.url ?? null
     heldBookings = heldCount ?? 0
     meetsRequirements =
-      (profilePhotoCount ?? 0) >= 1 &&
-      (galleryCount ?? 0) >= 12 &&
-      (menuCount ?? 0) >= 3 &&
-      (dishCount ?? 0) >= 6
+      (profilePhotoCount ?? 0) >= MIN_PROFILE_PHOTOS &&
+      (galleryCount ?? 0) >= MIN_GALLERY_PHOTOS &&
+      (menuCount ?? 0) >= MIN_MENUS &&
+      (dishCount ?? 0) >= MIN_DISHES
   }
 
   const doneCount = ITEMS.filter((item) => completion?.[item.key]).length

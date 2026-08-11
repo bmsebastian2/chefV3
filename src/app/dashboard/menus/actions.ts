@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import type { Course } from '@/app/dashboard/platos/actions'
+import { MIN_MENUS } from '@/lib/chefRequirements'
 
 export type SelectionMode = 'all_inclusive' | 'choose_1' | 'choose_2' | 'choose_3'
 
@@ -121,9 +122,15 @@ export async function saveMenu(input: SaveMenuInput): Promise<{ error?: string; 
     .single()
 
   if (chef) {
+    const { count } = await supabase
+      .from('chef_menus')
+      .select('*', { count: 'exact', head: true })
+      .eq('chef_id', chef.id)
+      .eq('is_active', true)
+
     await supabase
       .from('profile_completion')
-      .update({ menus_done: true, updated_at: new Date().toISOString() })
+      .update({ menus_done: (count ?? 0) >= MIN_MENUS, updated_at: new Date().toISOString() })
       .eq('chef_id', chef.id)
   }
 
@@ -156,7 +163,7 @@ export async function deleteMenu(menuId: string): Promise<{ error?: string }> {
 
     await supabase
       .from('profile_completion')
-      .update({ menus_done: (count ?? 0) > 0, updated_at: new Date().toISOString() })
+      .update({ menus_done: (count ?? 0) >= MIN_MENUS, updated_at: new Date().toISOString() })
       .eq('chef_id', chef.id)
   }
 
