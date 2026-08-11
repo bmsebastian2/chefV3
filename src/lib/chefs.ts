@@ -4,93 +4,48 @@ import type { ChefCard } from "@/components/Chefs";
 export const FEATURED_CHEFS_LIMIT = 8;
 export const CHEFS_PAGE_SIZE = 24;
 
-// Fila cruda del query (chef_profiles + join a users).
-type ChefProfileRow = {
+// Fila cruda de la RPC get_public_chef_cards (ver MIGRATION_public_listing_qualification.sql).
+// La RPC ya filtra por is_active + admin_blocked + email confirmado + foto de
+// perfil + galería/menús/platos mínimos (vista qualified_chef_profiles) —
+// acá solo mapeamos al shape de ChefCard.
+type ChefCardRow = {
   id: string;
+  name: string | null;
   tagline: string | null;
   city: string | null;
   country: string | null;
   experience_years: number | null;
+  is_pro: boolean | null;
+  image_url: string | null;
   rating_avg: number | null;
   rating_count: number | null;
-  is_pro: boolean | null;
-  users: {
-    first_name: string | null;
-    first_surname: string | null;
-    second_surname: string | null;
-    avatar_url: string | null;
-  } | null;
 };
 
-const CHEF_CARD_SELECT = `
-  id,
-  tagline,
-  city,
-  country,
-  experience_years,
-  rating_avg,
-  rating_count,
-  is_pro,
-  users:user_id ( first_name, first_surname, second_surname, avatar_url )
-`;
-
-type AdminClient = ReturnType<typeof createAdminClient>;
-
-// La foto de perfil vive en chef_photos (tabla aparte). Si esa lectura falla
-// (hoy le falta el GRANT a service_role), degradamos a avatar_url / placeholder
-// sin romper el listado. Cuando se otorgue el permiso, las fotos aparecen solas.
-async function rowsToChefCards(admin: AdminClient, rows: ChefProfileRow[]): Promise<ChefCard[]> {
-  const photoByChef = new Map<string, string>();
-  const ids = rows.map((r) => r.id);
-  if (ids.length) {
-    const { data: photos } = await admin
-      .from("chef_photos")
-      .select("chef_id, url, type")
-      .in("chef_id", ids)
-      .eq("type", "profile");
-    for (const p of photos ?? []) photoByChef.set(p.chef_id, p.url);
-  }
-
-  return rows.map((row) => {
-    const u = row.users;
-    const name =
-      [u?.first_name, u?.first_surname, u?.second_surname]
-        .filter(Boolean)
-        .join(" ")
-        .trim() || "Chef";
-
-    return {
-      id: row.id,
-      name,
-      tagline: row.tagline,
-      city: row.city,
-      country: row.country,
-      experienceYears: row.experience_years,
-      isPro: !!row.is_pro,
-      imageUrl: photoByChef.get(row.id) ?? u?.avatar_url ?? null,
-      // count = reseñas reales (chef_profiles.rating_count, mantenido por trigger).
-      // Si es 0, RatingLine ignora rating_avg y muestra "Chef nuevo".
-      rating: { average: Number(row.rating_avg ?? 0), count: row.rating_count ?? 0 },
-    };
-  });
+function rowToChefCard(row: ChefCardRow): ChefCard {
+  return {
+    id: row.id,
+    name: row.name || "Chef",
+    tagline: row.tagline,
+    city: row.city,
+    country: row.country,
+    experienceYears: row.experience_years,
+    isPro: !!row.is_pro,
+    imageUrl: row.image_url,
+    // count = reseñas reales (chef_profiles.rating_count, mantenido por trigger).
+    // Si es 0, RatingLine ignora rating_avg y muestra "Chef nuevo".
+    rating: { average: Number(row.rating_avg ?? 0), count: row.rating_count ?? 0 },
+  };
 }
 
-// Service-role: la lectura pública de chef_profiles está bloqueada por RLS
-// (solo el dueño ve su perfil). Corre solo en servidor, selecciona únicamente
-// campos públicos — nunca email/phone.
 export async function getFeaturedChefs(limit: number = FEATURED_CHEFS_LIMIT): Promise<ChefCard[]> {
   const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("chef_profiles")
-    .select(CHEF_CARD_SELECT)
-    .eq("is_active", true)
-    .eq("admin_blocked", false)
-    .order("is_pro", { ascending: false })
-    .order("rating_avg", { ascending: false })
-    .limit(limit);
+  const { data, error } = await admin.rpc("get_public_chef_cards", {
+    p_limit: limit,
+    p_offset: 0,
+  });
 
   if (error || !data) return [];
-  return rowsToChefCards(admin, data as unknown as ChefProfileRow[]);
+  return (data as ChefCardRow[]).map(rowToChefCard);
 }
 
 // Página del directorio /chefs. Pide pageSize+1 filas para saber si hay
@@ -101,18 +56,14 @@ export async function getChefsPage(
 ): Promise<{ chefs: ChefCard[]; hasNextPage: boolean }> {
   const admin = createAdminClient();
   const offset = (page - 1) * pageSize;
-  const { data, error } = await admin
-    .from("chef_profiles")
-    .select(CHEF_CARD_SELECT)
-    .eq("is_active", true)
-    .eq("admin_blocked", false)
-    .order("is_pro", { ascending: false })
-    .order("rating_avg", { ascending: false })
-    .range(offset, offset + pageSize);
+  const { data, error } = await admin.rpc("get_public_chef_cards", {
+    p_limit: pageSize + 1,
+    p_offset: offset,
+  });
 
   if (error || !data) return { chefs: [], hasNextPage: false };
-  const rows = data as unknown as ChefProfileRow[];
+  const rows = data as ChefCardRow[];
   const hasNextPage = rows.length > pageSize;
-  const chefs = await rowsToChefCards(admin, rows.slice(0, pageSize));
+  const chefs = rows.slice(0, pageSize).map(rowToChefCard);
   return { chefs, hasNextPage };
 }
