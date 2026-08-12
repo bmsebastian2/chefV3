@@ -38,6 +38,7 @@ function NavItems({
   fotosCompleted,
   perfilCompleted,
   ubicacionCompleted,
+  cartaCompleted,
 }: {
   openSections: string[];
   toggle: (label: string) => void;
@@ -46,25 +47,30 @@ function NavItems({
   fotosCompleted: boolean;
   perfilCompleted: boolean;
   ubicacionCompleted: boolean;
+  cartaCompleted: boolean;
 }) {
   return (
     <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
       {NAV.map((item) => {
         if ("href" in item && item.href) {
           const active = pathname === item.href;
+          const done = item.href === "/dashboard/menus" && cartaCompleted;
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                active
-                  ? "bg-accent/10 text-accent"
-                  : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
+                done
+                  ? "text-accent font-semibold"
+                  : active
+                    ? "bg-accent/10 text-accent font-medium"
+                    : "text-zinc-600 font-medium hover:bg-zinc-100 hover:text-zinc-900"
               }`}
             >
-              <item.icon className="w-4 h-4 flex-shrink-0" />
-              {item.label}
+              <item.icon className={`w-4 h-4 flex-shrink-0 ${done ? "text-accent" : ""}`} />
+              <span className="flex-1">{item.label}</span>
+              {done && <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0" />}
             </Link>
           );
         }
@@ -247,6 +253,7 @@ export function Sidebar({
   fotosCompleted,
   perfilCompleted,
   ubicacionCompleted,
+  cartaCompleted,
 }: {
   userName: string;
   userFullName: string;
@@ -254,6 +261,7 @@ export function Sidebar({
   fotosCompleted: boolean;
   perfilCompleted: boolean;
   ubicacionCompleted: boolean;
+  cartaCompleted: boolean;
 }) {
   const pathname = usePathname();
   const [openSections, setOpenSections] = useState<string[]>(["Perfil"]);
@@ -272,6 +280,7 @@ export function Sidebar({
     fotosCompleted,
     perfilCompleted,
     ubicacionCompleted,
+    cartaCompleted,
   };
 
   const sidebarInner = (

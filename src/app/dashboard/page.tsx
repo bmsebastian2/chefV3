@@ -6,6 +6,7 @@ import { CheckCircle2, Circle, ArrowRight, Wallet } from 'lucide-react'
 import { ActiveToggle } from '@/components/dashboard/ActiveToggle'
 import { ChefRatingSummary } from '@/components/dashboard/ChefRatingSummary'
 import { MIN_PROFILE_PHOTOS, MIN_GALLERY_PHOTOS, MIN_MENUS, MIN_DISHES } from '@/lib/chefRequirements'
+import { countMenusWithDishes } from '@/lib/menuCompletion'
 
 type CompletionRow = {
   bio_done: boolean
@@ -55,7 +56,7 @@ export default async function DashboardPage() {
       { data: photoData },
       { count: profilePhotoCount },
       { count: galleryCount },
-      { count: menuCount },
+      menusWithDishesCount,
       { count: dishCount },
       { count: heldCount },
     ] = await Promise.all([
@@ -80,11 +81,8 @@ export default async function DashboardPage() {
         .select('*', { count: 'exact', head: true })
         .eq('chef_id', chefProfile.id)
         .eq('type', 'gallery'),
-      supabase
-        .from('chef_menus')
-        .select('*', { count: 'exact', head: true })
-        .eq('chef_id', chefProfile.id)
-        .eq('is_active', true),
+      // Un menú sin platos no cuenta — ver lib/menuCompletion.
+      countMenusWithDishes(supabase, chefProfile.id),
       supabase
         .from('dishes')
         .select('*', { count: 'exact', head: true })
@@ -105,7 +103,7 @@ export default async function DashboardPage() {
     meetsRequirements =
       (profilePhotoCount ?? 0) >= MIN_PROFILE_PHOTOS &&
       (galleryCount ?? 0) >= MIN_GALLERY_PHOTOS &&
-      (menuCount ?? 0) >= MIN_MENUS &&
+      menusWithDishesCount >= MIN_MENUS &&
       (dishCount ?? 0) >= MIN_DISHES
     dishesLoaded = dishCount ?? 0
   }

@@ -15,6 +15,7 @@ import {
 import { createClient } from "@/utils/supabase/clients"
 import { compressImage } from "@/utils/images"
 import { menuPriceBounds } from "@/lib/pricing"
+import { MIN_DISHES, MIN_MENUS } from "@/lib/chefRequirements"
 
 // ── Constantes ───────────────────────────────────────────────────────────────
 
@@ -291,11 +292,10 @@ function DishCard({
     >
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-zinc-800 truncate">{dish.name}</p>
-        {usageCount > 0 && (
-          <p className="text-[11px] text-zinc-400 mt-0.5">
-            en {usageCount} {usageCount === 1 ? "menú" : "menús"}
-          </p>
-        )}
+        <p className="text-[11px] text-zinc-400 mt-0.5">
+          <span className="font-bold text-zinc-500">{COURSES.find(c => c.value === dish.course)?.label}</span>
+          {usageCount > 0 && ` · en ${usageCount} ${usageCount === 1 ? "menú" : "menús"}`}
+        </p>
       </div>
       <div className="flex items-center gap-0.5 shrink-0">
         <button
@@ -951,8 +951,41 @@ export function MenuBuilderPanel({
   }
 
   const visibleDishes = dishFilter === "all" ? dishes : dishes.filter(d => d.course === dishFilter)
+  const dishesMet = dishes.length >= MIN_DISHES
+  // Un menú sin ningún plato asignado no cuenta — solo tiene título, no es
+  // una oferta real para el cliente.
+  const menusWithDishesCount = menus.filter(m =>
+    Object.values(m.courseSettings).some(cs => cs.dishIds.length > 0)
+  ).length
+  const menusMet = menusWithDishesCount >= MIN_MENUS
 
   return (
+    <>
+      {/* ── Mínimos para activar el perfil ── */}
+      <div className="flex flex-wrap items-center gap-2.5 mb-6">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-150 ${
+            dishesMet ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-white border-zinc-200 text-zinc-500"
+          }`}
+        >
+          {dishesMet && <CheckCircle2 size={12} />}
+          Platos {dishes.length}/{MIN_DISHES}
+        </span>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-150 ${
+            menusMet ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-white border-zinc-200 text-zinc-500"
+          }`}
+        >
+          {menusMet && <CheckCircle2 size={12} />}
+          Menús {menusWithDishesCount}/{MIN_MENUS}
+        </span>
+        {dishesMet && menusMet && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 text-accent px-3 py-1.5 text-xs font-bold">
+            <CheckCircle2 size={12} /> Completado
+          </span>
+        )}
+      </div>
+
     <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 items-start">
 
       {/* ── IZQUIERDA: repertorio de platos ── */}
@@ -1011,6 +1044,7 @@ export function MenuBuilderPanel({
       <div className="space-y-5">
 
         {/* Selector / creador de menú */}
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-2">Tus menús</h2>
         <div className="flex flex-wrap items-center gap-2">
           {menus.map(m => (
             <button
@@ -1164,5 +1198,6 @@ export function MenuBuilderPanel({
         />
       )}
     </div>
+    </>
   )
 }

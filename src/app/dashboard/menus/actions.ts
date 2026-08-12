@@ -4,25 +4,22 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import type { Course } from '@/app/dashboard/platos/actions'
 import { MIN_MENUS } from '@/lib/chefRequirements'
+import { countMenusWithDishes } from '@/lib/menuCompletion'
 
 export type SelectionMode = 'all_inclusive' | 'choose_1' | 'choose_2' | 'choose_3'
 
 // Recalcula menus_done en profile_completion a partir del conteo real de
-// menús activos. Compartido por deleteMenu y createMenuQuick para no repetir
-// el mismo query dos veces.
+// menús con al menos un plato (un menú con solo título no cuenta). Compartido
+// por deleteMenu y createMenuQuick para no repetir el mismo query dos veces.
 async function recomputeMenusDone(
   supabase: Awaited<ReturnType<typeof createClient>>,
   chefId: string
 ) {
-  const { count } = await supabase
-    .from('chef_menus')
-    .select('*', { count: 'exact', head: true })
-    .eq('chef_id', chefId)
-    .eq('is_active', true)
+  const menusWithDishes = await countMenusWithDishes(supabase, chefId)
 
   await supabase
     .from('profile_completion')
-    .update({ menus_done: (count ?? 0) >= MIN_MENUS, updated_at: new Date().toISOString() })
+    .update({ menus_done: menusWithDishes >= MIN_MENUS, updated_at: new Date().toISOString() })
     .eq('chef_id', chefId)
 }
 
@@ -221,6 +218,17 @@ export async function addDishToMenu(menuId: string, dishId: string): Promise<{ e
     return { error: 'Error al agregar el plato al menú' }
   }
 
+  // Este plato puede ser el primero del menú — recalcular menus_done acá
+  // también, no solo en createMenuQuick/deleteMenu, porque un menú pasa de
+  // "vacío" a "válido" en este momento, no cuando se creó.
+  const { data: chef } = await supabase
+    .from('chef_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .single()
+  if (chef) await recomputeMenusDone(supabase, chef.id)
+
+  revalidatePath('/dashboard')
   revalidatePath('/dashboard/menus')
   return {}
 }
@@ -240,6 +248,16 @@ export async function removeDishFromMenu(menuId: string, dishId: string): Promis
     return { error: 'Error al quitar el plato del menú' }
   }
 
+  // Simétrico a addDishToMenu: si este era el último plato del menú, vuelve
+  // a quedar "vacío" y ya no debe contar para menus_done.
+  const { data: chef } = await supabase
+    .from('chef_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .single()
+  if (chef) await recomputeMenusDone(supabase, chef.id)
+
+  revalidatePath('/dashboard')
   revalidatePath('/dashboard/menus')
   return {}
 }

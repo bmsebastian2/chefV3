@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { BlockedAccount } from '@/components/dashboard/BlockedAccount'
 import type { ChefBooking } from '@/components/dashboard/RequestsView'
+import { MIN_DISHES } from '@/lib/chefRequirements'
 
 export default async function DashboardLayout({
   children,
@@ -48,8 +49,9 @@ export default async function DashboardLayout({
   let fotosCompleted = false
   let perfilCompleted = false
   let ubicacionCompleted = false
+  let cartaCompleted = false
   if (chefProfile) {
-    const [{ data: photoData }, { data: completionData }] = await Promise.all([
+    const [{ data: photoData }, { data: completionData }, { count: dishCount }] = await Promise.all([
       supabase
         .from('chef_photos')
         .select('url')
@@ -57,19 +59,27 @@ export default async function DashboardLayout({
         .eq('type', 'profile')
         .maybeSingle(),
       // Misma condición que "Foto de Perfil" + "Fotos de Galería" / "Bio
-      // Profesional" / "Ubicación" en el checklist de /dashboard — para que
-      // el tilde del menú lateral nunca diga algo distinto de lo que dice
-      // esa pantalla.
+      // Profesional" / "Ubicación" / "Menús" en el checklist de /dashboard —
+      // para que el tilde del menú lateral nunca diga algo distinto de lo
+      // que dice esa pantalla.
       supabase
         .from('profile_completion')
-        .select('profile_picture_done, gallery_done, bio_done, location_done')
+        .select('profile_picture_done, gallery_done, bio_done, location_done, menus_done')
         .eq('chef_id', chefProfile.id)
         .maybeSingle(),
+      // "Platos" no vive en profile_completion (se calcula en vivo, igual
+      // que en /dashboard/page.tsx) — hace falta el conteo real acá también.
+      supabase
+        .from('dishes')
+        .select('*', { count: 'exact', head: true })
+        .eq('chef_id', chefProfile.id)
+        .eq('is_active', true),
     ])
     profilePhotoUrl = photoData?.url ?? null
     fotosCompleted = !!(completionData?.profile_picture_done && completionData?.gallery_done)
     perfilCompleted = !!completionData?.bio_done
     ubicacionCompleted = !!completionData?.location_done
+    cartaCompleted = !!completionData?.menus_done && (dishCount ?? 0) >= MIN_DISHES
   }
 
   const userName = userData?.first_name || user.email || 'Chef'
@@ -84,6 +94,7 @@ export default async function DashboardLayout({
         fotosCompleted={fotosCompleted}
         perfilCompleted={perfilCompleted}
         ubicacionCompleted={ubicacionCompleted}
+        cartaCompleted={cartaCompleted}
       />
       <div className="md:pl-64">
         <main className="min-h-screen">
