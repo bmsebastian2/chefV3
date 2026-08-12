@@ -6,6 +6,7 @@ import { Loader2, Plus, Trash2, AlertCircle } from "lucide-react";
 import { createClient } from "@/utils/supabase/clients";
 import { addGalleryPhoto, deleteGalleryPhoto } from "@/app/dashboard/fotos/actions";
 import { compressImage } from "@/utils/images";
+import { MIN_GALLERY_PHOTOS } from "@/lib/chefRequirements";
 
 const STORAGE_BUCKET = "chef-photos";
 const MAX_GALLERY = 12;
@@ -92,6 +93,7 @@ export function GaleriaUpload({
   }
 
   const canAdd = photos.length < MAX_GALLERY && !uploading;
+  const meetsMin = photos.length >= MIN_GALLERY_PHOTOS;
 
   return (
     <div className="space-y-4">
@@ -158,13 +160,27 @@ export function GaleriaUpload({
         </div>
       )}
 
-      {/* Count + hint */}
-      <div className="flex items-center gap-2">
-        <span className={`text-xs font-semibold tabular-nums ${photos.length >= MAX_GALLERY ? "text-amber-500" : "text-zinc-400"}`}>
-          {photos.length} / {MAX_GALLERY}
-        </span>
-        <span className="text-xs text-zinc-300">·</span>
-        <span className="text-xs text-zinc-400">JPG, PNG o WEBP · Máx. {MAX_FILE_MB} MB por foto</span>
+      {/* Progreso hacia el mínimo (100% de la barra = mínimo cumplido) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold tabular-nums text-zinc-600">
+            {Math.min(photos.length, MIN_GALLERY_PHOTOS)} / {MIN_GALLERY_PHOTOS} mínimo
+          </span>
+          <span className={`text-xs font-semibold ${meetsMin ? "text-emerald-600" : "text-zinc-400"}`}>
+            {meetsMin ? "Completado ✓" : `Faltan ${MIN_GALLERY_PHOTOS - photos.length}`}
+          </span>
+        </div>
+
+        <div className="w-full bg-zinc-100 rounded-full h-2 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${meetsMin ? "bg-emerald-500" : "bg-accent"}`}
+            style={{ width: `${Math.min(100, (photos.length / MIN_GALLERY_PHOTOS) * 100)}%` }}
+          />
+        </div>
+
+        <p className="text-xs text-zinc-400">
+          Podés subir hasta {MAX_GALLERY} fotos en total · JPG, PNG o WEBP · Máx. {MAX_FILE_MB} MB por foto
+        </p>
       </div>
 
       <input

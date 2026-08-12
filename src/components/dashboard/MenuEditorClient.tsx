@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useTransition, useMemo, useRef } from "react"
+import { useState, useTransition, useMemo, useRef, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Plus, X, ChevronDown, AlertTriangle, Loader2, Info, ChevronRight, AlertCircle, Camera } from "lucide-react"
+import { Plus, X, ChevronDown, AlertTriangle, Loader2, Info, ChevronRight, AlertCircle, Camera, CheckCircle2 } from "lucide-react"
 import { createClient } from "@/utils/supabase/clients"
 import { compressImage } from "@/utils/images"
 import { saveMenu, type SelectionMode, type MenuEditData } from "@/app/dashboard/menus/actions"
-import type { Course } from "@/app/dashboard/platos/actions"
+import { addDish, type Course } from "@/app/dashboard/platos/actions"
 import { menuPriceBounds } from "@/lib/pricing"
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -153,6 +153,20 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId,
   const [openPicker, setOpenPicker] = useState<Course | null>(null)
   const [saveError, setSaveError]   = useState<string | null>(null)
 
+  // ── Guardado incremental ────────────────────────────────────────────────
+  // El menú se guarda solo mientras el chef lo completa (ver efecto de
+  // autosave más abajo), así navegar fuera a mitad de carga ya no pierde el
+  // trabajo. currentMenuId reemplaza a la prop `menuId` una vez que existe
+  // la fila en DB (primer autosave o primer guardado manual).
+  const [currentMenuId, setCurrentMenuId] = useState<string | null>(menuId)
+  const [dishes, setDishes]         = useState<AvailableDish[]>(availableDishes)
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle")
+  const [newDishOpenFor, setNewDishOpenFor] = useState<Course | null>(null)
+  const [newDishName, setNewDishName]       = useState("")
+  const [newDishSaving, setNewDishSaving]   = useState(false)
+  const [newDishErr, setNewDishErr]         = useState<string | null>(null)
+  const didMountRef = useRef(false)
+
   // ── Price table ──────────────────────────────────────────────────────────
 
   const priceRows = useMemo(() => {
@@ -230,6 +244,26 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId,
     }))
   }
 
+  // Crear un plato sin salir del editor de menú — reusa la misma server
+  // action que /dashboard/platos. Al crearlo, lo suma directo al curso que
+  // estaba abierto para no obligar a un segundo paso de "agregar".
+  async function handleCreateDish(course: Course) {
+    const name = newDishName.trim()
+    if (!name) return
+    setNewDishSaving(true)
+    setNewDishErr(null)
+    const result = await addDish(name, course)
+    setNewDishSaving(false)
+    if (result.error || !result.id) {
+      setNewDishErr(result.error ?? "Error al crear el plato")
+      return
+    }
+    setDishes(prev => [...prev, { id: result.id!, name, course }])
+    addDishToCourse(course, result.id)
+    setNewDishName("")
+    setNewDishOpenFor(null)
+  }
+
   // ── Monotonía de precios ──────────────────────────────────────────────────
   // Más personas nunca puede costar MÁS por cabeza: price_2 ≥ price_3_6 ≥
   // price_7_20. Sin esto, un menú cargado al revés rompe el re-precio de la
@@ -250,6 +284,26 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId,
 
   // ── Save ──────────────────────────────────────────────────────────────────
 
+  function buildSaveInput() {
+    return {
+      menuId: currentMenuId,
+      title: title.trim(),
+      description: description.trim(),
+      cuisineTypes,
+      imageUrl,
+      minGuests,
+      maxGuests,
+      price2:   parseFloat(price2)   || 0,
+      price36:  parseFloat(price36)  || 0,
+      price720: parseFloat(price720) || 0,
+      courseData: COURSES_CONFIG.map(c => ({
+        course:        c.value,
+        selectionMode: courseMap[c.value].selectionMode,
+        dishIds:       courseMap[c.value].dishIds,
+      })),
+    }
+  }
+
   function handleSave() {
     setSaveError(null)
     if (priceOrderError) {
@@ -257,30 +311,47 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId,
       return
     }
     startTransition(async () => {
-      const result = await saveMenu({
-        menuId,
-        title: title.trim(),
-        description: description.trim(),
-        cuisineTypes,
-        imageUrl,
-        minGuests,
-        maxGuests,
-        price2:   parseFloat(price2)   || 0,
-        price36:  parseFloat(price36)  || 0,
-        price720: parseFloat(price720) || 0,
-        courseData: COURSES_CONFIG.map(c => ({
-          course:        c.value,
-          selectionMode: courseMap[c.value].selectionMode,
-          dishIds:       courseMap[c.value].dishIds,
-        })),
-      })
+      const result = await saveMenu(buildSaveInput())
       if (result.error) {
         setSaveError(result.error)
         return
       }
+      if (result.menuId) setCurrentMenuId(result.menuId)
+      setSaveStatus("saved")
       router.push("/dashboard/menus")
     })
   }
+
+  // ── Autosave ─────────────────────────────────────────────────────────────
+  // Guarda solo mientras hay un título cargado y los precios no están al
+  // revés — evita crear filas fantasma con un solo carácter y evita guardar
+  // un estado que el propio formulario ya marca como inválido. Se salta el
+  // primer render para no reescribir un menú existente con los mismos datos
+  // apenas se abre para editar.
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true
+      return
+    }
+    if (!title.trim() || priceOrderError) return
+
+    const timer = setTimeout(() => {
+      setSaveStatus("saving")
+      startTransition(async () => {
+        const result = await saveMenu(buildSaveInput())
+        if (result.error) {
+          setSaveError(result.error)
+          return
+        }
+        if (result.menuId && result.menuId !== currentMenuId) setCurrentMenuId(result.menuId)
+        setSaveError(null)
+        setSaveStatus("saved")
+      })
+    }, 1200)
+
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, description, cuisineTypes, imageUrl, minGuests, maxGuests, price2, price36, price720, courseMap])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -445,7 +516,7 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId,
         <div className="space-y-3">
           {COURSES_CONFIG.map(courseConf => {
             const setting     = courseMap[courseConf.value]
-            const courseDishes = availableDishes.filter(d => d.course === courseConf.value)
+            const courseDishes = dishes.filter(d => d.course === courseConf.value)
             const addedDishes = courseDishes.filter(d => setting.dishIds.includes(d.id))
             const notAdded    = courseDishes.filter(d => !setting.dishIds.includes(d.id))
 
@@ -502,7 +573,12 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId,
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setOpenPicker(openPicker === courseConf.value ? null : courseConf.value)}
+                    onClick={() => {
+                      setOpenPicker(openPicker === courseConf.value ? null : courseConf.value)
+                      setNewDishOpenFor(null)
+                      setNewDishName("")
+                      setNewDishErr(null)
+                    }}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
                   >
                     <Plus size={13} />
@@ -511,40 +587,69 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId,
 
                   {openPicker === courseConf.value && (
                     <>
-                      <div className="fixed inset-0 z-10" onClick={() => setOpenPicker(null)} />
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => { setOpenPicker(null); setNewDishOpenFor(null) }}
+                      />
                       <div className="absolute left-0 top-7 z-20 min-w-56 rounded-xl border border-zinc-100 bg-white shadow-xl py-1">
-                        {notAdded.length === 0 ? (
-                          courseDishes.length === 0 ? (
-                            <div className="px-4 py-3">
-                              <p className="text-sm text-zinc-400 mb-2">
-                                No tenés platos de este tipo todavía.
-                              </p>
-                              <a
-                                href="/dashboard/platos"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent/80 transition-colors"
+                        {notAdded.length > 0 && notAdded.map(d => (
+                          <button
+                            key={d.id}
+                            type="button"
+                            onClick={() => addDishToCourse(courseConf.value, d.id)}
+                            className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
+                          >
+                            {d.name}
+                          </button>
+                        ))}
+
+                        {notAdded.length === 0 && courseDishes.length > 0 && (
+                          <p className="px-4 py-3 text-sm text-zinc-400">
+                            Ya agregaste todos los platos disponibles.
+                          </p>
+                        )}
+
+                        {newDishOpenFor === courseConf.value ? (
+                          <div className="px-3 py-2.5 border-t border-zinc-50" onClick={e => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              autoFocus
+                              value={newDishName}
+                              onChange={e => setNewDishName(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === "Enter") { e.preventDefault(); handleCreateDish(courseConf.value) }
+                              }}
+                              placeholder="Nombre del plato"
+                              className="w-full h-9 px-3 border border-zinc-200 rounded-lg text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent mb-2"
+                            />
+                            {newDishErr && <p className="text-xs text-red-600 mb-2">{newDishErr}</p>}
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => { setNewDishOpenFor(null); setNewDishName(""); setNewDishErr(null) }}
+                                className="flex-1 h-8 rounded-lg border border-zinc-200 text-xs font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
                               >
-                                Crear plato en una pestaña nueva
-                                <ChevronRight size={12} />
-                              </a>
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                disabled={!newDishName.trim() || newDishSaving}
+                                onClick={() => handleCreateDish(courseConf.value)}
+                                className="flex-1 h-8 rounded-lg bg-accent hover:bg-accent/90 text-white text-xs font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                              >
+                                {newDishSaving ? "Agregando…" : "Agregar"}
+                              </button>
                             </div>
-                          ) : (
-                            <p className="px-4 py-3 text-sm text-zinc-400">
-                              Ya agregaste todos los platos disponibles.
-                            </p>
-                          )
+                          </div>
                         ) : (
-                          notAdded.map(d => (
-                            <button
-                              key={d.id}
-                              type="button"
-                              onClick={() => addDishToCourse(courseConf.value, d.id)}
-                              className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors"
-                            >
-                              {d.name}
-                            </button>
-                          ))
+                          <button
+                            type="button"
+                            onClick={() => { setNewDishOpenFor(courseConf.value); setNewDishName(""); setNewDishErr(null) }}
+                            className="w-full flex items-center gap-1 text-left px-4 py-2.5 text-xs font-semibold text-accent hover:bg-accent/5 transition-colors border-t border-zinc-50"
+                          >
+                            <Plus size={12} />
+                            Crear plato nuevo
+                          </button>
                         )}
                       </div>
                     </>
@@ -668,7 +773,7 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId,
       )}
 
       {/* ── Save button ── */}
-      <div className="flex justify-center pb-10">
+      <div className="flex flex-col items-center gap-2.5 pb-10">
         <button
           type="button"
           onClick={handleSave}
@@ -681,6 +786,14 @@ export function MenuEditorClient({ menuId, availableDishes, initialData, userId,
             "Guardar menú"
           )}
         </button>
+        {!isPending && saveStatus === "saving" && (
+          <p className="text-xs text-zinc-400">Guardando cambios…</p>
+        )}
+        {!isPending && saveStatus === "saved" && !saveError && (
+          <p className="flex items-center gap-1 text-xs text-emerald-600">
+            <CheckCircle2 size={12} /> Cambios guardados automáticamente
+          </p>
+        )}
       </div>
     </div>
   )

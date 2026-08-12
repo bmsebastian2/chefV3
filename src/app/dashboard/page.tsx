@@ -18,7 +18,7 @@ type CompletionRow = {
 }
 
 const ITEMS: {
-  key: keyof CompletionRow
+  key: string
   label: string
   href: string | null
   desc: string
@@ -27,6 +27,7 @@ const ITEMS: {
   { key: 'location_done',       label: 'Ubicación',                   href: '/dashboard/ubicacion',        desc: 'Añade tu ciudad y país.' },
   { key: 'profile_picture_done',label: 'Foto de Perfil',              href: '/dashboard/fotos',            desc: 'Sube tu foto de perfil.' },
   { key: 'gallery_done',        label: 'Fotos de Galería',            href: '/dashboard/fotos',            desc: 'Añade fotos de tus platos.' },
+  { key: 'dishes_done',         label: 'Platos',                      href: '/dashboard/platos',           desc: `Creá al menos ${MIN_DISHES} platos para poder armar tus menús.` },
   { key: 'menus_done',          label: 'Menús',                       href: '/dashboard/menus',            desc: 'Crea al menos 1 menú.' },
   { key: 'request_prefs_done',  label: 'Preferencias de Solicitudes', href: '/dashboard/request-settings', desc: 'Elige los tipos de servicio que aceptas.' },
   { key: 'payments_done',       label: 'Pagos',                       href: '/dashboard/pagos',            desc: 'Cargá tu cuenta para recibir tus ganancias.' },
@@ -46,6 +47,7 @@ export default async function DashboardPage() {
   let profilePhotoUrl: string | null = null
   let meetsRequirements = false
   let heldBookings = 0
+  let dishesLoaded = 0
 
   if (chefProfile) {
     const [
@@ -105,9 +107,18 @@ export default async function DashboardPage() {
       (galleryCount ?? 0) >= MIN_GALLERY_PHOTOS &&
       (menuCount ?? 0) >= MIN_MENUS &&
       (dishCount ?? 0) >= MIN_DISHES
+    dishesLoaded = dishCount ?? 0
   }
 
-  const doneCount = ITEMS.filter((item) => completion?.[item.key]).length
+  // "Platos" no vive en profile_completion (no es un campo que el chef guarde
+  // a mano) — se calcula en vivo igual que meetsRequirements, para que el
+  // checklist deje de esconder el requisito real de activación.
+  const doneMap: Record<string, boolean | undefined> = {
+    ...completion,
+    dishes_done: dishesLoaded >= MIN_DISHES,
+  }
+
+  const doneCount = ITEMS.filter((item) => doneMap[item.key]).length
   const pct = Math.round((doneCount / ITEMS.length) * 100)
   const firstName = userData?.first_name || user.email?.split('@')[0] || 'Chef'
 
@@ -252,7 +263,7 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {ITEMS.map((item) => {
-            const done   = completion?.[item.key] ?? false
+            const done   = doneMap[item.key] ?? false
             const locked = item.href === null && !done
 
             return (

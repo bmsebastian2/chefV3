@@ -35,7 +35,7 @@ export function ActiveToggle({
           <p className="text-sm font-semibold text-zinc-800">Perfil inactivo</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             Completá los{' '}
-            <Link href="/dashboard/requests" className="text-accent underline underline-offset-2">
+            <Link href="/dashboard" className="text-accent underline underline-offset-2">
               requisitos mínimos
             </Link>{' '}
             para activar tu perfil y recibir solicitudes.
