@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChefHat, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroVideo } from "@/components/HeroVideo";
+import { AnchorLink } from "@/components/AnchorLink";
 
 // Banner gastronómico con video — comunica el servicio de chef/comida.
 // Se renderiza en dos posiciones: arriba en móvil (primera pantalla) y en la
@@ -188,7 +189,7 @@ export function Hero() {
                   </span>
                 </Button>
               </Link>
-              <Link
+              <AnchorLink
                 href="#chefs"
                 className="group/ghost inline-flex items-center justify-center sm:justify-start gap-2 h-12 px-2 rounded-lg text-sm font-semibold text-amber-700 outline-none transition-colors hover:text-amber-800 focus-visible:ring-2 focus-visible:ring-amber-300/60"
               >
@@ -196,7 +197,7 @@ export function Hero() {
                   Ver nuestros chefs
                 </span>
                 <span className="transition-transform duration-200 group-hover/ghost:translate-x-1">→</span>
-              </Link>
+              </AnchorLink>
             </div>
 
             {/* Banner gastronómico — en móvil sube aquí para verse en la primera pantalla */}

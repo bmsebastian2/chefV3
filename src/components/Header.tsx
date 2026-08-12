@@ -6,6 +6,7 @@ import { Menu, X, LayoutDashboard, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginDialog } from "../components/auth/login-dialog";
 import { InstallButton } from "@/components/InstallButton";
+import { AnchorLink } from "@/components/AnchorLink";
 import { createClient } from "@/utils/supabase/clients";
 
 const navLinks = [
@@ -155,13 +156,13 @@ export function Header() {
         {/* Desktop nav */}
         <nav className="hidden md:flex gap-8 items-center">
           {navLinks.map((l) => (
-            <Link
+            <AnchorLink
               key={l.href}
               href={l.href}
               className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors duration-200 relative after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
             >
               {l.label}
-            </Link>
+            </AnchorLink>
           ))}
           <ChefRegistrationLink className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors duration-200 relative after:absolute after:-bottom-0.5 after:left-0 after:h-px after:w-0 after:bg-accent after:transition-all after:duration-300 hover:after:w-full" />
         </nav>
@@ -206,14 +207,14 @@ export function Header() {
 
             <nav className="flex flex-col gap-5 mt-2">
               {navLinks.map((l) => (
-                <Link
+                <AnchorLink
                   key={l.href}
                   href={l.href}
                   onClick={() => setOpen(false)}
                   className="text-lg font-medium text-zinc-800 hover:text-accent transition-colors"
                 >
                   {l.label}
-                </Link>
+                </AnchorLink>
               ))}
               <ChefRegistrationLink className="text-lg font-medium text-zinc-800 hover:text-accent transition-colors" />
             </nav>
