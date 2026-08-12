@@ -43,12 +43,16 @@ function NavItems({
   pathname,
   onNavigate,
   fotosCompleted,
+  perfilCompleted,
+  ubicacionCompleted,
 }: {
   openSections: string[];
   toggle: (label: string) => void;
   pathname: string;
   onNavigate: () => void;
   fotosCompleted: boolean;
+  perfilCompleted: boolean;
+  ubicacionCompleted: boolean;
 }) {
   return (
     <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
@@ -100,7 +104,10 @@ function NavItems({
               <div className="ml-7 mt-1 space-y-0.5">
                 {item.children.map((child) => {
                   const active = pathname === child.href;
-                  const done = child.href === "/dashboard/fotos" && fotosCompleted;
+                  const done =
+                    (child.href === "/dashboard/fotos" && fotosCompleted) ||
+                    (child.href === "/dashboard/perfil" && perfilCompleted) ||
+                    (child.href === "/dashboard/ubicacion" && ubicacionCompleted);
                   return (
                     <Link
                       key={child.href}
@@ -240,11 +247,15 @@ export function Sidebar({
   userFullName,
   profilePhotoUrl,
   fotosCompleted,
+  perfilCompleted,
+  ubicacionCompleted,
 }: {
   userName: string;
   userFullName: string;
   profilePhotoUrl: string | null;
   fotosCompleted: boolean;
+  perfilCompleted: boolean;
+  ubicacionCompleted: boolean;
 }) {
   const pathname = usePathname();
   const [openSections, setOpenSections] = useState<string[]>(["Perfil"]);
@@ -261,6 +272,8 @@ export function Sidebar({
     pathname,
     onNavigate: () => setMobileOpen(false),
     fotosCompleted,
+    perfilCompleted,
+    ubicacionCompleted,
   };
 
   const sidebarInner = (

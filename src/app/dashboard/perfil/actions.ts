@@ -25,9 +25,6 @@ export async function savePerfilProfesional(
 
   const tagline           = str('tagline')
   const acerca_de_mi      = str('acerca_de_mi')
-  const para_mi_cocinar_es = str('para_mi_cocinar_es')
-  const aprendi_a_cocinar = str('aprendi_a_cocinar')
-  const mi_secreto_cocina = str('mi_secreto_cocina')
   const sitio_web         = str('sitio_web')
   const instagram         = str('instagram')
   const facebook          = str('facebook')
@@ -41,9 +38,6 @@ export async function savePerfilProfesional(
     .update({
       tagline,
       acerca_de_mi,
-      para_mi_cocinar_es,
-      aprendi_a_cocinar,
-      mi_secreto_cocina,
       experience_years,
       sitio_web,
       instagram,
