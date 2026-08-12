@@ -81,20 +81,25 @@ function NavItems({
           "children" in item && item.children
             ? item.children.some((c) => pathname === c.href)
             : false;
+        const sectionCompleted =
+          item.label === "Perfil" && fotosCompleted && perfilCompleted && ubicacionCompleted;
 
         return (
           <div key={item.label}>
             <button
               type="button"
               onClick={() => toggle(item.label)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                childActive
-                  ? "text-zinc-900"
-                  : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${
+                sectionCompleted
+                  ? "text-accent font-semibold"
+                  : childActive
+                    ? "text-zinc-900 font-medium"
+                    : "text-zinc-600 font-medium hover:bg-zinc-100 hover:text-zinc-900"
               }`}
             >
-              <item.icon className="w-4 h-4 flex-shrink-0" />
-              <span className="flex-1 text-left">{item.label}</span>
+              <item.icon className={`w-4 h-4 flex-shrink-0 ${sectionCompleted ? "text-accent" : ""}`} />
+              <span className={`flex-1 text-left ${sectionCompleted ? "text-[15px]" : ""}`}>{item.label}</span>
+              {sectionCompleted && <CheckCircle2 className="w-5 h-5 text-accent flex-shrink-0" />}
               <ChevronDown
                 className={`w-4 h-4 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
               />

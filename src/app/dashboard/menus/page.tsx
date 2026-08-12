@@ -1,8 +1,8 @@
-import Image from 'next/image'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { Plus, ChevronRight, UtensilsCrossed } from 'lucide-react'
 import { createClient } from '@/utils/supabase/server'
+import { MenuBuilderPanel } from '@/components/dashboard/MenuBuilderPanel'
+import type { Dish, Course } from '@/app/dashboard/platos/actions'
+import type { MenuBuilderData, SelectionMode } from '@/app/dashboard/menus/actions'
 
 export default async function MenusPage() {
   const supabase = await createClient()
@@ -17,98 +17,113 @@ export default async function MenusPage() {
 
   if (!chef) redirect('/dashboard')
 
-  const { data: menus } = await supabase
-    .from('chef_menus')
-    .select('id, title, cuisine_types, image_url')
-    .eq('chef_id', chef.id)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
+  // menu_course_settings y menu_dishes no filtran por chef_id acá: sus
+  // políticas RLS ya restringen la lectura a los menús del chef logueado
+  // (menu_id IN (... WHERE chef_id IN (... auth.uid()))).
+  const [
+    { data: dishRows },
+    { data: menuRows },
+    { data: courseRows },
+    { data: dishRows2 },
+    { data: platformConfig },
+  ] = await Promise.all([
+    supabase
+      .from('dishes')
+      .select('id, name, course, description')
+      .eq('chef_id', chef.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('chef_menus')
+      .select('id, title, description, cuisine_types, image_url, min_guests, max_guests, price_2, price_3_6, price_7_20')
+      .eq('chef_id', chef.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('menu_course_settings')
+      .select('menu_id, course, selection_mode'),
+    supabase
+      .from('menu_dishes')
+      .select('menu_id, dish_id'),
+    supabase
+      .from('platform_config')
+      .select('commission_rate')
+      .eq('id', 1)
+      .single(),
+  ])
+
+  const dishes: Dish[] = (dishRows ?? []).map(d => ({
+    id: d.id as string,
+    name: d.name as string,
+    course: d.course as Course,
+    description: d.description as string | null,
+  }))
+
+  const emptyCourseSettings = (): Record<Course, { selectionMode: SelectionMode; dishIds: string[] }> => ({
+    starter:      { selectionMode: 'all_inclusive', dishIds: [] },
+    first_course: { selectionMode: 'all_inclusive', dishIds: [] },
+    main:         { selectionMode: 'all_inclusive', dishIds: [] },
+    dessert:      { selectionMode: 'all_inclusive', dishIds: [] },
+  })
+
+  const menus: MenuBuilderData[] = (menuRows ?? []).map(m => {
+    const courseSettings = emptyCourseSettings()
+
+    ;(courseRows ?? [])
+      .filter(c => c.menu_id === m.id)
+      .forEach(c => {
+        courseSettings[c.course as Course].selectionMode = c.selection_mode as SelectionMode
+      })
+    ;(dishRows2 ?? [])
+      .filter(row => row.menu_id === m.id)
+      .forEach(row => {
+        const dish = dishes.find(d => d.id === row.dish_id)
+        if (dish) courseSettings[dish.course].dishIds.push(dish.id)
+      })
+
+    return {
+      id: m.id as string,
+      title: m.title as string,
+      description: (m.description as string) ?? '',
+      cuisineTypes: (m.cuisine_types as string[]) ?? [],
+      imageUrl: m.image_url as string | null,
+      minGuests: m.min_guests as number,
+      maxGuests: m.max_guests as number,
+      price2: m.price_2 as number,
+      price36: m.price_3_6 as number,
+      price720: m.price_7_20 as number,
+      courseSettings,
+    }
+  })
+
+  const dishUsageCounts: Record<string, number> = {}
+  ;(dishRows2 ?? []).forEach(row => {
+    dishUsageCounts[row.dish_id as string] = (dishUsageCounts[row.dish_id as string] ?? 0) + 1
+  })
+
+  const commissionRatePercent = Number((((platformConfig?.commission_rate as number) ?? 0.15) * 100).toFixed(2))
 
   return (
-    <div className="p-6 md:p-10 max-w-2xl">
-
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4 mb-10">
-        <div>
-          <div className="flex items-center gap-2.5 mb-4">
-            <div className="h-px w-8 bg-accent rounded-full" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-              Mi perfil
-            </span>
-          </div>
-          <h1 className="font-serif text-3xl font-semibold text-zinc-900">Menús</h1>
+    <div className="p-6 md:p-10">
+      <div className="mb-8 max-w-2xl">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="h-px w-8 bg-accent rounded-full" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+            Mi perfil
+          </span>
         </div>
-        <Link
-          href="/dashboard/menus/nuevo"
-          className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-white font-semibold text-sm h-10 px-5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-accent/20 hover:-translate-y-0.5 shrink-0 mt-8"
-        >
-          <Plus size={15} />
-          Crear menú
-        </Link>
+        <h1 className="font-serif text-3xl font-semibold text-zinc-900 mb-2">Tu Carta</h1>
+        <p className="text-sm text-zinc-500 leading-relaxed">
+          Armá tus platos a la izquierda y arrastralos (o tocá "＋") a la sección del menú que estés armando a la derecha.
+        </p>
       </div>
-
-      {/* ── Empty state ── */}
-      {(!menus || menus.length === 0) ? (
-        <div className="bg-white border border-zinc-100 rounded-2xl shadow-sm py-16 text-center">
-          <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <UtensilsCrossed className="text-zinc-300" size={28} />
-          </div>
-          <h3 className="font-serif text-lg font-semibold text-zinc-800 mb-2">
-            Todavía no tenés menús
-          </h3>
-          <p className="text-sm text-zinc-400 mb-7 max-w-xs mx-auto leading-relaxed">
-            Creá tu primer menú para que los clientes puedan contratarte.
-          </p>
-          <Link
-            href="/dashboard/menus/nuevo"
-            className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-accent/20"
-          >
-            <Plus size={15} />
-            Crear primer menú
-          </Link>
-        </div>
-      ) : (
-        /* ── Menu list ── */
-        <div className="space-y-3">
-          {menus.map((menu) => (
-            <Link
-              key={menu.id}
-              href={`/dashboard/menus/${menu.id}`}
-              className="group flex items-center gap-4 bg-white border border-zinc-100 rounded-xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-            >
-              <div className="w-14 h-14 rounded-xl overflow-hidden bg-zinc-100 shrink-0 border border-zinc-100">
-                {menu.image_url ? (
-                  <Image
-                    src={menu.image_url}
-                    alt={menu.title}
-                    width={56}
-                    height={56}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <UtensilsCrossed size={18} className="text-zinc-300" />
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-serif text-[15px] font-semibold text-zinc-900 leading-snug truncate">
-                  {menu.title}
-                </p>
-                {menu.cuisine_types?.length > 0 && (
-                  <p className="text-xs text-zinc-400 truncate mt-0.5">
-                    {(menu.cuisine_types as string[]).join(' · ')}
-                  </p>
-                )}
-              </div>
-              <ChevronRight
-                size={16}
-                className="text-zinc-300 group-hover:text-zinc-500 transition-colors shrink-0"
-              />
-            </Link>
-          ))}
-        </div>
-      )}
+      <MenuBuilderPanel
+        initialDishes={dishes}
+        initialMenus={menus}
+        initialDishUsage={dishUsageCounts}
+        userId={user.id}
+        commissionRatePercent={commissionRatePercent}
+      />
     </div>
   )
 }
