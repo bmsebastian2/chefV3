@@ -24,14 +24,7 @@ const NAV = [
       { href: "/dashboard/ubicacion", label: "Ubicación" },
     ],
   },
-  {
-    label: "Propuesta Gastronómica",
-    icon: UtensilsCrossed,
-    children: [
-      { href: "/dashboard/platos", label: "Platos" },
-      { href: "/dashboard/menus", label: "Menús" },
-    ],
-  },
+  { href: "/dashboard/menus", label: "Tu Carta", icon: UtensilsCrossed },
   { href: "/dashboard/request-settings", label: "Config. Solicitudes", icon: SlidersHorizontal },
   { href: "/dashboard/pagos", label: "Pagos", icon: Wallet },
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },

@@ -114,7 +114,7 @@ export default async function MenusPage() {
         </div>
         <h1 className="font-serif text-3xl font-semibold text-zinc-900 mb-2">Tu Carta</h1>
         <p className="text-sm text-zinc-500 leading-relaxed">
-          Armá tus platos a la izquierda y arrastralos (o tocá "＋") a la sección del menú que estés armando a la derecha.
+          Armá tus platos a la izquierda y arrastralos (o tocá el botón ＋) a la sección del menú que estés armando a la derecha.
         </p>
       </div>
       <MenuBuilderPanel

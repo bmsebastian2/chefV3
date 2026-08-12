@@ -27,7 +27,7 @@ const ITEMS: {
   { key: 'location_done',       label: 'Ubicación',                   href: '/dashboard/ubicacion',        desc: 'Añade tu ciudad y país.' },
   { key: 'profile_picture_done',label: 'Foto de Perfil',              href: '/dashboard/fotos',            desc: 'Sube tu foto de perfil.' },
   { key: 'gallery_done',        label: 'Fotos de Galería',            href: '/dashboard/fotos',            desc: 'Añade fotos de tus platos.' },
-  { key: 'dishes_done',         label: 'Platos',                      href: '/dashboard/platos',           desc: `Creá al menos ${MIN_DISHES} platos para poder armar tus menús.` },
+  { key: 'dishes_done',         label: 'Platos',                      href: '/dashboard/menus',            desc: `Creá al menos ${MIN_DISHES} platos para poder armar tus menús.` },
   { key: 'menus_done',          label: 'Menús',                       href: '/dashboard/menus',            desc: 'Crea al menos 1 menú.' },
   { key: 'request_prefs_done',  label: 'Preferencias de Solicitudes', href: '/dashboard/request-settings', desc: 'Elige los tipos de servicio que aceptas.' },
   { key: 'payments_done',       label: 'Pagos',                       href: '/dashboard/pagos',            desc: 'Cargá tu cuenta para recibir tus ganancias.' },
