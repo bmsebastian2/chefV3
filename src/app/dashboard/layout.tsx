@@ -45,14 +45,26 @@ export default async function DashboardLayout({
   }
 
   let profilePhotoUrl: string | null = null
+  let fotosCompleted = false
   if (chefProfile) {
-    const { data: photoData } = await supabase
-      .from('chef_photos')
-      .select('url')
-      .eq('chef_id', chefProfile.id)
-      .eq('type', 'profile')
-      .maybeSingle()
+    const [{ data: photoData }, { data: completionData }] = await Promise.all([
+      supabase
+        .from('chef_photos')
+        .select('url')
+        .eq('chef_id', chefProfile.id)
+        .eq('type', 'profile')
+        .maybeSingle(),
+      // Misma condición que "Foto de Perfil" + "Fotos de Galería" en el
+      // checklist de /dashboard — para que el tilde del menú lateral nunca
+      // diga algo distinto de lo que dice esa pantalla.
+      supabase
+        .from('profile_completion')
+        .select('profile_picture_done, gallery_done')
+        .eq('chef_id', chefProfile.id)
+        .maybeSingle(),
+    ])
     profilePhotoUrl = photoData?.url ?? null
+    fotosCompleted = !!(completionData?.profile_picture_done && completionData?.gallery_done)
   }
 
   const userName = userData?.first_name || user.email || 'Chef'
@@ -60,7 +72,12 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-zinc-50">
-      <Sidebar userName={userName} userFullName={userFullName} profilePhotoUrl={profilePhotoUrl} />
+      <Sidebar
+        userName={userName}
+        userFullName={userFullName}
+        profilePhotoUrl={profilePhotoUrl}
+        fotosCompleted={fotosCompleted}
+      />
       <div className="md:pl-64">
         <main className="min-h-screen">
           {children}

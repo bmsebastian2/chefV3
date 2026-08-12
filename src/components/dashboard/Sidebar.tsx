@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Home, User, UtensilsCrossed,
-  Settings, ChevronDown, Menu, X, ClipboardList, SlidersHorizontal, Zap, MapPinned, Wallet,
+  Settings, ChevronDown, Menu, X, ClipboardList, SlidersHorizontal, Zap, MapPinned, Wallet, CheckCircle2,
 } from "lucide-react";
 import { logout } from "@/app/auth/actions";
 import { LogoutButton } from "@/components/auth/LogoutButton";
@@ -42,11 +42,13 @@ function NavItems({
   toggle,
   pathname,
   onNavigate,
+  fotosCompleted,
 }: {
   openSections: string[];
   toggle: (label: string) => void;
   pathname: string;
   onNavigate: () => void;
+  fotosCompleted: boolean;
 }) {
   return (
     <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
@@ -98,18 +100,20 @@ function NavItems({
               <div className="ml-7 mt-1 space-y-0.5">
                 {item.children.map((child) => {
                   const active = pathname === child.href;
+                  const done = child.href === "/dashboard/fotos" && fotosCompleted;
                   return (
                     <Link
                       key={child.href}
                       href={child.href}
                       onClick={onNavigate}
-                      className={`block px-3 py-2 rounded-md text-sm transition-colors ${
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                         active
                           ? "text-accent font-medium bg-accent/5"
                           : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
                       }`}
                     >
-                      {child.label}
+                      <span>{child.label}</span>
+                      {done && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
                     </Link>
                   );
                 })}
@@ -235,10 +239,12 @@ export function Sidebar({
   userName,
   userFullName,
   profilePhotoUrl,
+  fotosCompleted,
 }: {
   userName: string;
   userFullName: string;
   profilePhotoUrl: string | null;
+  fotosCompleted: boolean;
 }) {
   const pathname = usePathname();
   const [openSections, setOpenSections] = useState<string[]>(["Perfil"]);
@@ -254,6 +260,7 @@ export function Sidebar({
     toggle,
     pathname,
     onNavigate: () => setMobileOpen(false),
+    fotosCompleted,
   };
 
   const sidebarInner = (
