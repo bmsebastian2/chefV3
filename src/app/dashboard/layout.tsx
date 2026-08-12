@@ -50,6 +50,8 @@ export default async function DashboardLayout({
   let perfilCompleted = false
   let ubicacionCompleted = false
   let cartaCompleted = false
+  let requestSettingsCompleted = false
+  let pagosCompleted = false
   if (chefProfile) {
     const [{ data: photoData }, { data: completionData }, { count: dishCount }] = await Promise.all([
       supabase
@@ -59,12 +61,12 @@ export default async function DashboardLayout({
         .eq('type', 'profile')
         .maybeSingle(),
       // Misma condición que "Foto de Perfil" + "Fotos de Galería" / "Bio
-      // Profesional" / "Ubicación" / "Menús" en el checklist de /dashboard —
-      // para que el tilde del menú lateral nunca diga algo distinto de lo
-      // que dice esa pantalla.
+      // Profesional" / "Ubicación" / "Menús" / "Preferencias de Solicitudes" /
+      // "Pagos" en el checklist de /dashboard — para que el tilde del menú
+      // lateral nunca diga algo distinto de lo que dice esa pantalla.
       supabase
         .from('profile_completion')
-        .select('profile_picture_done, gallery_done, bio_done, location_done, menus_done')
+        .select('profile_picture_done, gallery_done, bio_done, location_done, menus_done, request_prefs_done, payments_done')
         .eq('chef_id', chefProfile.id)
         .maybeSingle(),
       // "Platos" no vive en profile_completion (se calcula en vivo, igual
@@ -80,6 +82,8 @@ export default async function DashboardLayout({
     perfilCompleted = !!completionData?.bio_done
     ubicacionCompleted = !!completionData?.location_done
     cartaCompleted = !!completionData?.menus_done && (dishCount ?? 0) >= MIN_DISHES
+    requestSettingsCompleted = !!completionData?.request_prefs_done
+    pagosCompleted = !!completionData?.payments_done
   }
 
   const userName = userData?.first_name || user.email || 'Chef'
@@ -95,6 +99,8 @@ export default async function DashboardLayout({
         perfilCompleted={perfilCompleted}
         ubicacionCompleted={ubicacionCompleted}
         cartaCompleted={cartaCompleted}
+        requestSettingsCompleted={requestSettingsCompleted}
+        pagosCompleted={pagosCompleted}
       />
       <div className="md:pl-64">
         <main className="min-h-screen">

@@ -39,6 +39,8 @@ function NavItems({
   perfilCompleted,
   ubicacionCompleted,
   cartaCompleted,
+  requestSettingsCompleted,
+  pagosCompleted,
 }: {
   openSections: string[];
   toggle: (label: string) => void;
@@ -48,13 +50,18 @@ function NavItems({
   perfilCompleted: boolean;
   ubicacionCompleted: boolean;
   cartaCompleted: boolean;
+  requestSettingsCompleted: boolean;
+  pagosCompleted: boolean;
 }) {
   return (
     <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
       {NAV.map((item) => {
         if ("href" in item && item.href) {
           const active = pathname === item.href;
-          const done = item.href === "/dashboard/menus" && cartaCompleted;
+          const done =
+            (item.href === "/dashboard/menus" && cartaCompleted) ||
+            (item.href === "/dashboard/request-settings" && requestSettingsCompleted) ||
+            (item.href === "/dashboard/pagos" && pagosCompleted);
           return (
             <Link
               key={item.href}
@@ -254,6 +261,8 @@ export function Sidebar({
   perfilCompleted,
   ubicacionCompleted,
   cartaCompleted,
+  requestSettingsCompleted,
+  pagosCompleted,
 }: {
   userName: string;
   userFullName: string;
@@ -262,6 +271,8 @@ export function Sidebar({
   perfilCompleted: boolean;
   ubicacionCompleted: boolean;
   cartaCompleted: boolean;
+  requestSettingsCompleted: boolean;
+  pagosCompleted: boolean;
 }) {
   const pathname = usePathname();
   const [openSections, setOpenSections] = useState<string[]>(["Perfil"]);
@@ -281,6 +292,8 @@ export function Sidebar({
     perfilCompleted,
     ubicacionCompleted,
     cartaCompleted,
+    requestSettingsCompleted,
+    pagosCompleted,
   };
 
   const sidebarInner = (
