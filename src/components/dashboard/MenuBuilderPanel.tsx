@@ -19,11 +19,14 @@ import { MIN_DISHES, MIN_MENUS } from "@/lib/chefRequirements"
 
 // ── Constantes ───────────────────────────────────────────────────────────────
 
-const COURSES: { value: Course; label: string }[] = [
-  { value: "starter",      label: "Entradas" },
-  { value: "first_course", label: "Primeros" },
-  { value: "main",         label: "Principales" },
-  { value: "dessert",      label: "Postres" },
+// "Primer plato" es el único curso obligatorio para que un menú cuente en
+// los mínimos de activación (ver menusWithDishesCount y lib/menuCompletion) —
+// el resto, incluido "Segundo plato", queda a criterio del chef.
+const COURSES: { value: Course; label: string; required: boolean }[] = [
+  { value: "starter",      label: "Entradas",     required: false },
+  { value: "first_course", label: "Primer plato", required: true },
+  { value: "main",         label: "Segundo plato", required: false },
+  { value: "dessert",      label: "Postres",      required: false },
 ]
 
 const CUISINE_OPTIONS = [
@@ -330,10 +333,11 @@ function DishCard({
 // ── Sección de curso (constructor de menú, derecha) ─────────────────────────
 
 function CourseSection({
-  label, sectionDishes, selectionMode, onModeChange,
+  label, required, sectionDishes, selectionMode, onModeChange,
   onRemove, onDropDish, pulsing, rejecting, dropEnabled,
 }: {
   label: string
+  required: boolean
   sectionDishes: Dish[]
   selectionMode: SelectionMode
   onModeChange: (mode: SelectionMode) => void
@@ -372,6 +376,9 @@ function CourseSection({
         <div className="flex items-center gap-2 min-w-0">
           <div className="h-px w-4 bg-accent/40 rounded-full shrink-0" />
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 truncate">{label}</p>
+          {!required && (
+            <span className="text-[9px] font-medium normal-case tracking-normal text-zinc-300 shrink-0">(opcional)</span>
+          )}
         </div>
         <div className="relative shrink-0">
           <select
@@ -390,6 +397,7 @@ function CourseSection({
       {sectionDishes.length === 0 ? (
         <p className="text-xs text-zinc-400 py-3 text-center border border-dashed border-zinc-200 rounded-xl">
           Tocá ＋ en un plato de {label.toLowerCase()}
+          {required && " — obligatorio para que el menú cuente"}
         </p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
@@ -952,10 +960,11 @@ export function MenuBuilderPanel({
 
   const visibleDishes = dishFilter === "all" ? dishes : dishes.filter(d => d.course === dishFilter)
   const dishesMet = dishes.length >= MIN_DISHES
-  // Un menú sin ningún plato asignado no cuenta — solo tiene título, no es
-  // una oferta real para el cliente.
+  // Un menú cuenta si tiene al menos un plato en "Primer plato" (first_course)
+  // — es el único curso obligatorio; el resto queda a criterio del chef.
+  // Debe coincidir con countMenusWithDishes en lib/menuCompletion.ts.
   const menusWithDishesCount = menus.filter(m =>
-    Object.values(m.courseSettings).some(cs => cs.dishIds.length > 0)
+    m.courseSettings.first_course.dishIds.length > 0
   ).length
   const menusMet = menusWithDishesCount >= MIN_MENUS
 
@@ -1123,6 +1132,7 @@ export function MenuBuilderPanel({
                 <CourseSection
                   key={c.value}
                   label={c.label}
+                  required={c.required}
                   sectionDishes={
                     activeMenu.courseSettings[c.value].dishIds
                       .map(id => dishes.find(d => d.id === id))

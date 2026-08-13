@@ -150,7 +150,7 @@ const CUISINE_LABELS: Record<string, string> = {
   chefs_special: "A elección del chef",
 };
 
-const OCCASION_LABELS: Record<string, string> = {
+export const OCCASION_LABELS: Record<string, string> = {
   birthday:          "Cumpleaños",
   bachelor_party:    "Despedida de soltero/a",
   romantic_dinner:   "Cena romántica",

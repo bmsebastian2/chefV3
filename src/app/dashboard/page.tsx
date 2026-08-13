@@ -5,8 +5,25 @@ import Link from 'next/link'
 import { CheckCircle2, Circle, ArrowRight, Wallet } from 'lucide-react'
 import { ActiveToggle } from '@/components/dashboard/ActiveToggle'
 import { ChefRatingSummary } from '@/components/dashboard/ChefRatingSummary'
+import { ActivitySnapshot } from '@/components/dashboard/ActivitySnapshot'
+import type { ChefBooking } from '@/components/dashboard/RequestsView'
 import { MIN_PROFILE_PHOTOS, MIN_GALLERY_PHOTOS, MIN_MENUS, MIN_DISHES } from '@/lib/chefRequirements'
 import { countMenusWithDishes } from '@/lib/menuCompletion'
+
+// Saludo por hora del día en horario de Nicaragua, sin depender de en qué
+// TZ corre el servidor (Vercel suele correr en UTC).
+function getGreeting(): string {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Managua',
+      hour: 'numeric',
+      hourCycle: 'h23',
+    }).format(new Date())
+  )
+  if (hour >= 5 && hour < 12) return 'Buenos días'
+  if (hour >= 12 && hour < 19) return 'Buenas tardes'
+  return 'Buenas noches'
+}
 
 type CompletionRow = {
   bio_done: boolean
@@ -49,6 +66,7 @@ export default async function DashboardPage() {
   let meetsRequirements = false
   let heldBookings = 0
   let dishesLoaded = 0
+  let bookings: ChefBooking[] = []
 
   if (chefProfile) {
     const [
@@ -59,6 +77,7 @@ export default async function DashboardPage() {
       menusWithDishesCount,
       { count: dishCount },
       { count: heldCount },
+      { data: bookingsData },
     ] = await Promise.all([
       supabase
         .from('profile_completion')
@@ -96,6 +115,9 @@ export default async function DashboardPage() {
         .eq('chef_id', chefProfile.id)
         .eq('payment_status', 'paid')
         .eq('payout_status', 'pending'),
+      // Reservas confirmadas/completadas del chef, para el panel de actividad
+      // (servicios completados + próximo servicio agendado).
+      supabase.rpc('get_chef_bookings'),
     ])
     completion = completionData
     profilePhotoUrl = photoData?.url ?? null
@@ -106,7 +128,16 @@ export default async function DashboardPage() {
       menusWithDishesCount >= MIN_MENUS &&
       (dishCount ?? 0) >= MIN_DISHES
     dishesLoaded = dishCount ?? 0
+    bookings = Array.isArray(bookingsData) ? (bookingsData as ChefBooking[]) : []
   }
+
+  const completedCount = bookings.filter((b) => b.booking_status === 'completed').length
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const nextBooking =
+    bookings
+      .filter((b) => b.booking_status === 'confirmed' && b.event_date_start >= todayStr)
+      .sort((a, b) => a.event_date_start.localeCompare(b.event_date_start))[0] ?? null
+  const hasBookings = bookings.length > 0
 
   // "Platos" no vive en profile_completion (no es un campo que el chef guarde
   // a mano) — se calcula en vivo igual que meetsRequirements, para que el
@@ -119,6 +150,23 @@ export default async function DashboardPage() {
   const doneCount = ITEMS.filter((item) => doneMap[item.key]).length
   const pct = Math.round((doneCount / ITEMS.length) * 100)
   const firstName = userData?.first_name || user.email?.split('@')[0] || 'Chef'
+  const firstPendingHref = ITEMS.find((item) => !doneMap[item.key])?.href ?? null
+
+  const greeting = getGreeting()
+  const isActive = chefProfile?.is_active ?? false
+  let heroSubline: string | null = null
+  if (chefProfile && !hasBookings) {
+    if (!meetsRequirements) {
+      const remaining = ITEMS.length - doneCount
+      heroSubline = remaining > 0
+        ? `${remaining} paso${remaining === 1 ? '' : 's'} más y tu perfil queda listo para recibir pedidos`
+        : 'Ajustá los últimos detalles de tu perfil para activar tu cuenta'
+    } else if (!isActive) {
+      heroSubline = 'Tu perfil cumple los requisitos. Activalo abajo para que los clientes te encuentren.'
+    } else {
+      heroSubline = 'Tu perfil está activo y visible. Tu primer pedido está por llegar.'
+    }
+  }
 
   // Aviso de datos de pago pendientes. Se muestra SOLO si además hay dinero
   // retenido: sin cuenta cargada no podemos liquidarle, y el chef no tiene otra
@@ -182,6 +230,7 @@ export default async function DashboardPage() {
                 )}
               </div>
               <div>
+                <p className="text-sm text-zinc-500 mb-2">{greeting}</p>
                 <div className="flex items-center gap-2 mb-1">
                   <div className="h-px w-5 bg-accent rounded-full" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
@@ -199,6 +248,11 @@ export default async function DashboardPage() {
                       count={chefProfile.rating_count ?? 0}
                     />
                   </div>
+                )}
+                {heroSubline && (
+                  <p className="mt-2 text-sm text-zinc-500 leading-relaxed max-w-sm">
+                    {heroSubline}
+                  </p>
                 )}
               </div>
             </div>
@@ -245,6 +299,21 @@ export default async function DashboardPage() {
           )}
         </div>
       </div>
+
+      {chefProfile && (
+        <ActivitySnapshot
+          hasBookings={hasBookings}
+          completedCount={completedCount}
+          nextBooking={
+            nextBooking
+              ? { occasion: nextBooking.occasion, event_date_start: nextBooking.event_date_start }
+              : null
+          }
+          meetsRequirements={meetsRequirements}
+          isActive={isActive}
+          firstPendingHref={firstPendingHref}
+        />
+      )}
 
       {/* ── Checklist ── */}
       <div>

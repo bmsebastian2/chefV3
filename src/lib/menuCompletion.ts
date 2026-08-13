@@ -1,10 +1,11 @@
 import type { createClient } from '@/utils/supabase/server'
 
 // Un menú solo cuenta para los mínimos de activación si tiene al menos un
-// plato asignado — un menú con solo título no es una oferta real para el
-// cliente. Compartido por dashboard/page.tsx (gate de "Perfil activo") y
-// dashboard/menus/actions.ts (profile_completion.menus_done), para que
-// checklist, sidebar y el gate real de activación digan siempre lo mismo.
+// plato en "Primer plato" (first_course) — es el único curso obligatorio,
+// "Segundo plato" (main) y el resto quedan a criterio del chef. Compartido
+// por dashboard/page.tsx (gate de "Perfil activo") y dashboard/menus/actions.ts
+// (profile_completion.menus_done), para que checklist, sidebar y el gate real
+// de activación digan siempre lo mismo.
 export async function countMenusWithDishes(
   supabase: Awaited<ReturnType<typeof createClient>>,
   chefId: string
@@ -20,8 +21,9 @@ export async function countMenusWithDishes(
 
   const { data: dishRows } = await supabase
     .from('menu_dishes')
-    .select('menu_id')
+    .select('menu_id, dishes!inner(course)')
     .in('menu_id', activeIds)
+    .eq('dishes.course', 'first_course')
 
   return new Set((dishRows ?? []).map(r => r.menu_id as string)).size
 }
