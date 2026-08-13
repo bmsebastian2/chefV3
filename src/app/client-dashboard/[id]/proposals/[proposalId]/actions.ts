@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { checkMessageContent, MODERATION_BLOCKED_MESSAGE } from '@/lib/chat-moderation'
 
 export async function acceptProposal(
   proposalId: string,
@@ -185,6 +186,19 @@ export async function sendClientMessage(
     .eq('user_id', user.id)
     .single()
   if (!request) return { error: 'No autorizado' }
+
+  const moderation = checkMessageContent(trimmed)
+  if (moderation.blocked) {
+    const admin = createAdminClient()
+    await admin.from('chat_moderation_flags').insert({
+      proposal_id:      proposalId,
+      sender_id:        user.id,
+      sender_role:      'client',
+      content:          trimmed,
+      matched_category: moderation.category,
+    })
+    return { error: MODERATION_BLOCKED_MESSAGE }
+  }
 
   const { error } = await supabase.rpc('insert_message', {
     p_proposal_id: proposalId,

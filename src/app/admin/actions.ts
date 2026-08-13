@@ -659,3 +659,60 @@ export async function updateCommissionRate(
   revalidatePath('/dashboard/menus')
   return {}
 }
+
+// ── Moderación de chat: intentos de compartir datos de contacto ──────────────
+// El bloqueo real ocurre en sendMessage/sendClientMessage (src/lib/chat-moderation.ts)
+// ANTES de insertar el mensaje; acá solo se lee lo que ya quedó registrado en
+// chat_moderation_flags para que el admin vea patrones de abuso (quién insiste).
+type ModerationFlagRow = {
+  id:                string
+  proposal_id:       string
+  sender_id:         string
+  sender_name:       string
+  sender_role:       'chef' | 'client'
+  content:           string
+  matched_category:  string
+  created_at:        string
+}
+
+const MODERATION_FLAGS_LIMIT = 300
+
+export async function getModerationFlags(): Promise<{ error?: string; data?: ModerationFlagRow[] }> {
+  if (!(await isAdmin())) return { error: 'No autorizado' }
+
+  const admin = createAdminClient()
+  const { data: flags, error } = await admin
+    .from('chat_moderation_flags')
+    .select('id, proposal_id, sender_id, sender_role, content, matched_category, created_at')
+    .order('created_at', { ascending: false })
+    .limit(MODERATION_FLAGS_LIMIT)
+
+  if (error) {
+    console.error('getModerationFlags:', error)
+    return { error: 'No se pudieron cargar los intentos registrados' }
+  }
+
+  const rows = flags ?? []
+  const senderIds = [...new Set(rows.map((r) => r.sender_id as string))]
+  const { data: users, error: usersError } = senderIds.length
+    ? await admin.from('users').select('id, first_name, first_surname').in('id', senderIds)
+    : { data: [] as { id: string; first_name: string | null; first_surname: string | null }[], error: null }
+  if (usersError) console.error('getModerationFlags (users):', usersError)
+
+  const nameById = Object.fromEntries(
+    (users ?? []).map((u) => [u.id, [u.first_name, u.first_surname].filter(Boolean).join(' ') || 'Usuario']),
+  )
+
+  const data: ModerationFlagRow[] = rows.map((r) => ({
+    id:               r.id as string,
+    proposal_id:      r.proposal_id as string,
+    sender_id:        r.sender_id as string,
+    sender_name:      nameById[r.sender_id as string] ?? 'Usuario',
+    sender_role:      r.sender_role as 'chef' | 'client',
+    content:          r.content as string,
+    matched_category: r.matched_category as string,
+    created_at:       r.created_at as string,
+  }))
+
+  return { data }
+}

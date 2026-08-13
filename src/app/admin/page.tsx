@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createAdminClient } from '@/utils/supabase/admin'
-import { Banknote, Undo2, ShieldCheck, CheckCircle2, Wallet, ClipboardList, Users, AlertTriangle, Settings } from 'lucide-react'
+import { Banknote, Undo2, ShieldCheck, CheckCircle2, Wallet, ClipboardList, Users, AlertTriangle, Settings, MessageCircleWarning } from 'lucide-react'
 import { formatPrice } from '@/lib/format'
 import { ProcessButton } from './ProcessButton'
 import { PaymentRefChip } from './PaymentRefChip'
@@ -10,6 +10,7 @@ import { RequestsMonitorSection } from './RequestsMonitorSection'
 import { ChefsManagementSection } from './ChefsManagementSection'
 import { ReleasedPayoutsSection } from './ReleasedPayoutsSection'
 import { CommissionRateSection } from './CommissionRateSection'
+import { ModerationSection } from './ModerationSection'
 import { AdminTabs } from './AdminTabs'
 
 type Payout = {
@@ -278,6 +279,12 @@ export default async function AdminPage({
             label: 'Chefs',
             icon: <Users className="w-4 h-4" />,
             content: <ChefsManagementSection />,
+          },
+          {
+            id: 'moderacion',
+            label: 'Moderación',
+            icon: <MessageCircleWarning className="w-4 h-4" />,
+            content: <ModerationSection />,
           },
           {
             id: 'config',

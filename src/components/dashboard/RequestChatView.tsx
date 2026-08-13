@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { sendMessage, getMessages } from "@/app/dashboard/requests/[id]/actions";
 import { formatPrice } from "@/lib/format";
+import { MODERATION_PASSIVE_NOTICE } from "@/lib/chat-moderation";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -530,6 +531,9 @@ export function RequestChatView({
                 </button>
               </div>
               <p style={{ fontSize: 10, color: "#9ca3af", marginTop: 5, marginBottom: 0, textAlign: "center" }}>
+                {MODERATION_PASSIVE_NOTICE}
+              </p>
+              <p style={{ fontSize: 10, color: "#d1d5db", marginTop: 2, marginBottom: 0, textAlign: "center" }}>
                 Enter · enviar &nbsp;·&nbsp; Shift+Enter · nueva línea
               </p>
             </div>

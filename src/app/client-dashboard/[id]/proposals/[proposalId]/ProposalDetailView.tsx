@@ -11,6 +11,7 @@ import {
 import { rejectProposal, sendClientMessage, getMessages } from "./actions"
 import { BookingPanel } from "./BookingPanel"
 import { formatPrice } from "@/lib/format"
+import { MODERATION_PASSIVE_NOTICE } from "@/lib/chat-moderation"
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -559,6 +560,7 @@ export function ProposalDetailView({
                   <Send className="w-4 h-4" />
                 </button>
               </div>
+              <p className="text-[10px] text-zinc-400 text-center">{MODERATION_PASSIVE_NOTICE}</p>
             </div>
           )}
 
