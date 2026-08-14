@@ -23,6 +23,7 @@ import {
   priceForGuests, proposalPriceRange, cellFromBudget, getBracket,
   BRACKET_LABELS, TIER_LABELS,
 } from "@/lib/pricing";
+import { checkMessageContent, MODERATION_BLOCKED_MESSAGE } from "@/lib/chat-moderation";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -399,7 +400,10 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, budgetMin,
     !priceRange ||
     (Number.isFinite(chosenPrice) && chosenPrice >= priceRange.min && chosenPrice <= priceRange.max);
   const menuOk = hasMenus && selectedMenuId !== "" && menuDescription.trim().length > 0;
-  const canSubmit = menuOk && priceOk;
+  // Chequeo instantáneo con el mismo filtro del server (chat-moderation.ts):
+  // feedback rápido en el campo, pero el bloqueo real ocurre en submitProposal.
+  const contactBlocked = checkMessageContent(message).blocked;
+  const canSubmit = menuOk && priceOk && !contactBlocked;
 
   function handleMenuSelect(menuId: string) {
     setSelectedMenuId(menuId);
@@ -419,6 +423,7 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, budgetMin,
       setServerError(`El precio por persona debe estar entre ${formatPrice(priceRange.min)} y ${formatPrice(priceRange.max)}.`);
       return;
     }
+    if (contactBlocked) { setServerError(MODERATION_BLOCKED_MESSAGE); return; }
     startTransition(async () => {
       const result = await submitProposal(
         requestId,
@@ -513,8 +518,15 @@ function ProposalForm({ requestId, clientName, chefMenus, guestCount, budgetMin,
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Contale por qué sos la persona ideal para este evento..."
             rows={3}
-            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-accent/15 focus:border-accent resize-none transition-all duration-150"
+            className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 resize-none transition-all duration-150 ${
+              contactBlocked
+                ? "border-red-300 focus:ring-red-100 focus:border-red-400"
+                : "border-zinc-200 focus:ring-accent/15 focus:border-accent"
+            }`}
           />
+          {contactBlocked && (
+            <p className="mt-1.5 text-xs text-red-600">{MODERATION_BLOCKED_MESSAGE}</p>
+          )}
         </div>
 
         {priceRange && (

@@ -7,6 +7,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { sendProposalEmail } from '@/lib/emails/client-emails'
 import { cellFromBudget, proposalPriceRange, proposalSnapshotForTier } from '@/lib/pricing'
 import { formatPrice } from '@/lib/format'
+import { checkMessageContent, MODERATION_BLOCKED_MESSAGE } from '@/lib/chat-moderation'
 import type { MenuPrices } from '@/lib/pricing'
 
 export type ChefBookingDetail = {
@@ -66,6 +67,17 @@ export async function submitProposal(
   // propuesta vacía, así que se corta acá.
   const menu = menuDescription?.trim() ?? ''
   if (!menu) return { error: 'La descripción del menú es obligatoria.' }
+
+  // ── Anti-desintermediación server-side ─────────────────────────────────────
+  // Mismo filtro que el chat (src/lib/chat-moderation.ts): el mensaje al cliente
+  // es el primer contacto donde un chef podría pasar su número antes de que
+  // exista cualquier pago. El frontend ya da feedback al tipear, pero la
+  // protección real va acá — un request directo a este server action se
+  // saltearía cualquier chequeo solo-cliente.
+  const trimmedMessage = message?.trim() ?? ''
+  if (trimmedMessage && checkMessageContent(trimmedMessage).blocked) {
+    return { error: MODERATION_BLOCKED_MESSAGE }
+  }
 
   // ── Precio AUTORITATIVO server-side ────────────────────────────────────────
   // El cliente propone un precio, pero el servidor decide qué se guarda: cuando
