@@ -17,7 +17,13 @@ export default async function RequestsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
 
-  const { data } = await supabase.rpc('get_chef_requests_state')
+  // Se dispara en paralelo con la carga del estado: entrar a esta página
+  // marca todo lo pendiente como visto, así el badge del dashboard/sidebar
+  // baja a 0 sin esperar una acción aparte del chef.
+  const [{ data }] = await Promise.all([
+    supabase.rpc('get_chef_requests_state'),
+    supabase.rpc('mark_chef_requests_viewed'),
+  ])
   const state = data as ChefRequestsState
   if (!state) redirect('/dashboard')
 

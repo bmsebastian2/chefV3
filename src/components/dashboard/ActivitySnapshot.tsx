@@ -20,6 +20,7 @@ export function ActivitySnapshot({
   meetsRequirements,
   isActive,
   firstPendingHref,
+  pendingRequestsCount,
 }: {
   hasBookings: boolean
   completedCount: number
@@ -27,6 +28,7 @@ export function ActivitySnapshot({
   meetsRequirements: boolean
   isActive: boolean
   firstPendingHref: string | null
+  pendingRequestsCount: number
 }) {
   // Chef sin actividad todavía: una sola card cálida con la próxima acción
   // concreta según en qué paso está, en vez de una grilla de stats en cero.
@@ -51,6 +53,23 @@ export function ActivitySnapshot({
     } else if (!isActive) {
       headline = 'Tu perfil está listo'
       body = 'Activalo arriba para que los clientes te encuentren.'
+    } else if (pendingRequestsCount > 0) {
+      headline =
+        pendingRequestsCount === 1
+          ? 'Tenés 1 solicitud esperando tu propuesta'
+          : `Tenés ${pendingRequestsCount} solicitudes esperando tu propuesta`
+      body = (
+        <>
+          Mirala antes de que la tome otro chef.{' '}
+          <Link
+            href="/dashboard/requests"
+            className="inline-flex items-center gap-1 text-accent font-semibold hover:text-accent/80"
+          >
+            Ver solicitudes
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </>
+      )
     } else {
       headline = 'Tu primer pedido está por llegar'
       body = (

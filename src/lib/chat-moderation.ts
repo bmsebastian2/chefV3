@@ -38,26 +38,30 @@ function hasEmail(normalized: string): boolean {
 
 // ── Teléfono ─────────────────────────────────────────────────────────────────
 
-// Corridas de dígitos con separadores de teléfono típicos (espacio, guion, punto).
-// Deliberadamente NO incluye "/" para no chocar con fechas DD/MM/YYYY.
-const DIGIT_RUN_RE = /\+?\d[\d .-]{5,13}\d/g;
+// Corridas de dígitos con separadores de teléfono típicos (espacio, guion).
+// Deliberadamente NO incluye "." ni "/": el punto se usa como separador de
+// miles en precios ("1.500.000") y la barra en fechas DD/MM/YYYY — ambos
+// colisionarían con corridas de 7+ dígitos si los aceptáramos acá.
+const DIGIT_RUN_RE = /\+?\d[\d -]{5,13}\d/g;
 
-const ISO_DATE_RE = /^\d{4}[.-]\d{2}[.-]\d{2}$/;
-const DMY_DATE_RE = /^\d{2}[.-]\d{2}[.-]\d{4}$/;
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DMY_DATE_RE = /^\d{2}-\d{2}-\d{4}$/;
 
 function looksLikeDate(rawMatch: string): boolean {
   const trimmed = rawMatch.trim();
   return ISO_DATE_RE.test(trimmed) || DMY_DATE_RE.test(trimmed);
 }
 
+// Multi-país: NI (8, +505 → 11), UY (8-9, +598 → 11-12), y otros formatos
+// LatAm comunes de 9-10 dígitos locales. Rango continuo en vez de una lista
+// cerrada por país — evita tener que mantener una tabla país→largo acá.
 function hasPhoneNumber(original: string): boolean {
   const matches = original.match(DIGIT_RUN_RE);
   if (!matches) return false;
   for (const raw of matches) {
     if (looksLikeDate(raw)) continue;
     const digitsOnly = raw.replace(/\D/g, "");
-    // NI: 8 dígitos locales, o 11 con código de país 505.
-    if (digitsOnly.length === 7 || digitsOnly.length === 8 || digitsOnly.length === 11) {
+    if (digitsOnly.length >= 7 && digitsOnly.length <= 12) {
       return true;
     }
   }

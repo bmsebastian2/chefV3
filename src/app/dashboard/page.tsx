@@ -67,6 +67,7 @@ export default async function DashboardPage() {
   let heldBookings = 0
   let dishesLoaded = 0
   let bookings: ChefBooking[] = []
+  let pendingRequestsCount = 0
 
   if (chefProfile) {
     const [
@@ -78,6 +79,7 @@ export default async function DashboardPage() {
       { count: dishCount },
       { count: heldCount },
       { data: bookingsData },
+      { data: badgeData },
     ] = await Promise.all([
       supabase
         .from('profile_completion')
@@ -118,10 +120,14 @@ export default async function DashboardPage() {
       // Reservas confirmadas/completadas del chef, para el panel de actividad
       // (servicios completados + próximo servicio agendado).
       supabase.rpc('get_chef_bookings'),
+      // Count liviano de solicitudes 'new' sin ver — no trae las solicitudes
+      // completas, solo el número (ver get_chef_requests_badge).
+      supabase.rpc('get_chef_requests_badge'),
     ])
     completion = completionData
     profilePhotoUrl = photoData?.url ?? null
     heldBookings = heldCount ?? 0
+    pendingRequestsCount = (badgeData as { count?: number } | null)?.count ?? 0
     meetsRequirements =
       (profilePhotoCount ?? 0) >= MIN_PROFILE_PHOTOS &&
       (galleryCount ?? 0) >= MIN_GALLERY_PHOTOS &&
@@ -312,6 +318,7 @@ export default async function DashboardPage() {
           meetsRequirements={meetsRequirements}
           isActive={isActive}
           firstPendingHref={firstPendingHref}
+          pendingRequestsCount={pendingRequestsCount}
         />
       )}
 

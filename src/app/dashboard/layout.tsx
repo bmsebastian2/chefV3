@@ -52,8 +52,9 @@ export default async function DashboardLayout({
   let cartaCompleted = false
   let requestSettingsCompleted = false
   let pagosCompleted = false
+  let pendingRequestsCount = 0
   if (chefProfile) {
-    const [{ data: photoData }, { data: completionData }, { count: dishCount }] = await Promise.all([
+    const [{ data: photoData }, { data: completionData }, { count: dishCount }, { data: badgeData }] = await Promise.all([
       supabase
         .from('chef_photos')
         .select('url')
@@ -76,6 +77,9 @@ export default async function DashboardLayout({
         .select('*', { count: 'exact', head: true })
         .eq('chef_id', chefProfile.id)
         .eq('is_active', true),
+      // Count liviano de solicitudes 'new' sin ver, para el badge del nav
+      // "Solicitudes" — mismo count que usa la card de /dashboard.
+      supabase.rpc('get_chef_requests_badge'),
     ])
     profilePhotoUrl = photoData?.url ?? null
     fotosCompleted = !!(completionData?.profile_picture_done && completionData?.gallery_done)
@@ -84,6 +88,7 @@ export default async function DashboardLayout({
     cartaCompleted = !!completionData?.menus_done && (dishCount ?? 0) >= MIN_DISHES
     requestSettingsCompleted = !!completionData?.request_prefs_done
     pagosCompleted = !!completionData?.payments_done
+    pendingRequestsCount = (badgeData as { count?: number } | null)?.count ?? 0
   }
 
   const userName = userData?.first_name || user.email || 'Chef'
@@ -101,6 +106,7 @@ export default async function DashboardLayout({
         cartaCompleted={cartaCompleted}
         requestSettingsCompleted={requestSettingsCompleted}
         pagosCompleted={pagosCompleted}
+        pendingRequestsCount={pendingRequestsCount}
       />
       <div className="md:pl-64">
         <main className="min-h-screen">

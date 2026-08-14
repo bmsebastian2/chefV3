@@ -41,6 +41,7 @@ function NavItems({
   cartaCompleted,
   requestSettingsCompleted,
   pagosCompleted,
+  pendingRequestsCount,
 }: {
   openSections: string[];
   toggle: (label: string) => void;
@@ -52,6 +53,7 @@ function NavItems({
   cartaCompleted: boolean;
   requestSettingsCompleted: boolean;
   pagosCompleted: boolean;
+  pendingRequestsCount: number;
 }) {
   return (
     <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
@@ -62,6 +64,7 @@ function NavItems({
             (item.href === "/dashboard/menus" && cartaCompleted) ||
             (item.href === "/dashboard/request-settings" && requestSettingsCompleted) ||
             (item.href === "/dashboard/pagos" && pagosCompleted);
+          const badge = item.href === "/dashboard/requests" ? pendingRequestsCount : 0;
           return (
             <Link
               key={item.href}
@@ -78,6 +81,11 @@ function NavItems({
               <item.icon className={`w-4 h-4 flex-shrink-0 ${done ? "text-accent" : ""}`} />
               <span className="flex-1">{item.label}</span>
               {done && <CheckCircle2 className="w-4 h-4 text-accent flex-shrink-0" />}
+              {badge > 0 && (
+                <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center">
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              )}
             </Link>
           );
         }
@@ -263,6 +271,7 @@ export function Sidebar({
   cartaCompleted,
   requestSettingsCompleted,
   pagosCompleted,
+  pendingRequestsCount,
 }: {
   userName: string;
   userFullName: string;
@@ -273,6 +282,7 @@ export function Sidebar({
   cartaCompleted: boolean;
   requestSettingsCompleted: boolean;
   pagosCompleted: boolean;
+  pendingRequestsCount: number;
 }) {
   const pathname = usePathname();
   const [openSections, setOpenSections] = useState<string[]>(["Perfil"]);
@@ -294,6 +304,7 @@ export function Sidebar({
     cartaCompleted,
     requestSettingsCompleted,
     pagosCompleted,
+    pendingRequestsCount,
   };
 
   const sidebarInner = (
