@@ -20,10 +20,15 @@ export function AdditionalCitiesPicker({
   city,
   country,
   initialKeys,
+  hasConfiguredCities,
 }: {
-  city:        string | null;
-  country:     string | null;
-  initialKeys: string[];
+  city:                 string | null;
+  country:              string | null;
+  initialKeys:          string[];
+  /** false si el chef nunca guardó esta sección: precarga todo el catálogo en
+   *  vez de `initialKeys`, para que arranque recibiendo solicitudes de todo el
+   *  país en lugar de quedar invisible por no haber configurado nada. */
+  hasConfiguredCities:  boolean;
 }) {
   const catalog = getCatalogCities(country);
   const primaryKey = normalizeCity(city);
@@ -31,15 +36,16 @@ export function AdditionalCitiesPicker({
 
   // Estado: solo claves válidas del catálogo y distintas de la ciudad base.
   const validKeys = new Set((catalog ?? []).map((c) => c.key));
-  const [additionalKeys, setAdditionalKeys] = useState<string[]>(() =>
-    Array.from(
+  const [additionalKeys, setAdditionalKeys] = useState<string[]>(() => {
+    const source = hasConfiguredCities ? initialKeys ?? [] : (catalog ?? []).map((c) => c.key);
+    return Array.from(
       new Set(
-        (initialKeys ?? [])
+        source
           .map((k) => normalizeCity(k))
           .filter((k): k is string => !!k && validKeys.has(k) && k !== primaryKey)
       )
-    )
-  );
+    );
+  });
   const [query, setQuery] = useState("");
 
   function toggle(key: string) {

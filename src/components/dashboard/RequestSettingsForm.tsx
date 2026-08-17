@@ -16,6 +16,7 @@ export type RequestSettingsInitialData = {
   city:              string | null
   country:           string | null
   additional_cities: string[]
+  has_configured_cities: boolean
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -119,6 +120,7 @@ export function RequestSettingsForm({ initialData }: { initialData: RequestSetti
         city={initialData.city}
         country={initialData.country}
         initialKeys={initialData.additional_cities}
+        hasConfiguredCities={initialData.has_configured_cities}
       />
 
       <div className="border-t border-zinc-100" />

@@ -31,6 +31,15 @@ export default async function RequestSettingsPage() {
     .eq('chef_id', chef.id)
     .single()
 
+  // request_prefs_done: true solo cuando el chef guardó esta sección al menos
+  // una vez. Se usa para distinguir "nunca configuró ciudades" (default: todas)
+  // de "ya eligió conscientemente" (se respeta lo guardado, aunque sea vacío).
+  const { data: completion } = await supabase
+    .from('profile_completion')
+    .select('request_prefs_done')
+    .eq('chef_id', chef.id)
+    .single()
+
   const initialData: RequestSettingsInitialData = {
     accepts_single:    settings?.accepts_single   ?? true,
     accepts_multiple:  settings?.accepts_multiple ?? true,
@@ -42,6 +51,7 @@ export default async function RequestSettingsPage() {
     city:              chef.city,
     country:           chef.country,
     additional_cities: cov?.additional_cities ?? [],
+    has_configured_cities: completion?.request_prefs_done ?? false,
   }
 
   return (
