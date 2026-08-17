@@ -24,9 +24,9 @@ export default async function Home() {
     <main className="flex min-h-screen flex-col bg-background selection:bg-accent selection:text-zinc-900 overflow-x-hidden">
       <Header />
       <Hero />
-      <SaboresEnCasa />
-      <AssistantEntry variant="embedded" />
       <HowItWorks />
+      <SaboresEnCasa />
+      <AssistantEntry variant="embedded" />      
       <MenuDeLaNoche />
       <NicaraguaChefMapSection />
       <Chefs chefs={chefs} />
