@@ -12,6 +12,7 @@ import { canonicalCity } from '@/lib/maps/cities'
 import { TERMS_VERSION } from '@/lib/terms'
 import { getPriceRange } from '@/lib/pricing'
 import { validateEmail } from '@/lib/email-validation'
+import { resolveAppUrl } from '@/lib/payment-guards'
 
 // País a persistir en la solicitud. Se deriva del countryCode (ISO) capturado en
 // el wizard con country-state-city — MISMA fuente que chef_profiles.country, así
@@ -91,7 +92,7 @@ function formatLocalDate(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
-const SITE_URL = (process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
+const SITE_URL = resolveAppUrl('wizard')
 
 // ─── registerOrVerifyClient ───────────────────────────────────────────────────
 

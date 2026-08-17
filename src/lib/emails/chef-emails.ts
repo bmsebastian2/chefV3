@@ -1,7 +1,7 @@
 'use server'
 
 import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
-import { emailFooter, ctaBand, greetingBlock, iconUrl, EMAIL_RESPONSIVE_STYLES, ASSET_BASE_URL } from './shared'
+import { emailFooter, ctaBand, greetingBlock, detailBlock, iconUrl, EMAIL_RESPONSIVE_STYLES, ASSET_BASE_URL, SITE_URL } from './shared'
 
 // Perforado "sello postal" arriba y abajo del card — mismo truco que
 // client-emails.ts / notify-chefs.ts.
@@ -31,7 +31,9 @@ const SCALLOP_TOP_ROW    = scallopRow(true, '#FAFAFA')
 const SCALLOP_BOTTOM_ROW = scallopRow(false, '#FAFAFA')
 
 // ── HTML shell (idéntico al de client-emails / notify-chefs) ─────────────────
-function shell(body: string, subtitle: string = 'Bienvenido al equipo'): string {
+// Exportado: lo reusa el recordatorio de perfil incompleto más abajo, para no
+// duplicar header/scallops/footer con un segundo shell casi idéntico.
+export function shell(body: string, subtitle: string = 'Bienvenido al equipo'): string {
   return `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">${EMAIL_RESPONSIVE_STYLES}</head>
@@ -115,4 +117,77 @@ export async function sendChefConfirmationEmail(opts: {
   })
 
   if (error) console.error('[chef-emails] sendChefConfirmationEmail falló:', error)
+}
+
+// ── Email: recordatorio de perfil incompleto ──────────────────────────────────
+// Shape que devuelve compute_chef_missing_requirements() (SQL) — ver
+// MIGRATION_chef_completion_reminder.sql. 'key' identifica el requisito para
+// elegir ícono acá; el resto ya viene listo para mostrar.
+export type ChefMissingRequirement = {
+  key: 'profile_picture' | 'gallery' | 'menus' | 'dishes' | (string & {})
+  label: string
+  current: number
+  required: number
+  href: string
+}
+
+// Sin ícono dorado propio para foto/galería en el set de shared.ts (pensado
+// para "Detalles del servicio", no para checklist de perfil) — se usa emoji
+// de fallback ahí, e íconos existentes donde ya calzan (nota→menús, cubiertos→platos).
+const MISSING_ICON: Record<string, string> = {
+  profile_picture: '📷',
+  gallery: '🖼️',
+  menus: 'nota',
+  dishes: 'cubiertos',
+}
+
+function buildCompletionReminderEmail(name: string, missing: ChefMissingRequirement[]): string {
+  const firstHref = missing[0]?.href ?? '/dashboard'
+
+  return shell(`
+    ${greetingBlock({
+      name,
+      headline: 'Todavía no estás recibiendo solicitudes de clientes.',
+      detailLine: 'Mientras tu perfil no cumpla estos mínimos, no vas a aparecer para nadie que busque un chef.',
+    })}
+    ${detailBlock(missing.map(m => [
+      MISSING_ICON[m.key] ?? '•',
+      m.label,
+      `${m.current} de ${m.required}`,
+    ]))}
+    ${ctaBand({
+      title: 'Completá tu perfil',
+      subtitle: 'Un par de fotos y platos más y ya podés empezar a recibir solicitudes.',
+      buttonLabel: 'Completar mi perfil',
+      href: `${SITE_URL}${firstHref}`,
+    })}
+  `, 'Completá tu perfil')
+}
+
+// Devuelve si el envío salió bien — el cron lo usa para decidir si marca el
+// recordatorio como enviado (reminder_count/last_sent_at) o lo deja tal cual
+// para reintentar en la próxima corrida.
+export async function sendChefCompletionReminderEmail(opts: {
+  email: string
+  name: string
+  missing: ChefMissingRequirement[]
+}): Promise<boolean> {
+  if (!resend) {
+    console.warn('[chef-emails] RESEND_API_KEY no configurado, omitiendo recordatorio de perfil')
+    return false
+  }
+
+  const { error } = await resend.emails.send({
+    from:    FROM_EMAIL,
+    to:      resolveRecipient(opts.email),
+    replyTo: REPLY_TO,
+    subject: `${testSubjectPrefix(opts.email)}Todavía no recibís solicitudes — completá tu perfil`,
+    html:    buildCompletionReminderEmail(opts.name, opts.missing),
+  })
+
+  if (error) {
+    console.error('[chef-emails] sendChefCompletionReminderEmail falló:', error)
+    return false
+  }
+  return true
 }

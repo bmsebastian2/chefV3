@@ -8,6 +8,7 @@ import { TERMS_VERSION } from '@/lib/terms'
 import { validatePassword } from '@/lib/password'
 import { validateEmail } from '@/lib/email-validation'
 import { sendChefConfirmationEmail } from '@/lib/emails/chef-emails'
+import { resolveAppUrl } from '@/lib/payment-guards'
 
 // Errores de acceso que puede provocar quien intenta entrar. Se mapea por
 // `code` y no por `message`: el código es estable entre versiones de Supabase,
@@ -48,7 +49,7 @@ export async function signup(prevState: { error: string } | null, formData: Form
     email: formData.get('email') as string,
     password: formData.get('password') as string,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      emailRedirectTo: `${resolveAppUrl('auth')}/auth/callback`,
     },
   })
 
@@ -62,7 +63,7 @@ export async function loginWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      redirectTo: `${resolveAppUrl('auth')}/auth/callback`,
     },
   })
 
@@ -116,7 +117,7 @@ export async function requestPasswordReset(
   // El enlace del email vuelve por /auth/callback, que intercambia el code y
   // redirige a /reset-password gracias al parámetro `next`.
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`,
+    redirectTo: `${resolveAppUrl('auth')}/auth/callback?next=/reset-password`,
   })
 
   if (error) return { error: error.message, success: false }
@@ -232,7 +233,7 @@ export async function registerChef(
     const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
       type:    'magiclink',
       email,
-      options: { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/dashboard` },
+      options: { redirectTo: `${resolveAppUrl('auth')}/auth/callback?next=/dashboard` },
     })
 
     if (linkError) {
