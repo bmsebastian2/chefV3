@@ -28,9 +28,9 @@ export default async function Home() {
       <AssistantEntry variant="embedded" />
       <HowItWorks />
       <MenuDeLaNoche />
-      <Chefs chefs={chefs} />
       <NicaraguaChefMapSection />
-      <Menus />
+      <Chefs chefs={chefs} />
+        <Menus />
       <About />
       <Contact />
       <Footer />

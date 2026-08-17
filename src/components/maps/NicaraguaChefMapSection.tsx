@@ -72,8 +72,8 @@ export function NicaraguaChefMapSection() {
             Chefs activos en todo <span className="text-accent">Nicaragua</span>
           </h2>
           <p className="mt-4 text-base leading-relaxed text-zinc-500">
-            Explorá el mapa por departamento, descubrí quién cocina cerca tuyo y
-            abrí el perfil de cada chef disponible en tu zona.
+            Explorá el mapa por departamento, seguí la ruta culinaria y
+            descubrí quién cocina cerca tuyo.
           </p>
         </div>
 
