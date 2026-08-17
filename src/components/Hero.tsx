@@ -1,6 +1,6 @@
 import ReactDOM from "react-dom";
 import Link from "next/link";
-import { ChefHat, ArrowRight, Sparkles } from "lucide-react";
+import { ChefHat, ArrowRight, Sparkles, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroVideo } from "@/components/HeroVideo";
 import { AnchorLink } from "@/components/AnchorLink";
@@ -189,15 +189,27 @@ export function Hero() {
                   </span>
                 </Button>
               </Link>
-              <AnchorLink
-                href="#chefs"
-                className="group/ghost inline-flex items-center justify-center sm:justify-start gap-2 h-12 px-2 rounded-lg text-sm font-semibold text-amber-700 outline-none transition-colors hover:text-amber-800 focus-visible:ring-2 focus-visible:ring-amber-300/60"
-              >
-                <span className="border-b border-amber-500/40 group-hover/ghost:border-amber-700 transition-colors">
-                  Ver nuestros chefs
-                </span>
-                <span className="transition-transform duration-200 group-hover/ghost:translate-x-1">→</span>
-              </AnchorLink>
+              <div className="flex h-12 items-center justify-center gap-3 px-2 sm:justify-start">
+                <AnchorLink
+                  href="#chefs"
+                  className="group/ghost inline-flex items-center gap-2 rounded text-sm font-semibold text-amber-700 outline-none transition-colors hover:text-amber-800 focus-visible:ring-2 focus-visible:ring-amber-300/60"
+                >
+                  <span className="border-b border-amber-500/40 group-hover/ghost:border-amber-700 transition-colors">
+                    Ver nuestros chefs
+                  </span>
+                  <span className="transition-transform duration-200 group-hover/ghost:translate-x-1">→</span>
+                </AnchorLink>
+                <span className="h-3.5 w-px bg-zinc-300/70" aria-hidden="true" />
+                <AnchorLink
+                  href="#mapa"
+                  className="group/map inline-flex items-center gap-1.5 rounded text-sm font-semibold text-amber-700 outline-none transition-colors hover:text-amber-800 focus-visible:ring-2 focus-visible:ring-amber-300/60"
+                >
+                  <UtensilsCrossed className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="border-b border-amber-500/40 group-hover/map:border-amber-700 transition-colors">
+                    Ruta culinaria
+                  </span>
+                </AnchorLink>
+              </div>
             </div>
 
             {/* Banner gastronómico — en móvil sube aquí para verse en la primera pantalla */}
