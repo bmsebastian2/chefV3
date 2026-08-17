@@ -76,8 +76,8 @@ function GooglePayIcon() {
   )
 }
 
-const METHODS: { id: PaymentMethod; label: string; Icon: React.FC }[] = [
-  { id: "card",      label: "Tarjeta de crédito", Icon: CreditCardIcon },
+const METHODS: { id: PaymentMethod; label: string; Icon: React.FC; disabled?: boolean }[] = [
+  { id: "card",      label: "Tarjeta de crédito", Icon: CreditCardIcon, disabled: true },
   { id: "paypal",    label: "Paypal",              Icon: PaypalIcon },
   { id: "googlepay", label: "Google Pay",          Icon: GooglePayIcon },
 ]
@@ -86,7 +86,7 @@ const METHODS: { id: PaymentMethod; label: string; Icon: React.FC }[] = [
 
 export function PaymentView({ requestId, proposalId, total, guests, initialError }: Props) {
   const router = useRouter()
-  const [method, setMethod]   = useState<PaymentMethod>("card")
+  const [method, setMethod]   = useState<PaymentMethod>("paypal")
   const [isPaying, startTransition] = useTransition()
   // Arranca con el error del retorno fallido (si lo hay); cualquier intento nuevo
   // lo limpia con setError(null) antes de disparar el pago.
@@ -165,24 +165,33 @@ export function PaymentView({ requestId, proposalId, total, guests, initialError
               </div>
 
               <div className="space-y-2">
-                {METHODS.map(({ id, label, Icon }) => (
+                {METHODS.map(({ id, label, Icon, disabled }) => (
                   <button
                     key={id}
                     type="button"
-                    onClick={() => setMethod(id)}
+                    onClick={() => !disabled && setMethod(id)}
+                    disabled={disabled}
                     className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all duration-150 ${
-                      method === id
-                        ? "border-accent bg-accent/5"
-                        : "border-zinc-200 bg-white hover:border-zinc-300"
+                      disabled
+                        ? "border-zinc-100 bg-zinc-50 opacity-60 cursor-not-allowed"
+                        : method === id
+                          ? "border-accent bg-accent/5"
+                          : "border-zinc-200 bg-white hover:border-zinc-300"
                     }`}
                   >
                     <Icon />
                     <span className="flex-1 text-left text-sm font-medium text-zinc-800">{label}</span>
-                    <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                      method === id ? "border-accent" : "border-zinc-300"
-                    }`}>
-                      {method === id && <span className="w-2 h-2 rounded-full bg-accent" />}
-                    </span>
+                    {disabled ? (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 flex-shrink-0">
+                        Próximamente
+                      </span>
+                    ) : (
+                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        method === id ? "border-accent" : "border-zinc-300"
+                      }`}>
+                        {method === id && <span className="w-2 h-2 rounded-full bg-accent" />}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
