@@ -31,9 +31,9 @@ const SCALLOP_TOP_ROW    = scallopRow(true, '#FAFAFA')
 const SCALLOP_BOTTOM_ROW = scallopRow(false, '#FAFAFA')
 
 // ── HTML shell (idéntico al de client-emails / notify-chefs) ─────────────────
-// Exportado: lo reusa el recordatorio de perfil incompleto más abajo, para no
-// duplicar header/scallops/footer con un segundo shell casi idéntico.
-export function shell(body: string, subtitle: string = 'Bienvenido al equipo'): string {
+// Sin exportar: la reusan buildConfirmationEmail y buildCompletionReminderEmail,
+// ambas en este mismo archivo, para no duplicar header/scallops/footer.
+function shell(body: string, subtitle: string = 'Bienvenido al equipo'): string {
   return `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">${EMAIL_RESPONSIVE_STYLES}</head>
