@@ -25,14 +25,16 @@ export default async function Home() {
       <Header />
       <Hero />
       <HowItWorks />
+      <AssistantEntry variant="embedded" />   
       <SaboresEnCasa />
-      <AssistantEntry variant="embedded" />      
+       
       <MenuDeLaNoche />
       <NicaraguaChefMapSection />
       <Chefs chefs={chefs} />
-        <Menus />
+       
       <About />
       <Contact />
+       <Menus />
       <Footer />
     </main>
   );
