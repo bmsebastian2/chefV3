@@ -43,4 +43,11 @@ export const CULINARY: Partial<Record<string, DepartmentCulinary>> = {
     image: '/maps/culinary/quesillo.jpg',
     imageAlt: 'Quesillo recién envuelto en una tortilla, sostenido con la mano junto al comal',
   },
+  boaco: {
+    dish: 'Indio Viejo',
+    description:
+      'Carne deshilachada que se cuece junto a masa de maíz, hierbabuena, achiote y un toque de naranja agria, hasta espesar en un guiso que abraza. Es de raíz muy anterior a la conquista — nahuas mesoamericanos ya lo preparaban con maíz molido en piedra — y en Boaco, tierra de fincas y ganado, sigue siendo el plato de olla grande que reúne a la familia después de un día de trabajo en el campo.',
+    image: '/maps/culinary/indio-viejo.jpg',
+    imageAlt: 'Guiso de Indio Viejo en un sartén, con carne deshilachada y hierbabuena fresca',
+  },
 }

@@ -43,11 +43,12 @@ const HEIGHT_RATIO = 0.92 // alto = ancho × ratio (aprox. proporción de Nicara
 
 /**
  * Orden geográfico de la "Ruta Culinaria" (NO orden alfabético): un recorrido
- * real de Pacífico a lago, León → Managua → Masaya → Granada. Solo se dibujan
- * los departamentos que además tienen entrada en `CULINARY` — agregar un
- * depto acá sin contenido curado no rompe nada, simplemente no se pinta.
+ * real de Pacífico a lago con una escapada al campo — León → Managua → Boaco
+ * → Masaya → Granada. Solo se dibujan los departamentos que además tienen
+ * entrada en `CULINARY` — agregar un depto acá sin contenido curado no rompe
+ * nada, simplemente no se pinta.
  */
-const CULINARY_ROUTE_ORDER = ['leon', 'managua', 'masaya', 'granada']
+const CULINARY_ROUTE_ORDER = ['leon', 'managua', 'boaco', 'masaya', 'granada']
 
 /**
  * Dirección (vector unitario, no normalizado) hacia un hueco vacío dentro del
@@ -62,6 +63,7 @@ const CULINARY_ROUTE_ORDER = ['leon', 'managua', 'masaya', 'granada']
 const CULINARY_PIN_DIRECTION: Record<string, { dx: number; dy: number }> = {
   leon: { dx: 0.85, dy: 0.52 }, // hacia el interior del depto (sureste)
   managua: { dx: -0.94, dy: -0.34 }, // hacia el oeste/noroeste, lejos del centro
+  boaco: { dx: -0.97, dy: 0.08 }, // hacia el oeste, lejos de la frontera con Chontales
   masaya: { dx: 0.37, dy: -0.93 }, // hacia el norte, el depto es angosto
   granada: { dx: 0.82, dy: 0.57 }, // hacia el sureste, lejos de la costa del lago
 }

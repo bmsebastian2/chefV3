@@ -4,6 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
 import { normalizeCity } from '@/lib/maps/normalizeCity'
 import { tierFromBudget, type PriceTier } from '@/lib/pricing'
+import { occasionSentence } from '@/lib/occasion'
 import { emailFooter, ctaBand, detailBlock, tierBadge, heroGrid, tierBadgeLabel, greetingBlock, iconUrl, EMAIL_RESPONSIVE_STYLES, SITE_URL, ASSET_BASE_URL } from './shared'
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
@@ -162,7 +163,7 @@ function buildEmailHtml(chef: string, req: RequestData, clientName: string): str
 
   const headline = isWeekly
     ? `${clientName} está buscando un chef para su día a día.`
-    : `${clientName} te está esperando para su ${occasionLabel.toLowerCase()}.`
+    : `${clientName} te está esperando para ${occasionSentence(req.occasion, occasionLabel)}.`
 
   const detailBits = [
     fecha ? `El ${fecha}` : null,
