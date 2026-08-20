@@ -201,7 +201,7 @@ export function Footer() {
             </a>
             <div className="mt-6 flex gap-3">
               <a
-                href="https://www.instagram.com/getchefcom/"
+                href="https://www.instagram.com/getcheftoday/"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="GetChef en Instagram"
