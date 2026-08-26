@@ -8,7 +8,7 @@ import {
   ArrowLeft, Send, Share2, MoreHorizontal,
   Star, CheckCircle2, XCircle, Loader2,
 } from "lucide-react"
-import { rejectProposal, sendClientMessage, getMessages } from "./actions"
+import { rejectProposal, sendClientMessage, getMessages, markConversationRead } from "./actions"
 import { BookingPanel } from "./BookingPanel"
 import { formatPrice } from "@/lib/format"
 import { MODERATION_PASSIVE_NOTICE } from "@/lib/chat-moderation"
@@ -266,6 +266,15 @@ export function ProposalDetailView({
       bottomRef.current?.scrollIntoView({ behavior: "smooth" })
     }
   }, [messages, activeTab])
+
+  // Abrir la pestaña de mensajes cuenta como leer la conversación — resetea
+  // la alerta de mensaje nuevo (proposals.client_msg_alert_sent_at) para que
+  // el próximo mensaje sin leer pueda volver a disparar un aviso por email.
+  useEffect(() => {
+    if (activeTab === "mensajes") {
+      markConversationRead(proposal.id)
+    }
+  }, [activeTab, proposal.id])
 
   useEffect(() => {
     if (activeTab !== "mensajes") return

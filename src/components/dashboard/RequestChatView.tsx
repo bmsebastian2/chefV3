@@ -8,7 +8,7 @@ import {
   ChefHat, UtensilsCrossed, Clock, CheckCircle2, XCircle, ChevronDown,
   MessageCircle,
 } from "lucide-react";
-import { sendMessage, getMessages } from "@/app/dashboard/requests/[id]/actions";
+import { sendMessage, getMessages, markConversationRead } from "@/app/dashboard/requests/[id]/actions";
 import { formatPrice } from "@/lib/format";
 import { MODERATION_PASSIVE_NOTICE } from "@/lib/chat-moderation";
 
@@ -218,6 +218,13 @@ export function RequestChatView({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Entrar a esta vista cuenta como leer la conversación — resetea la alerta
+  // de mensaje nuevo (proposals.chef_msg_alert_sent_at) para que el próximo
+  // mensaje sin leer pueda volver a disparar un aviso por email.
+  useEffect(() => {
+    markConversationRead(proposalId);
+  }, [proposalId]);
 
   useEffect(() => {
     const poll = async () => {

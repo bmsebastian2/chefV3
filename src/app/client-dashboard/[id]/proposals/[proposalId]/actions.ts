@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { checkMessageContent, MODERATION_BLOCKED_MESSAGE } from '@/lib/chat-moderation'
+import { notifyChefOfNewMessage } from '@/lib/emails/chef-emails'
 
 export async function acceptProposal(
   proposalId: string,
@@ -210,5 +211,28 @@ export async function sendClientMessage(
     return { error: 'Error al enviar el mensaje' }
   }
 
+  const admin = createAdminClient()
+  const { data: clientUser } = await admin
+    .from('users')
+    .select('first_name, first_surname')
+    .eq('id', user.id)
+    .maybeSingle()
+  const clientName = clientUser
+    ? ([clientUser.first_name, clientUser.first_surname].filter(Boolean).join(' ') || 'Un cliente')
+    : 'Un cliente'
+
+  notifyChefOfNewMessage(proposalId, clientName).catch((err) =>
+    console.error('sendClientMessage: notifyChefOfNewMessage falló', err)
+  )
+
   return {}
+}
+
+export async function markConversationRead(proposalId: string): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  const { error } = await supabase.rpc('mark_conversation_read', { p_proposal_id: proposalId })
+  if (error) console.error('markConversationRead:', error)
 }

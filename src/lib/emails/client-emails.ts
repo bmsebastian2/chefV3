@@ -1,5 +1,6 @@
 'use server'
 
+import { createAdminClient } from '@/utils/supabase/admin'
 import { resend, FROM_EMAIL, REPLY_TO, resolveRecipient, testSubjectPrefix } from '@/lib/resend'
 import { emailFooter, ctaBand, detailBlock, tierBadge, heroGrid, tierBadgeLabel, greetingBlock, iconUrl, EMAIL_RESPONSIVE_STYLES, SITE_URL, ASSET_BASE_URL } from './shared'
 
@@ -420,4 +421,81 @@ export async function sendClientEmails(opts: {
     html:    buildMagicLinkEmail(opts.name, opts.confirmationLink, opts.tempPassword, opts.requestSummary),
   })
   if (error) console.error('[client-emails] Caso B falló:', error)
+}
+
+// ── Email: mensaje nuevo del chef en el chat de una propuesta ────────────────
+// Simétrico a notifyChefOfNewMessage (chef-emails.ts). A propósito NO incluye
+// el texto del mensaje — mismo motivo que el filtro de chat-moderation.ts.
+function buildNewClientMessageEmail(clientName: string, chefName: string, href: string): string {
+  return shell(`
+    ${greetingBlock({
+      name: clientName,
+      headline: `${chefName} te escribió un mensaje nuevo.`,
+      detailLine: 'Entrá a la conversación para verlo y responder.',
+    })}
+    ${ctaBand({
+      title: `Tenés un mensaje de ${chefName}`,
+      subtitle: 'Respondé desde la conversación en tu cuenta.',
+      buttonLabel: 'Ver conversación',
+      href,
+    })}
+  `, 'Mensaje nuevo')
+}
+
+/**
+ * Avisa al cliente de un mensaje nuevo del chef. Idempotente vía claim
+ * atómico sobre proposals.client_msg_alert_sent_at (mismo patrón que
+ * notifyChefOfNewMessage en chef-emails.ts): si ya hay un aviso sin leer para
+ * esta conversación, no se reenvía. mark_conversation_read() resetea la
+ * columna cuando el cliente abre el chat (ver MIGRATION_message_alerts.sql).
+ */
+export async function notifyClientOfNewMessage(proposalId: string, chefName: string): Promise<void> {
+  const admin = createAdminClient()
+
+  const { data: claimed, error: claimError } = await admin
+    .from('proposals')
+    .update({ client_msg_alert_sent_at: new Date().toISOString() })
+    .eq('id', proposalId)
+    .is('client_msg_alert_sent_at', null)
+    .select('request_id')
+    .maybeSingle()
+
+  if (claimError) {
+    console.error('[notifyClientOfNewMessage] claim falló:', claimError)
+    return
+  }
+  if (!claimed) return // ya hay un aviso sin leer para esta conversación
+
+  const { data: request, error: requestError } = await admin
+    .from('service_requests')
+    .select('user_id, users!inner(email, first_name)')
+    .eq('id', claimed.request_id)
+    .single()
+
+  if (requestError || !request) {
+    console.error('[notifyClientOfNewMessage] request fetch falló:', requestError)
+    return
+  }
+
+  const { data: authUser, error: authError } = await admin.auth.admin.getUserById(request.user_id as string)
+  if (authError || !authUser.user?.email_confirmed_at) return // email sin confirmar
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const requestUsers = (request as any).users
+  const clientUser = Array.isArray(requestUsers) ? requestUsers[0] : requestUsers
+
+  if (!resend) {
+    console.warn('[notifyClientOfNewMessage] RESEND_API_KEY no configurado, omitiendo email')
+    return
+  }
+
+  const { error } = await resend.emails.send({
+    from:    FROM_EMAIL,
+    to:      resolveRecipient(clientUser.email),
+    replyTo: REPLY_TO,
+    subject: `${testSubjectPrefix(clientUser.email)}${chefName} te escribió — GetChef`,
+    html: buildNewClientMessageEmail(clientUser.first_name, chefName, `${SITE_URL}/client-dashboard/${claimed.request_id}/proposals/${proposalId}`),
+  })
+
+  if (error) console.error('[notifyClientOfNewMessage] send falló:', error)
 }
