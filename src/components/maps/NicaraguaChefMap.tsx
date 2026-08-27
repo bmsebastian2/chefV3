@@ -176,6 +176,7 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const reducedMotion = usePrefersReducedMotion()
+  const isMobile = useIsMobile()
   const emptyPatternId = useId()
 
   // Medir el ancho disponible (mobile-first, responsive).
@@ -627,6 +628,28 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
                   : `${deptName(hoveredDept)} · ${demandData?.byDept.get(hoveredDept) ?? 0} solicitudes`}
               </div>
             )}
+
+            {/* Leyenda de color: aprovecha el hueco vacío inferior izquierdo en
+                desktop; en mobile ese hueco no existe, así que baja como franja
+                al pie del mapa (dentro de la misma tarjeta). */}
+            {props.mode === 'chefs' && (
+              <div
+                className={
+                  isMobile
+                    ? 'flex items-center justify-center gap-4 border-t border-zinc-200/60 px-3 py-2 text-[11px] text-zinc-500'
+                    : 'absolute bottom-3 left-3 z-30 flex flex-col gap-1 rounded bg-white/70 px-1.5 py-1 text-[11px] text-zinc-500 backdrop-blur-[2px]'
+                }
+              >
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-600" aria-hidden="true" />
+                  Ruta gastronómica
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" aria-hidden="true" />
+                  Chefs disponibles
+                </span>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -760,13 +783,13 @@ function MiniCard({
     return (
       <>
         <div
-          className="fixed inset-0 z-20 bg-zinc-900/20 backdrop-blur-[1px]"
+          className="fixed inset-0 z-[35] bg-zinc-900/20 backdrop-blur-[1px]"
           onClick={onClose}
           aria-hidden="true"
         />
         <div
           className={[
-            'fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-zinc-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-2xl',
+            'fixed inset-x-0 bottom-0 z-[36] rounded-t-2xl border-t border-zinc-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-2xl',
             reducedMotion ? '' : 'transition-transform duration-300 ease-out',
             shown ? 'translate-y-0' : 'translate-y-full',
           ].join(' ')}
@@ -788,7 +811,7 @@ function MiniCard({
   // ── Desktop: popup anclado al marcador (sin cambios) ──
   return (
     <div
-      className="absolute z-20 w-64 -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white p-3 shadow-xl"
+      className="absolute z-[36] w-64 -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white p-3 shadow-xl"
       style={{ left: x, top: y + 18 }}
       role="dialog"
       aria-label={`Chefs en ${city.name}`}
@@ -887,13 +910,13 @@ function CulinaryPanel({
     return (
       <>
         <div
-          className="fixed inset-0 z-20 bg-zinc-900/20 backdrop-blur-[1px]"
+          className="fixed inset-0 z-[35] bg-zinc-900/20 backdrop-blur-[1px]"
           onClick={onClose}
           aria-hidden="true"
         />
         <div
           className={[
-            'fixed inset-x-0 bottom-0 z-30 rounded-t-2xl border-t border-zinc-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-2xl',
+            'fixed inset-x-0 bottom-0 z-[36] rounded-t-2xl border-t border-zinc-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-2xl',
             reducedMotion ? '' : 'transition-transform duration-300 ease-out',
             shown ? 'translate-y-0' : 'translate-y-full',
           ].join(' ')}
@@ -911,7 +934,7 @@ function CulinaryPanel({
   // ── Desktop: popup anclado al centroide del departamento ──
   return (
     <div
-      className="absolute z-20 w-72 -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white p-3 shadow-xl sm:w-80"
+      className="absolute z-[36] w-72 -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white p-3 shadow-xl sm:w-80"
       style={{ left: x, top: y + 12 }}
       role="dialog"
       aria-label={`Ruta culinaria: ${deptName}`}
