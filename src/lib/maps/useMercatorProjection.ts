@@ -5,6 +5,9 @@ import { geoMercator, geoPath } from 'd3-geo'
 
 const GEOJSON_URL = '/maps/data/nicaragua-departamentos.min.geojson'
 
+/** Margen interno del mapa (px) para que pines/puntos desplazados no queden cortados por el borde. */
+const PROJECTION_PADDING_PX = 32
+
 /** Feature de departamento tal como viene en el geojson local. */
 type DepartmentFeature = {
   type: 'Feature'
@@ -82,7 +85,17 @@ export function useMercatorProjection(width: number, height: number): MercatorPr
 
   const projection = useMemo(() => {
     if (!collection || width <= 0 || height <= 0) return null
-    return geoMercator().fitSize([width, height], collection)
+    // Margen interno: sin esto el país queda pegado al borde del contenedor
+    // (que recorta con overflow-hidden), y cualquier elemento desplazado hacia
+    // afuera de su ciudad (pines, puntos de ruta) puede quedar cortado.
+    const pad = Math.min(PROJECTION_PADDING_PX, width / 4, height / 4)
+    return geoMercator().fitExtent(
+      [
+        [pad, pad],
+        [width - pad, height - pad],
+      ],
+      collection
+    )
   }, [collection, width, height])
 
   const departments = useMemo<ProjectedDepartment[]>(() => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChefHat, Star, MapPin, X, ArrowUpRight, Users, UtensilsCrossed } from 'lucide-react'
@@ -67,7 +67,10 @@ const CULINARY_PIN_DIRECTION: Record<string, { dx: number; dy: number }> = {
   masaya: { dx: 0.37, dy: -0.93 }, // hacia el norte, el depto es angosto
   granada: { dx: 0.82, dy: 0.57 }, // hacia el sureste, lejos de la costa del lago
 }
-const CULINARY_PIN_OFFSET_PX = 54
+const CULINARY_PIN_OFFSET_PX = 40
+
+/** Distancia del nombre de departamento a la ciudad, en el lado opuesto al punto de ruta. */
+const CULINARY_LABEL_OFFSET_PX = 36
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -116,12 +119,64 @@ function buildRoutePath(points: { x: number; y: number }[]): string {
   return d
 }
 
+/** Separación mínima entre centros de punto de ruta para que no se toquen los círculos. */
+const CULINARY_MIN_GAP_PX = 42
+
+/** Separación mínima entre un punto de ruta y el pin del chef de SU PROPIA ciudad. */
+const CULINARY_CITY_MIN_GAP_PX = 40
+
+/**
+ * La dirección de cada medallón (`CULINARY_PIN_DIRECTION`) se calculó por
+ * separado para cada departamento — el hueco vacío DENTRO de su propio
+ * polígono — así que dos vecinos pueden terminar apuntándose el uno al otro
+ * (ej. Boaco se mueve al oeste, Masaya al norte, y convergen). Esta relajación
+ * simple los empuja aparte en pantalla cuando eso pasa, sin tocar la
+ * dirección curada de cada uno. También vuelve a alejar cada medallón del pin
+ * de SU PROPIA ciudad si la relajación entre vecinos lo arrastró de vuelta
+ * hacia ahí (pasaba con Managua: al separarlo de León terminaba encima de su
+ * propio pin verde). Muta los puntos in-place; funciona para cualquier ancho
+ * de mapa porque parte de coordenadas ya proyectadas.
+ */
+function resolveCulinaryOverlap(
+  points: { x: number; y: number; cityX: number; cityY: number }[]
+): void {
+  for (let iter = 0; iter < 6; iter++) {
+    for (const p of points) {
+      const dx = p.x - p.cityX
+      const dy = p.y - p.cityY
+      const dist = Math.hypot(dx, dy) || 0.01
+      if (dist >= CULINARY_CITY_MIN_GAP_PX) continue
+      const push = CULINARY_CITY_MIN_GAP_PX - dist
+      p.x += (dx / dist) * push
+      p.y += (dy / dist) * push
+    }
+    for (let i = 0; i < points.length; i++) {
+      for (let j = i + 1; j < points.length; j++) {
+        const a = points[i]
+        const b = points[j]
+        const dx = b.x - a.x
+        const dy = b.y - a.y
+        const dist = Math.hypot(dx, dy) || 0.01
+        if (dist >= CULINARY_MIN_GAP_PX) continue
+        const push = (CULINARY_MIN_GAP_PX - dist) / 2
+        const ux = dx / dist
+        const uy = dy / dist
+        a.x -= ux * push
+        a.y -= uy * push
+        b.x += ux * push
+        b.y += uy * push
+      }
+    }
+  }
+}
+
 // ── Componente principal ─────────────────────────────────────────────────────
 
 export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const reducedMotion = usePrefersReducedMotion()
+  const emptyPatternId = useId()
 
   // Medir el ancho disponible (mobile-first, responsive).
   useEffect(() => {
@@ -205,10 +260,12 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
       }
 
       // modo chefs
+      const hasCulinary = Boolean(CULINARY[deptId])
       const hasChefs = (chefData?.countByDept.get(deptId) ?? 0) > 0
-      let fill = '#f4f4f5'
+      let fill: string = `url(#${emptyPatternId})`
       if (isSelected) fill = 'rgba(34,197,94,0.22)'
       else if (isHover) fill = 'rgba(34,197,94,0.16)'
+      else if (hasCulinary) fill = 'rgba(217,119,6,0.08)' // identifica la zona de la ruta aun sin hover
       else if (hasChefs) fill = 'rgba(34,197,94,0.08)'
       return {
         fill,
@@ -216,7 +273,7 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
         strokeWidth: isSelected || isHover ? 1.5 : 0.75,
       }
     },
-    [props.mode, demandData, chefData, coveredDepts, hoveredDept, selectedDept]
+    [props.mode, demandData, chefData, coveredDepts, hoveredDept, selectedDept, emptyPatternId]
   )
 
   const toggleDept = useCallback((deptId: string) => {
@@ -279,6 +336,7 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
       const y = pt[1] + (dir.dy / len) * CULINARY_PIN_OFFSET_PX
       out.push({ deptId, x, y, cityX: pt[0], cityY: pt[1], dish })
     }
+    resolveCulinaryOverlap(out)
     return out
   }, [props.mode, ready, project])
 
@@ -286,8 +344,49 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
 
   const deptName = (id: string) => departments.find((d) => d.id === id)?.name ?? id
 
+  // Etiquetas de departamento (overlay HTML, por encima de pines y medallones —
+  // el nombre del depto nunca debe quedar tapado). Solo los que tienen ruta
+  // culinaria curada. Se ubican en el centroide del polígono pero empujadas un
+  // poco más lejos en esa misma dirección desde la ciudad, para alejarlas del
+  // cluster de pines/medallones que vive pegado al punto de la ciudad.
+  const deptLabels = useMemo(() => {
+    if (props.mode !== 'chefs' || !ready) return []
+    const out: { deptId: string; name: string; x: number; y: number }[] = []
+    for (const dept of departments) {
+      if (!CULINARY[dept.id]) continue
+      const city = CITIES[dept.id]
+      const cityPt = city ? project([city.lng, city.lat]) : null
+      const dir = CULINARY_PIN_DIRECTION[dept.id]
+      let x = dept.centroid[0]
+      let y = dept.centroid[1]
+      if (cityPt && dir) {
+        // Lado OPUESTO al punto de ruta (que se mueve en `dir` desde la
+        // ciudad): por construcción nunca pueden terminar en el mismo lugar.
+        const len = Math.hypot(dir.dx, dir.dy) || 1
+        x = cityPt[0] - (dir.dx / len) * CULINARY_LABEL_OFFSET_PX
+        y = cityPt[1] - (dir.dy / len) * CULINARY_LABEL_OFFSET_PX
+      }
+      out.push({ deptId: dept.id, name: dept.name, x, y })
+    }
+    return out
+  }, [props.mode, ready, departments, project])
+
   return (
     <div>
+      {/* ── Microtexto + leyenda: arriba del mapa, para leerse antes de explorar ── */}
+      {props.mode === 'chefs' && (
+        <div className="mb-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 rounded-full border border-zinc-200/80 bg-white px-4 py-2 text-[11px] font-medium text-zinc-500 shadow-sm sm:text-xs">
+          <span className="flex items-center gap-1.5 text-emerald-700">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+            Tocá un departamento para ver sus chefs
+          </span>
+          <span className="flex items-center gap-1.5 text-amber-700">
+            <UtensilsCrossed className="h-3.5 w-3.5" aria-hidden="true" />
+            Tocá un plato para descubrir su historia
+          </span>
+        </div>
+      )}
+
       {/* ── Lienzo del mapa ── */}
       <div
         ref={containerRef}
@@ -310,13 +409,29 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
               aria-label="Mapa de Nicaragua por departamentos"
               className="block"
             >
+              <defs>
+                {/* Patrón "próximamente": departamentos sin chefs ni ruta culinaria todavía */}
+                <pattern
+                  id={emptyPatternId}
+                  width="6"
+                  height="6"
+                  patternUnits="userSpaceOnUse"
+                  patternTransform="rotate(45)"
+                >
+                  <rect width="6" height="6" fill="#f4f4f5" />
+                  <line x1="0" y1="0" x2="0" y2="6" stroke="#e4e4e7" strokeWidth="1.5" />
+                </pattern>
+              </defs>
+
               {departments.map((dept) => {
                 const style = fillFor(dept.id)
                 const count = chefData?.countByDept.get(dept.id) ?? 0
                 const demand = demandData?.byDept.get(dept.id) ?? 0
                 const label =
                   props.mode === 'chefs'
-                    ? `${dept.name}: ${count} chef${count === 1 ? '' : 's'}`
+                    ? count === 0 && !CULINARY[dept.id]
+                      ? `${dept.name}: próximamente`
+                      : `${dept.name}: ${count} chef${count === 1 ? '' : 's'}`
                     : `${dept.name}: ${demand} solicitud${demand === 1 ? '' : 'es'}`
                 const interactive = props.mode === 'chefs'
                 return (
@@ -351,36 +466,35 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
                 )
               })}
 
-              {/* Ruta culinaria: trazo punteado que une los departamentos con contenido curado */}
+              {/* Ruta culinaria: trazo de base sólida (legible sin animación) + capa
+                  animada encima, para que se lea como un recorrido y no como una
+                  guía técnica punteada */}
               {culinaryRoutePath && (
-                <path
-                  d={culinaryRoutePath}
-                  fill="none"
-                  stroke="#d97706"
-                  strokeWidth={2.5}
-                  strokeLinecap="round"
-                  strokeDasharray="1 11"
-                  opacity={0.7}
-                  pointerEvents="none"
-                  className={reducedMotion ? undefined : 'culinary-route-path'}
-                />
+                <>
+                  <path
+                    d={culinaryRoutePath}
+                    fill="none"
+                    stroke="#b45309"
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity={0.55}
+                    pointerEvents="none"
+                  />
+                  <path
+                    d={culinaryRoutePath}
+                    fill="none"
+                    stroke="#f59e0b"
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeDasharray="2 14"
+                    pointerEvents="none"
+                    className={reducedMotion ? undefined : 'culinary-route-path'}
+                  />
+                </>
               )}
 
-              {/* Hilo fino que ancla cada medallón a su ciudad exacta (el medallón vive corrido, en hueco vacío) */}
-              {culinaryRoute.map((node) => (
-                <line
-                  key={`stem-${node.deptId}`}
-                  x1={node.cityX}
-                  y1={node.cityY}
-                  x2={node.x}
-                  y2={node.y}
-                  stroke="#b45309"
-                  strokeWidth={1.25}
-                  strokeDasharray="1 3"
-                  opacity={0.4}
-                  pointerEvents="none"
-                />
-              ))}
             </svg>
 
             {/* Marcadores de chefs (overlay HTML) */}
@@ -396,19 +510,19 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
                       setSelectedCity((p) => (p === m.key ? null : m.key))
                     }}
                     aria-label={`${m.entry.name}: ${m.chefs.length} chef${m.chefs.length === 1 ? '' : 's'}`}
-                    className="group absolute -translate-x-1/2 -translate-y-1/2 focus:outline-none"
+                    className="group absolute z-20 -translate-x-1/2 -translate-y-1/2 p-3 focus:outline-none"
                     style={{ left: m.x, top: m.y }}
                   >
                     <span
                       className={[
-                        'relative flex h-8 w-8 items-center justify-center rounded-full border bg-white shadow-md transition-transform',
-                        reducedMotion ? '' : 'group-hover:scale-110 group-focus-visible:scale-110',
-                        isActive ? 'border-emerald-500 ring-2 ring-emerald-500/40' : 'border-emerald-400/70',
+                        'relative flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 shadow-md ring-2 ring-white transition-transform',
+                        reducedMotion ? '' : 'group-hover:scale-125 group-focus-visible:scale-125',
+                        isActive ? (reducedMotion ? 'ring-[3px] ring-emerald-300' : 'scale-125 ring-[3px] ring-emerald-300') : '',
                       ].join(' ')}
                     >
-                      <ChefHat className="h-4 w-4 text-emerald-600" />
+                      <ChefHat className="h-3 w-3 text-white" />
                       {m.chefs.length > 1 && (
-                        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">
+                        <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-amber-500 px-0.5 text-[8px] font-bold text-white ring-1 ring-white">
                           {m.chefs.length}
                         </span>
                       )}
@@ -417,50 +531,59 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
                 )
               })}
 
-            {/* Ruta culinaria: medallones con foto + nombre del plato, siempre visibles.
-                Se posicionan en un hueco vacío del departamento (offset fijo en px,
-                no geográfico) para no pisar el marcador verde del chef; el hilo
-                punteado del SVG los ancla visualmente a su ciudad exacta. */}
+            {/* Ruta culinaria: puntos numerados mínimos, mismo lenguaje visual que el
+                pin de chef (círculo sólido, mismo tamaño) para que ambos convivan sin
+                competir. La foto grande, el nombre y la descripción del plato viven
+                en CulinaryPanel — nunca sobre el mapa. */}
             {props.mode === 'chefs' &&
               culinaryRoute.map((node, i) => {
                 const isActive = hoveredDept === node.deptId || selectedDept === node.deptId
                 return (
-                  <div
+                  <button
                     key={node.deptId}
-                    className="absolute z-10"
-                    style={{ left: node.x, top: node.y, transform: 'translate(-50%, -50%)' }}
+                    type="button"
+                    onClick={() => toggleDept(node.deptId)}
+                    onMouseEnter={() => setHoveredDept(node.deptId)}
+                    onMouseLeave={() => setHoveredDept((p) => (p === node.deptId ? null : p))}
+                    onFocus={() => setHoveredDept(node.deptId)}
+                    onBlur={() => setHoveredDept((p) => (p === node.deptId ? null : p))}
+                    aria-label={`Ruta culinaria — ${node.dish.dish} en ${deptName(node.deptId)}`}
+                    aria-pressed={selectedDept === node.deptId}
+                    className={[
+                      'group absolute z-10 -translate-x-1/2 -translate-y-1/2 p-3 focus:outline-none',
+                      reducedMotion ? '' : 'culinary-pin-in',
+                    ].join(' ')}
+                    style={{
+                      left: node.x,
+                      top: node.y,
+                      ...(reducedMotion ? undefined : { animationDelay: `${i * 110}ms` }),
+                    }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => toggleDept(node.deptId)}
-                      onMouseEnter={() => setHoveredDept(node.deptId)}
-                      onMouseLeave={() => setHoveredDept((p) => (p === node.deptId ? null : p))}
-                      onFocus={() => setHoveredDept(node.deptId)}
-                      onBlur={() => setHoveredDept((p) => (p === node.deptId ? null : p))}
-                      aria-label={`Ruta culinaria — ${node.dish.dish} en ${deptName(node.deptId)}`}
-                      aria-pressed={selectedDept === node.deptId}
+                    <span
                       className={[
-                        'group flex flex-col items-center focus:outline-none',
-                        reducedMotion ? '' : 'culinary-pin-in',
+                        'relative flex h-5 w-5 items-center justify-center rounded-full bg-amber-600 text-[10px] font-bold text-white shadow-md ring-2 ring-white transition-transform',
+                        reducedMotion || isActive ? '' : 'culinary-idle-pulse',
+                        reducedMotion ? '' : 'group-hover:scale-125 group-focus-visible:scale-125',
+                        isActive ? (reducedMotion ? 'ring-[3px] ring-amber-300' : 'scale-125 ring-[3px] ring-amber-300') : '',
                       ].join(' ')}
-                      style={reducedMotion ? undefined : { animationDelay: `${i * 110}ms` }}
                     >
-                      <span
-                        className={[
-                          'relative h-11 w-11 overflow-hidden rounded-full border-2 bg-white shadow-lg transition-transform sm:h-12 sm:w-12',
-                          reducedMotion ? '' : 'group-hover:scale-110 group-focus-visible:scale-110',
-                          isActive ? 'border-amber-500 ring-2 ring-amber-400/40' : 'border-amber-400/80 ring-1 ring-white',
-                        ].join(' ')}
-                      >
-                        <Image src={node.dish.image} alt={node.dish.imageAlt} fill sizes="48px" className="object-cover" />
-                      </span>
-                      <span className="mt-1 whitespace-nowrap rounded-full bg-white/95 px-2 py-0.5 font-serif text-[11px] italic text-amber-800 shadow-sm ring-1 ring-amber-100">
-                        {node.dish.dish}
-                      </span>
-                    </button>
-                  </div>
+                      {i + 1}
+                    </span>
+                  </button>
                 )
               })}
+
+            {/* Nombre de departamento: por encima de pines y medallones, nunca tapado */}
+            {props.mode === 'chefs' &&
+              deptLabels.map((label) => (
+                <div
+                  key={`label-${label.deptId}`}
+                  className="pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-1/2 select-none whitespace-nowrap rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600 shadow-sm ring-1 ring-zinc-200/70 backdrop-blur-sm sm:text-[11px]"
+                  style={{ left: label.x, top: label.y }}
+                >
+                  {label.name}
+                </div>
+              ))}
 
             {/* Mini-card del chef / ciudad */}
             {activeCity && (
@@ -495,29 +618,18 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
             {hoveredDept && (
               <div className="pointer-events-none absolute left-3 top-3 rounded-full border border-zinc-200 bg-white/90 px-3 py-1 text-xs font-semibold text-zinc-700 shadow-sm backdrop-blur">
                 {props.mode === 'chefs'
-                  ? `${deptName(hoveredDept)} · ${chefData?.countByDept.get(hoveredDept) ?? 0} chefs${
-                      CULINARY[hoveredDept] ? ` · ${CULINARY[hoveredDept]!.dish}` : ''
-                    }`
+                  ? (() => {
+                      const count = chefData?.countByDept.get(hoveredDept) ?? 0
+                      const dish = CULINARY[hoveredDept]
+                      if (count === 0 && !dish) return `${deptName(hoveredDept)} · Próximamente`
+                      return `${deptName(hoveredDept)} · ${count} chefs${dish ? ` · ${dish.dish}` : ''}`
+                    })()
                   : `${deptName(hoveredDept)} · ${demandData?.byDept.get(hoveredDept) ?? 0} solicitudes`}
               </div>
             )}
           </>
         )}
       </div>
-
-      {/* ── Leyenda de la ruta culinaria ── */}
-      {props.mode === 'chefs' && culinaryRoute.length > 0 && (
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-zinc-500">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
-            Chefs disponibles
-          </span>
-          <span className="flex items-center gap-1.5">
-            <UtensilsCrossed className="h-3.5 w-3.5 text-amber-600" aria-hidden="true" />
-            Ruta culinaria — tocá un plato para descubrirlo
-          </span>
-        </div>
-      )}
 
       {/* ── Leyenda de demanda ── */}
       {props.mode === 'demand' && demandData && (
@@ -581,6 +693,18 @@ export function NicaraguaChefMap(props: NicaraguaChefMapProps) {
           .culinary-pin-in {
             transform-origin: center;
             animation: culinaryPinIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+          }
+          @keyframes culinaryIdlePulse {
+            0%,
+            100% {
+              box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35);
+            }
+            50% {
+              box-shadow: 0 0 0 4px rgba(245, 158, 11, 0);
+            }
+          }
+          .culinary-idle-pulse {
+            animation: culinaryIdlePulse 2.6s ease-in-out infinite;
           }
         `}</style>
       )}
