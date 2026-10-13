@@ -15,6 +15,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import { ClipboardList, Inbox, AlertCircle } from 'lucide-react'
 import { formatPriceRange } from '@/lib/format'
+import { fromYMD } from '@/lib/dates'
 import { resolveCity } from '@/lib/maps/cities'
 import { getRequestsForAdmin } from './actions'
 
@@ -63,6 +64,13 @@ function cityLabel(raw: string) {
 function fmtDate(iso: string | null) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+// Fecha de evento (columna `date`, 'YYYY-MM-DD'): new Date('YYYY-MM-DD') es
+// medianoche UTC y en América se mostraba el día anterior. fromYMD = día local.
+function fmtEventDate(ymd: string | null) {
+  if (!ymd) return '—'
+  return fromYMD(ymd).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 // Número de referencia legible derivado del UUID (estable, sin tocar la DB).
@@ -284,7 +292,7 @@ export function RequestsMonitorSection() {
                           <td className="px-4 py-3 text-zinc-600 whitespace-nowrap">{r.city ? cityLabel(r.city) : '—'}</td>
                           <td className="px-4 py-3 text-zinc-600 whitespace-nowrap">{serviceLabel(r.service_type)}</td>
                           <td className="px-4 py-3 text-right text-zinc-600 tabular-nums">{guestsOf(r)}</td>
-                          <td className="px-4 py-3 text-zinc-500 whitespace-nowrap">{fmtDate(r.event_date_start)}</td>
+                          <td className="px-4 py-3 text-zinc-500 whitespace-nowrap">{fmtEventDate(r.event_date_start)}</td>
                           <td className="px-4 py-3 text-right text-zinc-600 tabular-nums whitespace-nowrap">{budgetOf(r)}</td>
                           <td className="px-4 py-3">
                             <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${st.chip}`}>
@@ -325,7 +333,7 @@ export function RequestsMonitorSection() {
                       </div>
                       <div className="flex items-end justify-between gap-3 mt-2">
                         <p className="text-xs text-zinc-400">
-                          Solicitado {fmtDate(r.created_at)} · evento {fmtDate(r.event_date_start)}
+                          Solicitado {fmtDate(r.created_at)} · evento {fmtEventDate(r.event_date_start)}
                           <br />
                           <span className={r.proposals_count === 0 ? 'text-amber-600 font-semibold' : 'text-zinc-500'}>
                             {r.proposals_count} {r.proposals_count === 1 ? 'propuesta' : 'propuestas'}

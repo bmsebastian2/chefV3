@@ -25,14 +25,16 @@ export interface WizardData {
   guestsAdults?: number;
   guestsTeens?: number;
   guestsKids?: number;
-  date?: Date;
+  // Fechas de calendario como 'YYYY-MM-DD' (ver lib/dates): nunca Date, que al
+  // llegar al servidor (UTC) corre el día a quien elige desde UTC+.
+  date?: string;
   // Service 1 — meal time selection
   mealTime?: 'lunch' | 'dinner';
   // Service 1 — budget tier
   budgetTier?: 'casual' | 'gourmet' | 'exclusive';
   time?: string;
-  dateRangeStart?: Date;
-  dateRangeEnd?: Date;
+  dateRangeStart?: string; // 'YYYY-MM-DD'
+  dateRangeEnd?: string;   // 'YYYY-MM-DD'
   cuisine?: string;
   dietaryRestrictions?: string[];
   dietaryOtras?: string;

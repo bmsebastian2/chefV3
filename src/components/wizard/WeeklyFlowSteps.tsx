@@ -19,6 +19,7 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { StepProps } from "./types";
+import { toYMD, fromYMD } from "@/lib/dates";
 
 // ── Piezas heredadas del flujo semanal viejo (WeeklyStep3Volume/5Schedule) ────
 
@@ -352,7 +353,7 @@ export function WeeklyStepMoments({ data, updateData, nextStep }: StepProps) {
 
 // ── Fecha de inicio + día preferido (rama de fechas/frecuencia, 2 de 2) ───────
 export function WeeklyStepSchedule({ data, updateData, nextStep }: StepProps) {
-  const selectedDate = data.date;
+  const selectedDate = data.date ? fromYMD(data.date) : undefined;
   const selectedDays = data.weeklyDetails?.frecuenciaCocina ?? [];
   const canContinue  = !!selectedDate && selectedDays.length > 0;
 
@@ -377,7 +378,7 @@ export function WeeklyStepSchedule({ data, updateData, nextStep }: StepProps) {
         Fecha ideal de inicio
       </p>
       <div className="border border-zinc-100 rounded-2xl p-4 mb-8 bg-white">
-        <InlineCalendar selected={selectedDate} onSelect={(d) => updateData({ date: d })} />
+        <InlineCalendar selected={selectedDate} onSelect={(d) => updateData({ date: toYMD(d) })} />
       </div>
 
       <div className="h-px bg-zinc-100 mb-8" />

@@ -9,6 +9,7 @@ import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { registerOrVerifyClient } from "@/app/wizard/actions";
 import { validateEmail } from "@/lib/email-validation";
+import { toYMD, fromYMD } from "@/lib/dates";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Check, X, Fish, Leaf, ChefHat, Layers, Store, Pizza, Croissant, Soup, Cake, PartyPopper, Heart, Briefcase, Smile, HelpCircle, Sun, Moon, Home, Users, ChevronDown } from "lucide-react";
@@ -480,7 +481,7 @@ export function StepDate({ data, updateData, nextStep }: StepProps) {
   const getMinTime = (): string | undefined => {
     if (!data.date) return undefined;
     const today = new Date();
-    const selected = new Date(data.date);
+    const selected = fromYMD(data.date);
     const isToday =
       selected.getFullYear() === today.getFullYear() &&
       selected.getMonth() === today.getMonth() &&
@@ -504,13 +505,13 @@ export function StepDate({ data, updateData, nextStep }: StepProps) {
           !data.date ? "text-muted-foreground border-zinc-200" : "border-zinc-300 text-zinc-900"
         }`}>
           <CalendarIcon className="mr-3 h-5 w-5 text-zinc-400" />
-          {data.date ? format(data.date, "PPP", { locale: es }) : <span className="text-base text-zinc-400">Elige una fecha</span>}
+          {data.date ? format(fromYMD(data.date), "PPP", { locale: es }) : <span className="text-base text-zinc-400">Elige una fecha</span>}
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0 rounded-xl shadow-xl border-zinc-200" align="center">
           <Calendar
             mode="single"
-            selected={data.date}
-            onSelect={(date) => updateData({ date })}
+            selected={data.date ? fromYMD(data.date) : undefined}
+            onSelect={(date) => updateData({ date: date ? toYMD(date) : undefined })}
             disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
           />
         </PopoverContent>
@@ -893,15 +894,16 @@ export function StepDateRange({ data, updateData, nextStep }: StepProps) {
   tomorrow.setHours(0, 0, 0, 0);
 
   const [state, setState] = useState({
-    startDate: data.dateRangeStart || tomorrow,
-    endDate:   data.dateRangeEnd   || tomorrow,
+    startDate: data.dateRangeStart ? fromYMD(data.dateRangeStart) : tomorrow,
+    endDate:   data.dateRangeEnd   ? fromYMD(data.dateRangeEnd)   : tomorrow,
     key: "selection",
   });
 
   const handleSelect = (ranges: RangeKeyDict) => {
     const sel = ranges.selection;
     setState({ startDate: sel.startDate!, endDate: sel.endDate!, key: "selection" });
-    updateData({ dateRangeStart: sel.startDate, dateRangeEnd: sel.endDate });
+    // react-date-range trabaja con Date; al estado del wizard va el día como texto.
+    updateData({ dateRangeStart: toYMD(sel.startDate!), dateRangeEnd: toYMD(sel.endDate!) });
   };
 
   const isValid = state.startDate && state.endDate && state.endDate > state.startDate;
@@ -954,20 +956,11 @@ export function StepDateRange({ data, updateData, nextStep }: StepProps) {
 }
 
 export function StepMealSlots({ data, updateData, nextStep }: StepProps) {
-  const toYMD = (date: Date): string => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  };
-
   const generateSlots = (): MealSlot[] => {
     if (!data.dateRangeStart || !data.dateRangeEnd) return [];
     const slots: MealSlot[] = [];
-    const current = new Date(data.dateRangeStart);
-    const end = new Date(data.dateRangeEnd);
-    current.setHours(0, 0, 0, 0);
-    end.setHours(0, 0, 0, 0);
+    const current = fromYMD(data.dateRangeStart);
+    const end = fromYMD(data.dateRangeEnd);
     while (current <= end) {
       slots.push({ fecha: toYMD(current), desayuno: true, almuerzo: true, cena: true });
       current.setDate(current.getDate() + 1);
@@ -1246,13 +1239,13 @@ export function StepDateCalendar({ data, updateData, nextStep }: StepProps) {
       <div className="w-full border border-zinc-200 rounded-2xl bg-white p-4 shadow-sm">
         <Calendar
           mode="single"
-          selected={data.date}
+          selected={data.date ? fromYMD(data.date) : undefined}
           onSelect={(date) => {
             if (!date) {
               if (data.date) nextStep();
               return;
             }
-            updateData({ date });
+            updateData({ date: toYMD(date) });
             nextStep();
           }}
           disabled={(date) => {

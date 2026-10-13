@@ -13,6 +13,7 @@ import { TERMS_VERSION } from '@/lib/terms'
 import { getPriceRange } from '@/lib/pricing'
 import { validateEmail } from '@/lib/email-validation'
 import { resolveAppUrl } from '@/lib/payment-guards'
+import { fromYMD, isValidYMD } from '@/lib/dates'
 
 // País a persistir en la solicitud. Se deriva del countryCode (ISO) capturado en
 // el wizard con country-state-city — MISMA fuente que chef_profiles.country, así
@@ -85,11 +86,11 @@ const joinNatural = (items: string[]): string =>
   items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} y ${items[items.length - 1]}`
 const capFirst = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
-function formatLocalDate(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+// 'YYYY-MM-DD' → "31 de diciembre de 2026". fromYMD arma y lee el día en la misma
+// zona, así que el resultado no depende del TZ del servidor.
+function fechaLarga(ymd: string): string {
+  const d = fromYMD(ymd)
+  return `${d.getDate()} de ${MONTHS_ES[d.getMonth()]} de ${d.getFullYear()}`
 }
 
 const SITE_URL = resolveAppUrl('wizard')
@@ -261,6 +262,11 @@ export async function submitServiceRequest(
   if (!data.location || !eventDateStart || !data.contact?.name || !data.contact?.email) {
     return { error: 'Faltan datos obligatorios para guardar la solicitud' }
   }
+  // La fecha llega como el día que el usuario eligió ('YYYY-MM-DD') y se guarda
+  // tal cual: nunca pasar por Date acá (el servidor corre en UTC).
+  if (!isValidYMD(eventDateStart)) {
+    return { error: 'La fecha del evento no es válida' }
+  }
 
   const restrictions = data.dietaryRestrictions ?? []
   const notasArr: string[] = []
@@ -308,7 +314,7 @@ export async function submitServiceRequest(
     p_location:           data.location.name,
     p_city:               canonicalCity(data.location.city, country),
     p_country:            country,
-    p_event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
+    p_event_date_start:   eventDateStart,
     p_event_date_end:     eventDateEnd,
     p_event_time:         eventTime,
     p_guests_adults:      guestsAdults,
@@ -390,7 +396,7 @@ export async function submitServiceRequest(
     service_type:       SERVICE_TYPE_MAP[data.serviceType ?? ''] ?? 'single',
     occasion:           OCCASION_MAP[data.occasion ?? ''] ?? data.occasion ?? 'other',
     city:               data.location.city,
-    event_date_start:   formatLocalDate(new Date(eventDateStart as unknown as string)),
+    event_date_start:   eventDateStart,
     event_date_end:     eventDateEnd,
     event_time:         eventTime,
     cuantas_personas:   guestsAdults,
@@ -413,9 +419,7 @@ export async function submitServiceRequest(
   const requestSummary: RequestSummary = {
     lugar:        data.location?.name,
     hora:         data.mealTime ? (MEAL_TIME_MAP[data.mealTime] ?? undefined) : undefined,
-    fecha:        eventDateStart
-                    ? `${(eventDateStart as unknown as Date).getDate()} de ${MONTHS_ES[(eventDateStart as unknown as Date).getMonth()]} de ${(eventDateStart as unknown as Date).getFullYear()}`
-                    : undefined,
+    fecha:        fechaLarga(eventDateStart),
     comensales:   (guestsAdults + guestsTeens + guestsKids) > 0
                     ? `${guestsAdults + guestsTeens + guestsKids} ${(guestsAdults + guestsTeens + guestsKids) === 1 ? 'persona' : 'personas'}`
                     : undefined,
@@ -484,6 +488,11 @@ export async function submitWeeklyRequest(
   if (!data.location || !data.date || !data.contact?.name || !data.contact?.email) {
     return { error: 'Faltan datos obligatorios' }
   }
+  // Fecha de inicio como texto 'YYYY-MM-DD' (ver submitServiceRequest).
+  const eventDate = data.date
+  if (!isValidYMD(eventDate)) {
+    return { error: 'La fecha de inicio no es válida' }
+  }
 
   const restrictions = data.dietaryRestrictions ?? []
   const raciones     = data.weeklyDetails?.racionesPorComida ?? 1
@@ -503,7 +512,7 @@ export async function submitWeeklyRequest(
     p_location:             data.location.name,
     p_city:                 canonicalCity(data.location.city, country),
     p_country:              country,
-    p_event_date_start:     formatLocalDate(new Date(data.date as unknown as string)),
+    p_event_date_start:     eventDate,
     p_event_date_end:       null,
     p_event_time:           null,
     p_guests_adults:        raciones,
@@ -570,10 +579,9 @@ export async function submitWeeklyRequest(
   })
   if (weeklyError) console.error('[weekly] Error saving weekly_meal_details:', weeklyError)
 
-  const eventDate  = new Date(data.date as unknown as string)
   const requestSummary: RequestSummary = {
     lugar:         data.location.name,
-    fecha:         `${eventDate.getDate()} de ${MONTHS_ES[eventDate.getMonth()]} de ${eventDate.getFullYear()}`,
+    fecha:         fechaLarga(eventDate),
     // Sin los centinelas "Sí"/"Ninguna" que agrega StepDietarySimple
     restricciones: restrictions.filter((r) => r !== 'Sí' && r !== 'Ninguna').join(', ') || 'No',
     notas:         data.weeklyDetails?.preferenciasCulinarias ?? undefined,
@@ -590,7 +598,7 @@ export async function submitWeeklyRequest(
     service_type:       'weekly',
     occasion:           'other',
     city:               data.location.city,
-    event_date_start:   formatLocalDate(eventDate),
+    event_date_start:   eventDate,
     event_date_end:     null,
     event_time:         null,
     cuantas_personas:   raciones,

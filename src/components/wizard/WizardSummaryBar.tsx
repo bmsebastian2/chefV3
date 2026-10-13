@@ -5,6 +5,7 @@ import { MapPin, Users, Sun, Moon, CalendarDays, PartyPopper, UtensilsCrossed, S
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { WizardData } from "./types";
+import { fromYMD } from "@/lib/dates";
 
 // Etiquetas legibles — mismo mapeo que usa StepContact1 (Steps.tsx)
 const OCCASION_LABELS: Record<string, string> = {
@@ -83,14 +84,14 @@ function buildItems(data: WizardData): SummaryItem[] {
 
     items.push({
       key: "start", Icon: CalendarDays, label: "Inicio",
-      value: data.date ? `Desde ${format(new Date(data.date), "d MMM", { locale: es })}` : undefined,
+      value: data.date ? `Desde ${format(fromYMD(data.date), "d MMM", { locale: es })}` : undefined,
     });
   } else if (isService2) {
     // Rango de fechas
     let rango: string | undefined;
     if (data.dateRangeStart && data.dateRangeEnd) {
-      const ini = format(new Date(data.dateRangeStart), "d MMM", { locale: es });
-      const fin = format(new Date(data.dateRangeEnd), "d MMM", { locale: es });
+      const ini = format(fromYMD(data.dateRangeStart), "d MMM", { locale: es });
+      const fin = format(fromYMD(data.dateRangeEnd), "d MMM", { locale: es });
       rango = ini === fin ? ini : `${ini} – ${fin}`;
     }
     items.push({ key: "dateRange", Icon: CalendarDays, label: "Fechas", value: rango });
@@ -135,7 +136,7 @@ function buildItems(data: WizardData): SummaryItem[] {
 
     items.push({
       key: "date", Icon: CalendarDays, label: "Fecha",
-      value: data.date ? format(new Date(data.date), "d MMM", { locale: es }) : undefined,
+      value: data.date ? format(fromYMD(data.date), "d MMM", { locale: es }) : undefined,
     });
   }
 
